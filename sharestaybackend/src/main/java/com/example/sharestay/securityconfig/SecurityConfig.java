@@ -76,6 +76,12 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 반영
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 STATELESS로 (JWT 방식)
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger/OpenAPI 관련 URL 모두 허용  // swagger url 403 떠서 이거 추가함
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .requestMatchers("/api/login", "/api/signup").permitAll() // 로그인/회원가입은 인증 없이
                         .anyRequest().authenticated() // 그 외 요청은 인증 필요
                 )
