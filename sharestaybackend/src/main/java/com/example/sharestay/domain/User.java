@@ -8,7 +8,7 @@ import java.util.Date;
 @Data
 @Entity
 @Table(name = "users")
-@NoArgsConstructor(force = true)
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Setter
@@ -19,7 +19,7 @@ public class User {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private final String username;
+    private String username;
 
     @Column(nullable = false, name = "password_hash")
     private String password; //OAuth2 유저는 null이 가능
@@ -37,7 +37,7 @@ public class User {
     private String phoneNumber;
 
     @Column(nullable = false)
-    private final String role;
+    private String role;
 
     @Column(nullable = false)
     private Date signupDate;
