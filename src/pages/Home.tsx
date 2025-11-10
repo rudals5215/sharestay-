@@ -29,7 +29,6 @@ import { api } from "../lib/api";
 import type { ApiEnvelope, Roles } from "../auth/types";
 import type { RoomSummary } from "../types/room";
 import type { DistrictSafety } from "../types/statistic";
-import SiteHeader from "../components/SiteHeader";
 
 const heroBackground =
   "https://plus.unsplash.com/premium_photo-1661885493074-e18964497278?fm=jpg&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8c2VvdWwlMjBuaWdodHxlbnwwfHwwfHx8MA%3D%3D&ixlib=rb-4.1.0&q=80&w=1920";
