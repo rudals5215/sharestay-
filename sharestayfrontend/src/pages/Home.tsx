@@ -1,4 +1,4 @@
-// src/pages/Home.tsx
+﻿// src/pages/Home.tsx
 import {
   Avatar,
   Box,
@@ -16,7 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import {
-
+  // ChatBubbleOutline,
   LocationOn,
   Search as SearchIcon,
   SecurityOutlined,
@@ -27,7 +27,8 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import { api } from "../lib/api";
 import type { ApiEnvelope, Roles } from "../auth/types";
-import type { RoomSummary } from "../types/room";
+import type { RoomApiResponse, RoomSummary } from "../types/room";
+import { mapRoomFromApi } from "../types/room";
 import type { DistrictSafety } from "../types/statistic";
 
 const heroBackground =
@@ -178,10 +179,14 @@ export default function Home() {
     setRoomsLoading(true);
     setRoomsError(null);
     try {
-      const { data } = await api.get<ApiEnvelope<RoomSummary[]>>("/rooms", {
-        params: { limit: 3, sort: "recommended" },
-      });
-      const list = Array.isArray(data.result) ? data.result : [];
+      const regionParam = heroDistrict || heroKeyword || "서울";
+      const { data } = await api.get<RoomApiResponse[]>(
+        "/rooms/search/simple",
+        { params: { region: regionParam } }
+      );
+      const list = Array.isArray(data)
+        ? data.map(mapRoomFromApi).slice(0, 3)
+        : [];
       setPopularRooms(list);
     } catch (err) {
       const message =
@@ -192,6 +197,8 @@ export default function Home() {
       setRoomsLoading(false);
     }
   };
+
+
 
   const fetchSafetyStats = async () => {
     setSafetyLoading(true);

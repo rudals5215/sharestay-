@@ -1,7 +1,7 @@
 package com.example.sharestay.service;
 
-import com.example.sharestay.domain.User;
-import com.example.sharestay.domain.UserRepository;
+import com.example.sharestay.entity.User;
+import com.example.sharestay.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import java.util.Date;
 import java.util.HashMap;

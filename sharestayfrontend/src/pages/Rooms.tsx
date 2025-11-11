@@ -1,4 +1,4 @@
-// src/pages/Rooms.tsx
+﻿// src/pages/Rooms.tsx
 import {
   Box,
   Button,
@@ -32,8 +32,8 @@ import { Link as RouterLink } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import { api } from "../lib/api";
-import type { ApiEnvelope } from "../auth/types";
-import type { RoomSummary } from "../types/room";
+import type { RoomApiResponse, RoomSummary } from "../types/room";
+import { mapRoomFromApi } from "../types/room";
 
 const filterFacilities = [
   "에어컨",
@@ -62,6 +62,10 @@ const roomTypes = [
   { value: "OFFICETEL", label: "오피스텔" },
   { value: "APARTMENT", label: "아파트" },
 ];
+
+type ShareLinkResponse = {
+  linkUrl?: string;
+};
 
 const formatCurrency = (amount?: number) => {
   if (typeof amount !== "number" || Number.isNaN(amount)) return "-";
@@ -102,6 +106,9 @@ const availabilityLabel = (status: RoomSummary["availabilityStatus"]) => {
   return "모집중";
 };
 
+
+const getRoomId = (room: RoomSummary) => room.roomId ?? room.id ?? null;
+
 export default function Rooms() {
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [keyword, setKeyword] = useState("");
@@ -122,32 +129,50 @@ export default function Rooms() {
     setIsLoading(true);
     setError(null);
     try {
-      const { data } = await api.get<ApiEnvelope<RoomSummary[]>>("/rooms", {
+      const [minPrice, maxPrice] = priceRange;
+      const regionParam = district || keyword || "서울";
+      const { data } = await api.get<RoomApiResponse[]>("/rooms/search/filter", {
         params: {
-          keyword: keyword || undefined,
-          district: district || undefined,
+          region: regionParam,
           type: roomType || undefined,
-          minRent: priceRange[0],
-          maxRent: priceRange[1],
+          minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
+          maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
+          option: keyword || undefined,
         },
       });
-      const list = Array.isArray(data.result) ? data.result : [];
-      setRooms(list);
-      const favSet = new Set(
-        list.filter((room) => room.isFavorite).map((room) => room.roomId)
-      );
-      setFavorites(favSet);
+      const list = Array.isArray(data) ? data.map(mapRoomFromApi) : [];
+      const normalized = list.map((room) => {
+        const roomId = getRoomId(room);
+        return {
+          ...room,
+          isFavorite: roomId ? favorites.has(roomId) : false,
+        };
+      });
+      setRooms(normalized);
+      setFavorites((prev) => {
+        const next = new Set<number>();
+        normalized.forEach((room) => {
+          const roomId = getRoomId(room);
+          if (roomId && prev.has(roomId)) {
+            next.add(roomId);
+          }
+        });
+        return next;
+      });
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
-          : "매물 정보를 불러오는 중 문제가 발생했습니다.";
+          : "방 정보를 불러오는 중 오류가 발생했습니다.";
       setError(message);
       setRooms([]);
+      setFavorites(new Set());
     } finally {
       setIsLoading(false);
     }
   };
+
+
 
   useEffect(() => {
     fetchRooms();
@@ -159,59 +184,38 @@ export default function Rooms() {
     await fetchRooms();
   };
 
-  const toggleFavorite = async (room: RoomSummary) => {
-    const isFavorite = favorites.has(room.roomId);
-    try {
-      if (isFavorite) {
-        const targetId = room.favoriteId ?? room.roomId;
-        await api.delete(`/favorites/${targetId}`);
-        setFavorites((prev) => {
-          const next = new Set(prev);
-          next.delete(room.roomId);
-          return next;
-        });
-        setRooms((prev) =>
-          prev.map((item) =>
-            item.roomId === room.roomId
-              ? { ...item, isFavorite: false, favoriteId: undefined }
-              : item
-          )
-        );
+  const toggleFavorite = (room: RoomSummary) => {
+    const roomId = getRoomId(room);
+    if (!roomId) return;
+    const currentlyFavorite = favorites.has(roomId);
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (currentlyFavorite) {
+        next.delete(roomId);
       } else {
-        const { data } = await api.post<
-          ApiEnvelope<{ favoriteId: number }>
-        >("/favorites", { roomId: room.roomId });
-        const favoriteId = data.result?.favoriteId ?? room.roomId;
-        setFavorites((prev) => new Set(prev).add(room.roomId));
-        setRooms((prev) =>
-          prev.map((item) =>
-            item.roomId === room.roomId
-              ? { ...item, isFavorite: true, favoriteId }
-              : item
-          )
-        );
+        next.add(roomId);
       }
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "즐겨찾기 처리 중 오류가 발생했습니다.";
-      alert(message);
-    }
+      return next;
+    });
+    setRooms((prev) =>
+      prev.map((item) =>
+        getRoomId(item) === roomId ? { ...item, isFavorite: !currentlyFavorite } : item
+      )
+    );
   };
 
-  const createShareLink = async (roomId: number) => {
+  const createShareLink = async (roomId?: number | null) => {
+    if (!roomId) return;
     try {
-      const { data } = await api.post<
-        ApiEnvelope<{ link: string }>
-      >(`/rooms/${roomId}/share-links`);
-      const link = data.result?.link;
+      const { data } = await api.post<ShareLinkResponse>(`/rooms/${roomId}/share`);
+      const link = data?.linkUrl;
       if (link && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link).catch(() => undefined);
       }
       alert(
         link
-          ? `공유 링크가 생성되었습니다.\n${link}`
+          ? `공유 링크가 생성되었습니다.
+${link}`
           : "공유 링크가 생성되었습니다."
       );
     } catch (err) {
@@ -222,6 +226,8 @@ export default function Rooms() {
       alert(message);
     }
   };
+
+
 
   return (
     <Box sx={{ bgcolor: "#f4f6fb", minHeight: "100vh" }}>
@@ -343,7 +349,12 @@ export default function Rooms() {
                     <Typography variant="subtitle2" color="text.secondary">
                       편의시설
                     </Typography>
-                    <Stack spacing={1} flexWrap="wrap" direction="row" useFlexGap>
+                    <Stack
+                      spacing={1}
+                      flexWrap="wrap"
+                      direction="row"
+                      useFlexGap
+                    >
                       {filterFacilities.map((facility) => (
                         <Chip
                           key={facility}
@@ -374,7 +385,11 @@ export default function Rooms() {
                     </Typography>
                   </Stack>
                   <Stack direction="row" spacing={1}>
-                    <Select defaultValue="추천순" size="small" sx={{ borderRadius: 999 }}>
+                    <Select
+                      defaultValue="추천순"
+                      size="small"
+                      sx={{ borderRadius: 999 }}
+                    >
                       <MenuItem value="추천순">추천순</MenuItem>
                       <MenuItem value="가격낮은순">가격 낮은 순</MenuItem>
                       <MenuItem value="가격높은순">가격 높은 순</MenuItem>
@@ -413,13 +428,17 @@ export default function Rooms() {
                 ) : (
                   <Grid container spacing={3}>
                     {rooms.map((room) => {
-                      const isFavorite = favorites.has(room.roomId);
+                      const roomId = getRoomId(room);
+                      const isFavorite = roomId ? favorites.has(roomId) : false;
                       const tags = extractTags(room);
                       const imageUrl =
                         room.images?.[0]?.imageUrl ??
                         "https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=900&q=80";
                       return (
-                        <Grid size={{ xs: 12, sm: 6 }} key={room.roomId}>
+                        <Grid
+                          size={{ xs: 12, sm: 6 }}
+                          key={roomId ?? `${room.title}-${room.address}`}
+                        >
                           <Card
                             sx={{
                               borderRadius: 4,
@@ -434,13 +453,21 @@ export default function Rooms() {
                               component="img"
                               src={imageUrl}
                               alt={room.title}
-                              sx={{ height: 200, width: "100%", objectFit: "cover" }}
+                              sx={{
+                                height: 200,
+                                width: "100%",
+                                objectFit: "cover",
+                              }}
                             />
-                            <CardContent sx={{ display: "grid", gap: 1.5, flexGrow: 1 }}>
+                            <CardContent
+                              sx={{ display: "grid", gap: 1.5, flexGrow: 1 }}
+                            >
                               <Stack direction="row" spacing={1}>
                                 {typeof room.safetyScore === "number" && (
                                   <Chip
-                                    label={`안전도 ${Math.round(room.safetyScore)}`}
+                                    label={`안전도 ${Math.round(
+                                      room.safetyScore
+                                    )}`}
                                     color="primary"
                                     size="small"
                                     sx={{ borderRadius: 999 }}
@@ -448,14 +475,18 @@ export default function Rooms() {
                                 )}
                                 {typeof room.trustScore === "number" && (
                                   <Chip
-                                    label={`신뢰도 ${Math.round(room.trustScore)}`}
+                                    label={`신뢰도 ${Math.round(
+                                      room.trustScore
+                                    )}`}
                                     color="success"
                                     size="small"
                                     sx={{ borderRadius: 999 }}
                                   />
                                 )}
                                 <Chip
-                                  label={availabilityLabel(room.availabilityStatus)}
+                                  label={availabilityLabel(
+                                    room.availabilityStatus
+                                  )}
                                   size="small"
                                   sx={{ borderRadius: 999 }}
                                 />
@@ -463,21 +494,40 @@ export default function Rooms() {
                               <Typography variant="h6" fontWeight={700}>
                                 {room.title}
                               </Typography>
-                              <Stack direction="row" spacing={1} alignItems="center">
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                alignItems="center"
+                              >
                                 <LocationOn fontSize="small" color="action" />
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
                                   {room.address}
                                 </Typography>
                               </Stack>
-                              <Typography variant="body1" fontWeight={700} color="primary">
+                              <Typography
+                                variant="body1"
+                                fontWeight={700}
+                                color="primary"
+                              >
                                 {formatCurrency(room.rentPrice)}
                               </Typography>
                               {room.description && (
-                                <Typography variant="body2" color="text.secondary">
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
                                   {room.description}
                                 </Typography>
                               )}
-                              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                              <Stack
+                                direction="row"
+                                spacing={1}
+                                flexWrap="wrap"
+                                useFlexGap
+                              >
                                 {tags.slice(0, 4).map((tag) => (
                                   <Chip
                                     key={tag}
@@ -501,7 +551,11 @@ export default function Rooms() {
                               <Button
                                 variant="text"
                                 component={RouterLink}
-                                to={`/rooms?highlight=${room.roomId}`}
+                                to={
+                                  roomId
+                                    ? `/rooms?highlight=${roomId}`
+                                    : "/rooms"
+                                }
                               >
                                 자세히 보기
                               </Button>
@@ -509,7 +563,7 @@ export default function Rooms() {
                                 variant="outlined"
                                 size="small"
                                 sx={{ borderRadius: 999 }}
-                                onClick={() => createShareLink(room.roomId)}
+                                onClick={() => createShareLink(roomId)}
                               >
                                 공유 링크
                               </Button>

@@ -1,7 +1,7 @@
 package com.example.sharestay.service;
 
-import com.example.sharestay.domain.User;
-import com.example.sharestay.domain.UserRepository;
+import com.example.sharestay.entity.User;
+import com.example.sharestay.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

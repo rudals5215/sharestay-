@@ -1,4 +1,4 @@
-﻿// src/pages/Signup.tsx
+﻿﻿// src/pages/Signup.tsx
 import {
   Box,
   Button,
@@ -56,7 +56,10 @@ const schema = z
   })
   .superRefine((values, ctx) => {
     if (values.role === "HOST") {
-      if (!values.hostIntroduction || values.hostIntroduction.trim().length < 1) {
+      if (
+        !values.hostIntroduction ||
+        values.hostIntroduction.trim().length < 1
+      ) {
         ctx.addIssue({
           path: ["hostIntroduction"],
           code: z.ZodIssueCode.custom,
@@ -117,8 +120,7 @@ export default function Signup() {
       lifeStyle: (rest.lifeStyle ?? "").trim(),
       hostIntroduction:
         rest.role === "HOST" ? (hostIntroduction ?? "").trim() : "",
-      hostTermsAgreed:
-        rest.role === "HOST" ? Boolean(hostTermsAgreed) : false,
+      hostTermsAgreed: rest.role === "HOST" ? Boolean(hostTermsAgreed) : false,
     };
     try {
       await signup(normalizedPayload);
@@ -272,7 +274,9 @@ export default function Signup() {
                   >
                     {roles.map((role) => (
                       <MenuItem key={role} value={role}>
-                        {role === "GUEST" ? "게스트 (방 찾기, 예약)" : "호스트 (룸 등록)"}
+                        {role === "GUEST"
+                          ? "게스트 (방 찾기, 예약)"
+                          : "호스트 (룸 등록)"}
                       </MenuItem>
                     ))}
                   </TextField>
@@ -281,7 +285,10 @@ export default function Signup() {
             </Stack>
 
             {selectedRole === "HOST" && (
-              <Stack spacing={1.5} sx={{ border: "1px solid #e3e8f7", p: 2, borderRadius: 2 }}>
+              <Stack
+                spacing={1.5}
+                sx={{ border: "1px solid #e3e8f7", p: 2, borderRadius: 2 }}
+              >
                 <Typography fontWeight={600} color="primary.main">
                   호스트 추가 정보
                 </Typography>
@@ -297,7 +304,9 @@ export default function Signup() {
                       multiline
                       minRows={3}
                       error={!!errors.hostIntroduction}
-                      helperText={errors.hostIntroduction?.message ?? "필수 입력"}
+                      helperText={
+                        errors.hostIntroduction?.message ?? "필수 입력"
+                      }
                     />
                   )}
                 />

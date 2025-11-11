@@ -1,9 +1,9 @@
 package com.example.sharestay.service;
 
-import com.example.sharestay.domain.Room;
-import com.example.sharestay.domain.RoomRepository;
-import com.example.sharestay.domain.ShareLink;
-import com.example.sharestay.domain.ShareLinkRepository;
+import com.example.sharestay.entity.Room;
+import com.example.sharestay.repository.RoomRepository;
+import com.example.sharestay.entity.ShareLink;
+import com.example.sharestay.repository.ShareLinkRepository;
 import com.example.sharestay.dto.ShareLinkResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

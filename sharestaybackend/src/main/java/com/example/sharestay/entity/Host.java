@@ -1,4 +1,4 @@
-package com.example.sharestay.domain;
+package com.example.sharestay.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

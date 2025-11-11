@@ -1,8 +1,8 @@
 package com.example.sharestay.dto;
 
 
-import com.example.sharestay.domain.Host;
-import com.example.sharestay.domain.User;
+import com.example.sharestay.entity.Host;
+import com.example.sharestay.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

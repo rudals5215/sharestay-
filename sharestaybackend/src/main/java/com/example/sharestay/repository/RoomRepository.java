@@ -1,5 +1,6 @@
-package com.example.sharestay.domain;
+package com.example.sharestay.repository;
 
+import com.example.sharestay.entity.Room;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

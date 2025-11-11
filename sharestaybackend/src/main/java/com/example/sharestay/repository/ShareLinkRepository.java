@@ -1,5 +1,6 @@
-package com.example.sharestay.domain;
+package com.example.sharestay.repository;
 
+import com.example.sharestay.entity.ShareLink;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
