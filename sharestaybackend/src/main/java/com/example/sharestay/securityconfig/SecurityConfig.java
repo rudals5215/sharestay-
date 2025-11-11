@@ -15,7 +15,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -30,18 +29,19 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
-    private final JwtService jwtService;
-    private final OAuth2UserService<OAuth2UserRequest, OAuth2User> customOAuth2UserService;
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtService jwtService;
     private final CustomOAuth2UserService customOAuth2UserService;
+    private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
 
     public SecurityConfig(UserDetailsServiceImpl userDetailsService,
                           JwtService jwtService,
-                          CustomOAuth2UserService customOAuth2UserService) {
+                          CustomOAuth2UserService customOAuth2UserService,
+                          ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider) {
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
         this.customOAuth2UserService = customOAuth2UserService;
+        this.clientRegistrationRepositoryProvider = clientRegistrationRepositoryProvider;
     }
 
     public void configGlobal(AuthenticationManagerBuilder auth) throws Exception {
@@ -77,32 +77,33 @@ public class SecurityConfig {
         JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtService, userDetailsService);
 
         http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .csrf(csrf -> csrf.disable()) // 기존 유지
+                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 반영
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 STATELESS로 (JWT 방식)
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger/OpenAPI 관련 URL 모두 허용  // swagger url 403 떠서 이거 추가함
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        .requestMatchers("/api/login", "/api/signup").permitAll()
-                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers("/api/login", "/api/signup").permitAll() // 로그인/회원가입은 인증 없이
+                        .anyRequest().authenticated() // 그 외 요청은 인증 필요
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
                 // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
-                // <--- oauth2 로그인 설정
-                .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService)  //customOAuth2UserService 연결
-                        )
-                        .successHandler((request, response, authentication) -> {
-                            OAuth2User oAuthUser = (OAuth2User) authentication.getPrincipal();
-                            String email = oAuthUser.getAttribute("email");
+        ClientRegistrationRepository registrations = clientRegistrationRepositoryProvider.getIfAvailable();
+        if (registrations != null) {
+            http.oauth2Login(oauth2 -> oauth2
+                    .userInfoEndpoint(userInfo -> userInfo
+                            .userService(customOAuth2UserService)  //customOAuth2UserService 연결
+                    )
+                    .successHandler((request, response, authentication) -> {
+                        OAuth2User oAuthUser = (OAuth2User) authentication.getPrincipal();
+                        String email = oAuthUser.getAttribute("email");
 
                         // jwt 발급
                         String accessToken = jwtService.generateAccessToken(email);
