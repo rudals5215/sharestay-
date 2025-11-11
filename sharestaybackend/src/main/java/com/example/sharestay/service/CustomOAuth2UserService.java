@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.Optional;
 
+@Service
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
@@ -42,7 +43,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String name = oauthUser.getAttribute("name");
 
         // DB에 존재하는지 확인
-        Optional<User> optionalUser = userRepository.findByUsername();
+        Optional<User> optionalUser = userRepository.findByUsername(email);
         User user;
         if (optionalUser.isPresent()) {
             user = optionalUser.get();

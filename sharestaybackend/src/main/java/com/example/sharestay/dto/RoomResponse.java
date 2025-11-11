@@ -1,6 +1,5 @@
 package com.example.sharestay.dto;
 
-import com.example.sharestay.domain.Room;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
