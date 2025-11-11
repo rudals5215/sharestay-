@@ -1,9 +1,13 @@
 package com.example.sharestay;
 
-import com.example.sharestay.domain.Host;
-import com.example.sharestay.domain.HostRepository;
-import com.example.sharestay.domain.User;
-import com.example.sharestay.domain.UserRepository;
+<<<<<<< HEAD
+import com.example.sharestay.repository.HostRepository;
+import com.example.sharestay.entity.User;
+import com.example.sharestay.repository.UserRepository;
+=======
+import com.example.sharestay.domain.*;
+
+>>>>>>> main
 import java.util.Date;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
@@ -17,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class SharestayApplication implements CommandLineRunner {
     private final UserRepository userRepository;
     private final HostRepository hostRepository;
+    private final RoomRepository roomRepository;
 
     public static void main(String[] args) {
         SpringApplication.run(SharestayApplication.class, args);
@@ -42,5 +47,35 @@ public class SharestayApplication implements CommandLineRunner {
                 .signupDate(new Date())
                 .build();
         userRepository.save(user);
+
+
+        Host host1 = new Host(
+                "깨끗한 방을 좋아하는 호스트입니다.",  // introduction
+                true,                                 // termsAgreed
+                user                                  // user (연결된 User)
+        );
+
+//        // Room 객체 생성
+//        Room room = new Room(
+//                host1,                          // 어떤 호스트가 등록한 방인지
+//                "홍대입구 근처 원룸",             // title
+//                55.5,                           // rentPrice
+//                "서울특별시 마포구 서교동 12-3",    // address
+//                "원룸",                          // type
+//                37.557123,                      // latitude (위도)
+//                126.923456,                     // longitude (경도)
+//                2,                              // availabilityStatus (최대 인원)
+//                "깔끔하고 교통 좋은 원룸입니다."      // description
+//        );
+
+        hostRepository.save(host1);
+//        roomRepository.save(room);
+
+
+
+
+
+
     }
 }
+

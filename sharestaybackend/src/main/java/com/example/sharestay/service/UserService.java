@@ -1,9 +1,9 @@
 package com.example.sharestay.service;
 
-import com.example.sharestay.domain.Host;
-import com.example.sharestay.domain.HostRepository;
-import com.example.sharestay.domain.User;
-import com.example.sharestay.domain.UserRepository;
+import com.example.sharestay.entity.Host;
+import com.example.sharestay.repository.HostRepository;
+import com.example.sharestay.entity.User;
+import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.dto.AuthResponse;
 import com.example.sharestay.dto.SignupRequest;
 import com.example.sharestay.dto.UpdateUserRequest;
