@@ -18,7 +18,7 @@ import lombok.*;
 @Builder
 public class Host {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false, updatable = false, name = "host_id")
     private Long id;
 
