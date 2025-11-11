@@ -29,16 +29,35 @@ export interface RoomSummary {
   shareLinkUrl?: string;
 }
 
-export interface RoomPayload {
-  hostId?: number;
+export interface RoomRequestPayload {
+  hostId: number;
   title: string;
   rentPrice: number;
   address: string;
   type: string;
-  options?: string[];
-  description?: string;
-  latitude?: number;
-  longitude?: number;
-  availabilityStatus?: RoomAvailabilityStatus | number;
-  lifeStylePreference?: string;
+  latitude: number;
+  longitude: number;
+  availabilityStatus: number;
+  description: string;
 }
+
+export interface RoomApiResponse {
+  id: number;
+  title: string;
+  rentPrice: number;
+  address: string;
+  type: string;
+  availabilityStatus: number;
+  description?: string;
+}
+
+export const mapRoomFromApi = (room: RoomApiResponse): RoomSummary => ({
+  roomId: room.id,
+  id: room.id,
+  title: room.title,
+  rentPrice: room.rentPrice,
+  address: room.address,
+  type: room.type,
+  availabilityStatus: room.availabilityStatus,
+  description: room.description,
+});

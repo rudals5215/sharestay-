@@ -1,5 +1,6 @@
 // src/pages/ListRoom.tsx
 import {
+  Alert,
   Box,
   Button,
   Checkbox,
@@ -22,11 +23,11 @@ import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import FormTextField from "../components/FormTextField";
 import { api } from "../lib/api";
-import type { ApiEnvelope } from "../auth/types";
+import { useAuth } from "../auth/useAuth";
 import type {
-  RoomPayload,
-  RoomSummary,
   RoomAvailabilityStatus,
+  RoomApiResponse,
+  RoomRequestPayload,
 } from "../types/room";
 
 const roomSchema = z.object({
@@ -76,6 +77,12 @@ const availabilityOptions = [
   { value: "PENDING", label: "예약중" },
   { value: "UNAVAILABLE", label: "마감" },
 ];
+
+const availabilityStatusMap: Record<RoomAvailabilityStatus, number> = {
+  AVAILABLE: 1,
+  PENDING: 0,
+  UNAVAILABLE: -1,
+};
 
 const lifestyleOptions = [
   "금연",
@@ -130,6 +137,12 @@ export default function ListRoom() {
     },
   });
 
+  const { user } = useAuth();
+  const hostId = user?.id ?? null;
+  const roleList = user?.roles ?? (user?.role ? [user.role] : []);
+  const isHostUser = roleList.includes("HOST");
+  const canSubmit = Boolean(hostId && isHostUser);
+
   const [selectedLifestyle, setSelectedLifestyle] = useState<string[]>([]);
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [images, setImages] = useState<File[]>([]);
@@ -162,59 +175,71 @@ export default function ListRoom() {
   };
 
   const onSubmit = async (values: FormValues) => {
+    if (!canSubmit) {
+      alert("호스트 전용 기능입니다. 호스트 전환을 완료해 주세요.");
+      return;
+    }
     try {
       const rentPrice = Number(values.rentPrice);
-      const latitude =
+      const latitudeValue =
         values.latitude && values.latitude.trim().length > 0
           ? Number(values.latitude)
           : undefined;
-      const longitude =
+      const longitudeValue =
         values.longitude && values.longitude.trim().length > 0
           ? Number(values.longitude)
           : undefined;
 
-      if (Number.isNaN(rentPrice))
+      if (Number.isNaN(rentPrice)) {
         throw new Error("월세 값이 올바르지 않습니다.");
-      if (Number.isNaN(latitude ?? 0) && latitude !== undefined)
+      }
+      if (latitudeValue !== undefined && Number.isNaN(latitudeValue)) {
         throw new Error("위도 값이 올바르지 않습니다.");
-      if (Number.isNaN(longitude ?? 0) && longitude !== undefined)
+      }
+      if (longitudeValue !== undefined && Number.isNaN(longitudeValue)) {
         throw new Error("경도 값이 올바르지 않습니다.");
+      }
 
-      const payload: RoomPayload = {
+      const availabilityCode =
+        availabilityStatusMap[
+          values.availabilityStatus as RoomAvailabilityStatus
+        ] ?? 0;
+
+      const selectedOptions = Array.from(
+        new Set([...selectedLifestyle, ...selectedFacilities])
+      );
+      const optionsBlock = selectedOptions.length
+        ? `선호 옵션:\n${selectedOptions.map((item) => `- ${item}`).join("\n")}`
+        : "";
+      const composedDescription = [values.description, optionsBlock]
+        .filter(Boolean)
+        .join("\n\n");
+
+      const payload: RoomRequestPayload = {
+        hostId: hostId!,
         title: values.title,
         rentPrice,
         address: values.address,
         type: values.type,
-        description: values.description,
-        availabilityStatus: values.availabilityStatus as RoomAvailabilityStatus,
-        latitude,
-        longitude,
-        options: Array.from(
-          new Set([...selectedLifestyle, ...selectedFacilities])
-        ),
+        latitude: latitudeValue ?? 0,
+        longitude: longitudeValue ?? 0,
+        availabilityStatus: availabilityCode,
+        description: composedDescription,
       };
 
-      const { data } = await api.post<ApiEnvelope<RoomSummary>>(
-        "/rooms",
-        payload
+      await api.post<RoomApiResponse>("/rooms", payload);
+
+      alert(
+        `룸 정보가 등록되었습니다.${
+          images.length ? "\n(이미지 업로드는 추후 지원 예정입니다.)" : ""
+        }`
       );
-      const createdRoom = data.result;
-
-      if (images.length > 0 && createdRoom?.roomId) {
-        const formData = new FormData();
-        images.forEach((file) => formData.append("images", file));
-        await api.post(`/rooms/${createdRoom.roomId}/images`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      }
-
-      alert("룸 정보가 등록되었습니다.");
       handleReset();
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
-          : "룸 정보를 저장하는 중 오류가 발생했습니다.";
+          : "룸 정보를 등록하는 중 오류가 발생했습니다.";
       alert(message);
     }
   };
@@ -232,6 +257,12 @@ export default function ListRoom() {
               새로운 룸메이트를 모집해보세요. 정확한 정보 입력이 중요합니다.
             </Typography>
           </Stack>
+
+          {!canSubmit && (
+            <Alert severity="warning" sx={{ borderRadius: 3 }}>
+              호스트 전환을 완료해야 방을 등록할 수 있습니다.
+            </Alert>
+          )}
 
           <Paper
             sx={{
@@ -402,7 +433,7 @@ export default function ListRoom() {
                   type="submit"
                   variant="contained"
                   sx={{ minWidth: 180 }}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !canSubmit}
                 >
                   {isSubmitting ? "등록 중..." : "룸메이트 모집하기"}
                 </Button>
