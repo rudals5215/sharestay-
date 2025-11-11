@@ -1,6 +1,10 @@
 package com.example.sharestay.controller;
 
-import com.example.sharestay.domain.*;
+import com.example.sharestay.entity.Favorite;
+import com.example.sharestay.entity.Room;
+import com.example.sharestay.entity.User;
+import com.example.sharestay.repository.RoomRepository;
+import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.service.FavoriteService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;

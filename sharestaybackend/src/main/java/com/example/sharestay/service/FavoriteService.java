@@ -1,9 +1,9 @@
 package com.example.sharestay.service;
 
-import com.example.sharestay.domain.Favorite;
-import com.example.sharestay.domain.FavoriteRepository;
-import com.example.sharestay.domain.Room;
-import com.example.sharestay.domain.User;
+import com.example.sharestay.entity.Favorite;
+import com.example.sharestay.repository.FavoriteRepository;
+import com.example.sharestay.entity.Room;
+import com.example.sharestay.entity.User;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

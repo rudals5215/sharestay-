@@ -1,5 +1,8 @@
-package com.example.sharestay.domain;
+package com.example.sharestay.repository;
 
+import com.example.sharestay.entity.Favorite;
+import com.example.sharestay.entity.Room;
+import com.example.sharestay.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
