@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 public class ShareLink {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false, updatable = false, name = "link_id")
     private Long id;
 
