@@ -33,6 +33,7 @@ public class SharestayApplication implements CommandLineRunner {
         User user = User.builder()
                 .username("kim1@test.com")
                 .password(encoder.encode("user1234"))
+                .loginType("LOCAL")
                 .nickname("도하 킴")
                 .address("인천, 대한민국")
                 .phoneNumber("010-1234-5678")
