@@ -57,66 +57,7 @@ public class RoomService {
         // return toResponse(saved);
     }
 
-//    // 간단 검색 (메인 화면)
-//    @Transactional(readOnly = true)
-//    public List<RoomResponse> simpleSearch(String regionKeyword) {
-//        // 타입/가격/편의시설은 전부 null
-//        List<Room> rooms = roomRepository.searchRooms(regionKeyword, null, null, null, null);
-//
-//        return rooms.stream()
-//                .map(room -> RoomResponse.builder()
-//                        .id(room.getId())
-//                        .title(room.getTitle())
-//                        .rentPrice(room.getRentPrice())
-//                        .address(room.getAddress())
-//                        .type(room.getType())
-//                        .availabilityStatus(room.getAvailabilityStatus())
-//                        .description(room.getDescription())
-//                        .build())
-//                .collect(Collectors.toList());
-//    }
-//
-//
-//    // 상세 검색 (필터 페이지)  Repository에 JPQL 짜놓음
-//    @Transactional(readOnly = true)
-//    public List<RoomResponse> filterSearch(String region, String type,
-//                                             Double minPrice, Double maxPrice,
-//                                             String amenity) {
-//        List<Room> rooms = roomRepository.searchRooms(region, type, minPrice, maxPrice, amenity);
-//
-//        return rooms.stream()
-//                .map(room -> RoomResponse.builder()
-//                        .id(room.getId())
-//                        .title(room.getTitle())
-//                        .rentPrice(room.getRentPrice())
-//                        .address(room.getAddress())
-//                        .type(room.getType())
-//                        .availabilityStatus(room.getAvailabilityStatus())
-//                        .description(room.getDescription())
-//                        .build())
-//                .collect(Collectors.toList());
-//    }
-
-    // ✅ 2. 검색 및 필터  (위에껀 상세랑 심플이랑 나뉘어져 있고 RESTful로 하면 그냥 합치면 된다고 하는데...?
-//    @Transactional(readOnly = true)
-//    public List<RoomResponse> advancedSearch(String region, String type,
-//                                             Double minPrice, Double maxPrice,
-//                                             String option) {
-//        List<Room> rooms = roomRepository.searchRooms(region, type, minPrice, maxPrice, option);
-//        return rooms.stream()
-//                .map(r -> new RoomResponse(
-//                        r.getId(),
-//                        r.getTitle(),
-//                        r.getRentPrice(),
-//                        r.getAddress(),
-//                        r.getType(),
-//                        r.getAvailabilityStatus(),
-//                        r.getDescription(),
-//                        r.getOption()
-//                ))
-//                .collect(Collectors.toList());
-//    }
-
+    // 방 검색
     // 검색 service 로직은 하나로 작성하고 controller에서 나눌 것임
     @Transactional(readOnly = true)
     public List<RoomResponse> searchRooms(
@@ -139,6 +80,33 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
+    // 방 수정
+    @Transactional
+    public RoomResponse updateRoom(Long roomId, RoomRequest request) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+
+        // Entity 내부 값 수정 (dirty checking)
+        room.setTitle(request.getTitle());
+        room.setRentPrice(request.getRentPrice());
+        room.setAddress(request.getAddress());
+        room.setType(request.getType());
+        room.setLatitude(request.getLatitude());
+        room.setLongitude(request.getLongitude());
+        room.setAvailabilityStatus(request.getAvailabilityStatus());
+        room.setDescription(request.getDescription());
+
+        // @Transactional 덕분에 save() 없이 자동 update됨
+        return toResponse(room);
+    }
+
+    // 방 삭제
+    @Transactional
+    public void deleteRoom(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+        roomRepository.delete(room);
+    }
 
 
 
