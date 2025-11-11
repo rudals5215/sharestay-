@@ -1,10 +1,15 @@
 package com.example.sharestay.dto;
 
+import com.example.sharestay.domain.Room;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Builder
+@NoArgsConstructor      // JSON 역직렬화, 기본 생성자 필요할 수 있음
+@AllArgsConstructor
 public class RoomResponse {
     private Long id;
     private String title;
@@ -13,4 +18,6 @@ public class RoomResponse {
     private String type;
     private int availabilityStatus;
     private String description;
+
+
 }
