@@ -1,6 +1,21 @@
 // src/pages/Guide.tsx
-import { Avatar, Box, Button, Card, CardContent, Chip, Container, Grid, Stack, Typography } from "@mui/material";
-import { AssignmentTurnedIn, HomeWork, PersonAddAlt } from "@mui/icons-material";
+import {
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Container,
+  Grid,
+  Stack,
+  Typography,
+} from "@mui/material";
+import {
+  AssignmentTurnedIn,
+  HomeWork,
+  PersonAddAlt,
+} from "@mui/icons-material";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 
@@ -51,7 +66,12 @@ export default function Guide() {
               안전하고 신뢰할 수 있는 룸쉐어링 서비스를 처음 이용하시나요?
               단계별 가이드를 통해 쉽게 시작하세요!
             </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center">
+            <Stack
+              direction="row"
+              spacing={1}
+              flexWrap="wrap"
+              justifyContent="center"
+            >
               {tabs.map((tab, index) => (
                 <Button
                   key={tab}
@@ -77,8 +97,13 @@ export default function Guide() {
             <Typography variant="h4" fontWeight={800}>
               ShareStay+ 시작하기
             </Typography>
-            <Typography color="text.secondary" maxWidth={640} alignSelf="center">
-              몇 분만 투자하면 안전하고 편리한 룸쉐어링 서비스를 이용할 수 있습니다.
+            <Typography
+              color="text.secondary"
+              maxWidth={640}
+              alignSelf="center"
+            >
+              몇 분만 투자하면 안전하고 편리한 룸쉐어링 서비스를 이용할 수
+              있습니다.
             </Typography>
           </Stack>
 
@@ -134,7 +159,11 @@ export default function Guide() {
               <Typography variant="h5" fontWeight={800}>
                 지금 바로 시작하세요!
               </Typography>
-              <Typography color="text.secondary" maxWidth={540} alignSelf="center">
+              <Typography
+                color="text.secondary"
+                maxWidth={540}
+                alignSelf="center"
+              >
                 ShareStay+와 함께 안전하고 신뢰할 수 있는 룸쉐어링 경험을
                 시작해보세요.
               </Typography>

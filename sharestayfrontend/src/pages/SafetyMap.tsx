@@ -48,7 +48,8 @@ export default function SafetyMap() {
         const source = item as Statistic & Record<string, unknown>;
         return {
           statisticId:
-            (source.statisticId as number) ?? Number(source.id ?? Math.random()),
+            (source.statisticId as number) ??
+            Number(source.id ?? Math.random()),
           statisticType: String(source.statisticType ?? statType),
           dataType: String(source.dataType ?? "score"),
           value: Number(source.value ?? 0),
@@ -89,9 +90,14 @@ export default function SafetyMap() {
               <Typography variant="h4" fontWeight={800}>
                 안전도 지도
               </Typography>
-              <Typography color="text.secondary" maxWidth={640} alignSelf="center">
-                지역별 안전도와 활동성 데이터를 확인하고, ShareStay+의 추천 정책을
-                이해해보세요. 통계 유형을 변경해 다양한 지표를 살펴볼 수 있습니다.
+              <Typography
+                color="text.secondary"
+                maxWidth={640}
+                alignSelf="center"
+              >
+                지역별 안전도와 활동성 데이터를 확인하고, ShareStay+의 추천
+                정책을 이해해보세요. 통계 유형을 변경해 다양한 지표를 살펴볼 수
+                있습니다.
               </Typography>
             </Stack>
 
@@ -124,7 +130,9 @@ export default function SafetyMap() {
             )}
 
             {isLoading ? (
-              <Box sx={{ display: "grid", placeItems: "center", minHeight: 240 }}>
+              <Box
+                sx={{ display: "grid", placeItems: "center", minHeight: 240 }}
+              >
                 <CircularProgress />
               </Box>
             ) : statistics.length === 0 ? (

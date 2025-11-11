@@ -1,4 +1,4 @@
-﻿// src/pages/Profile.tsx
+﻿﻿// src/pages/Profile.tsx
 import {
   Avatar,
   Box,
@@ -51,11 +51,20 @@ export default function Profile() {
     }
   }, [user?.id]);
 
-  const roles = useMemo(() => user?.roles ?? (user?.role ? [user.role] : []), [user]);
+  const roles = useMemo(
+    () => user?.roles ?? (user?.role ? [user.role] : []),
+    [user]
+  );
 
-  type EditableTextField = "nickname" | "address" | "phoneNumber" | "lifeStyle" | "hostIntroduction";
+  type EditableTextField =
+    | "nickname"
+    | "address"
+    | "phoneNumber"
+    | "lifeStyle"
+    | "hostIntroduction";
 
-  const handleChange = (field: EditableTextField) =>
+  const handleChange =
+    (field: EditableTextField) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }));
     };
@@ -337,7 +346,9 @@ type InfoRowProps = {
   label: string;
   value: string;
   editing?: boolean;
-  onChange?: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onChange?: (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
 };
 
 function InfoRow({ label, value, editing = false, onChange }: InfoRowProps) {
@@ -360,7 +371,9 @@ function InfoRow({ label, value, editing = false, onChange }: InfoRowProps) {
 type TextAreaRowProps = {
   value: string;
   editing?: boolean;
-  onChange?: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onChange?: (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void;
 };
 
 function TextAreaRow({ value, editing = false, onChange }: TextAreaRowProps) {
@@ -373,7 +386,11 @@ function TextAreaRow({ value, editing = false, onChange }: TextAreaRowProps) {
       fullWidth
     />
   ) : (
-    <Typography variant="body1" fontWeight={500} sx={{ whiteSpace: "pre-wrap" }}>
+    <Typography
+      variant="body1"
+      fontWeight={500}
+      sx={{ whiteSpace: "pre-wrap" }}
+    >
       {value || "입력된 라이프스타일 정보가 없습니다."}
     </Typography>
   );

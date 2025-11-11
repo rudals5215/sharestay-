@@ -1,4 +1,4 @@
-﻿// src/pages/AdminUsers.tsx
+﻿﻿// src/pages/AdminUsers.tsx
 import {
   Avatar,
   Box,
@@ -89,7 +89,9 @@ export default function AdminUsers() {
       setUsers(data.map(mapBackendUser));
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "사용자 목록을 불러오지 못했습니다.";
+        err instanceof Error
+          ? err.message
+          : "사용자 목록을 불러오지 못했습니다.";
       setError(message);
     } finally {
       setLoading(false);
@@ -124,9 +126,15 @@ export default function AdminUsers() {
     });
   };
 
-  type EditableTextField = "nickname" | "address" | "phoneNumber" | "lifeStyle" | "hostIntroduction";
+  type EditableTextField =
+    | "nickname"
+    | "address"
+    | "phoneNumber"
+    | "lifeStyle"
+    | "hostIntroduction";
 
-  const handleChange = (field: EditableTextField) =>
+  const handleChange =
+    (field: EditableTextField) =>
     (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [field]: event.target.value }));
     };
@@ -168,7 +176,12 @@ export default function AdminUsers() {
       <SiteHeader />
       <Container sx={{ flex: 1, py: { xs: 4, md: 6 } }}>
         <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, boxShadow: 4 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            mb={3}
+          >
             <Box>
               <Typography variant="h5" fontWeight={700}>
                 회원 관리
@@ -210,15 +223,24 @@ export default function AdminUsers() {
                   {rows.map((user) => (
                     <TableRow key={user.id} hover>
                       <TableCell>
-                        <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          alignItems="center"
+                        >
                           <Avatar sx={{ bgcolor: "primary.main" }}>
                             {user.nickname?.slice(0, 1)?.toUpperCase() ??
                               user.username.slice(0, 1).toUpperCase()}
                           </Avatar>
                           <Box>
-                            <Typography fontWeight={600}>{user.username}</Typography>
+                            <Typography fontWeight={600}>
+                              {user.username}
+                            </Typography>
                             {user.email && (
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 {user.email}
                               </Typography>
                             )}
@@ -229,19 +251,30 @@ export default function AdminUsers() {
                       <TableCell>
                         <Stack direction="row" spacing={1}>
                           {user.roles.map((role) => (
-                            <Chip key={role} label={role} size="small" color="secondary" />
+                            <Chip
+                              key={role}
+                              label={role}
+                              size="small"
+                              color="secondary"
+                            />
                           ))}
                         </Stack>
                       </TableCell>
                       <TableCell>{user.phoneNumber ?? "-"}</TableCell>
                       <TableCell>{user.address ?? "-"}</TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ whiteSpace: "pre-wrap" }}
+                        >
                           {user.lifeStyle ?? "-"}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ whiteSpace: "pre-wrap" }}
+                        >
                           {user.hostIntroduction ?? "-"}
                         </Typography>
                       </TableCell>
@@ -265,7 +298,12 @@ export default function AdminUsers() {
       </Container>
       <SiteFooter />
 
-      <Dialog open={dialogOpen} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>회원 정보 수정</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>

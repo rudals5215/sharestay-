@@ -106,8 +106,8 @@ export default function LifestyleSetup() {
                 라이프스타일을 선택해주세요
               </Typography>
               <Typography color="text.secondary">
-                함께 지내고 싶은 룸메이트의 생활 패턴을 미리 알려주시면 맞춤 추천에
-                도움이 됩니다. 언제든 마이페이지에서 수정할 수 있습니다.
+                함께 지내고 싶은 룸메이트의 생활 패턴을 미리 알려주시면 맞춤
+                추천에 도움이 됩니다. 언제든 마이페이지에서 수정할 수 있습니다.
               </Typography>
             </Stack>
 

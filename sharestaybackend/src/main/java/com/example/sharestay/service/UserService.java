@@ -33,6 +33,7 @@ public class UserService {
         User user = User.builder()
                 .username(request.getUsername())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .loginType("LOCAL")
                 .nickname(request.getNickname())
                 .address(request.getAddress())
                 .phoneNumber(request.getPhoneNumber())
