@@ -1,9 +1,12 @@
 package com.example.sharestay.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 @Data
 @Entity
@@ -50,6 +53,10 @@ public class Room {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id")
     private Host host;
+
+    @JsonIgnoreProperties("room")    // RoomImage 클래스의 필드명이 room이기 때문
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<RoomImage> roomImages;
 
 
     // final에 Required 조합이라 RoomService에서 객체 생성하려면 이거 있어야 하는데... 더 간단하게 쓸 수는 없는 거니
