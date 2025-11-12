@@ -15,11 +15,11 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     // 동적 필터 검색 (지역은 필수, 나머지는 nullable)
     @Query("""
         SELECT r FROM Room r
-        WHERE r.address LIKE %:region%
+        WHERE r.address LIKE CONCAT('%', :region, '%')
           AND (:type IS NULL OR r.type = :type)
           AND (:minPrice IS NULL OR r.rentPrice >= :minPrice)
           AND (:maxPrice IS NULL OR r.rentPrice <= :maxPrice)
-          AND (:amenity IS NULL OR r.description LIKE %:option%)
+          AND (:option IS NULL OR r.description LIKE CONCAT('%', :option, '%'))
         """)
 
     List<Room> searchRooms(

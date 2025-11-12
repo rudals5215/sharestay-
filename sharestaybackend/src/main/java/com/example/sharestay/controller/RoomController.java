@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/rooms")
 @RequiredArgsConstructor
 @Tag(name = "Room API", description = "방 등록 / 수정 / 삭제 / 검색 관련 API")
 public class RoomController {
@@ -40,7 +40,7 @@ public class RoomController {
     @Operation(summary = "필터 방 검색", description = "지역, 타입, 가격, 편의시설 조건으로 방을 검색합니다.")
     @GetMapping("/rooms/filter")
     public ResponseEntity<List<RoomResponse>> filterSearch(
-            @RequestParam String region,
+            @RequestParam(defaultValue = "") String region,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,

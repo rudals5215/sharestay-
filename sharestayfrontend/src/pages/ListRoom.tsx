@@ -19,6 +19,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import { useNavigate } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import FormTextField from "../components/FormTextField";
@@ -137,10 +138,12 @@ export default function ListRoom() {
     },
   });
 
+  const navigate = useNavigate();
   const { user } = useAuth();
   const hostId = user?.id ?? null;
   const roleList = user?.roles ?? (user?.role ? [user.role] : []);
-  const isHostUser = roleList.includes("HOST");
+  const isHostUser =
+    roleList.includes("HOST") || roleList.includes("ADMIN");
   const canSubmit = Boolean(hostId && isHostUser);
 
   const [selectedLifestyle, setSelectedLifestyle] = useState<string[]>([]);
@@ -176,7 +179,7 @@ export default function ListRoom() {
 
   const onSubmit = async (values: FormValues) => {
     if (!canSubmit) {
-      alert("호스트 전용 기능입니다. 호스트 전환을 완료해 주세요.");
+      alert("이 기능은 호스트 전용입니다. 호스트 전환을 완료해 주세요.");
       return;
     }
     try {
@@ -209,7 +212,7 @@ export default function ListRoom() {
         new Set([...selectedLifestyle, ...selectedFacilities])
       );
       const optionsBlock = selectedOptions.length
-        ? `선호 옵션:\n${selectedOptions.map((item) => `- ${item}`).join("\n")}`
+        ? `선호 옵션:\n${selectedOptions.map((option) => `- ${option}`).join("\n")}`
         : "";
       const composedDescription = [values.description, optionsBlock]
         .filter(Boolean)
@@ -227,14 +230,19 @@ export default function ListRoom() {
         description: composedDescription,
       };
 
-      await api.post<RoomApiResponse>("/rooms", payload);
+      const { data } = await api.post<RoomApiResponse>("/rooms", payload);
 
       alert(
         `룸 정보가 등록되었습니다.${
           images.length ? "\n(이미지 업로드는 추후 지원 예정입니다.)" : ""
         }`
       );
+      const createdRoomId = data?.id ?? (data as { roomId?: number }).roomId;
       handleReset();
+      navigate(
+        createdRoomId ? `/rooms?highlight=${createdRoomId}` : "/rooms",
+        { replace: true }
+      );
     } catch (err) {
       const message =
         err instanceof Error
@@ -243,7 +251,6 @@ export default function ListRoom() {
       alert(message);
     }
   };
-
   return (
     <Box sx={{ bgcolor: "#f4f6fb", minHeight: "100vh" }}>
       <SiteHeader activePath="/list-room" />
