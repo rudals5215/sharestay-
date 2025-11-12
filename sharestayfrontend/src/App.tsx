@@ -18,6 +18,7 @@ import Profile from "./pages/Profile";
 import AdminUsers from "./pages/AdminUsers";
 import Guide from "./pages/Guide";
 import Rooms from "./pages/Rooms";
+import RoomDetail from "./pages/RoomDetail";
 import ListRoom from "./pages/ListRoom";
 import ForgotPassword from "./pages/ForgotPassword";
 import Terms from "./pages/Terms";
@@ -72,6 +73,7 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/guide" element={<Guide />} />
             <Route path="/rooms" element={<Rooms />} />
+            <Route path="/rooms/:roomId" element={<RoomDetail />} />
             <Route
               path="/list-room"
               element={

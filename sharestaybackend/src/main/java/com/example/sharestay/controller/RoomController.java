@@ -10,21 +10,21 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/rooms")
 @RequiredArgsConstructor
 public class RoomController {
     private final RoomService roomService;
     // 안녕하세요
 
     // 방 등록
-    @PostMapping("rooms")
+    @PostMapping
     public ResponseEntity<RoomResponse> createRoom(@RequestBody RoomRequest request) {
         RoomResponse response = roomService.createRoom(request);
         return ResponseEntity.ok(response);
     }
 
     // 메인화면 검색 (간단 버전)
-    @GetMapping("/main")
+    @GetMapping("/search/simple")
     public ResponseEntity<List<RoomResponse>> mainSearch(
             @RequestParam(required = false) String region) {
         List<RoomResponse> result = roomService.searchRooms(region, null, null, null, null);
@@ -33,9 +33,9 @@ public class RoomController {
     }
 
     // 상세 검색 (필터 포함)
-    @GetMapping("/rooms/filter")
+    @GetMapping("/search/filter")
     public ResponseEntity<List<RoomResponse>> filterSearch(
-            @RequestParam String region,
+            @RequestParam(defaultValue = "") String region,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
@@ -45,9 +45,10 @@ public class RoomController {
         return ResponseEntity.ok(result);
     }
 
-
-
-
+    @GetMapping("/{roomId}")
+    public ResponseEntity<RoomResponse> getRoom(@PathVariable Long roomId) {
+        return ResponseEntity.ok(roomService.getRoom(roomId));
+    }
 
 
 

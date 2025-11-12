@@ -1,4 +1,4 @@
-﻿// src/pages/Rooms.tsx
+// src/pages/Rooms.tsx
 import {
   Box,
   Button,
@@ -27,8 +27,8 @@ import {
   LocationOn,
   Search,
 } from "@mui/icons-material";
-import { useEffect, useMemo, useState } from "react";
-import { Link as RouterLink } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
 import { api } from "../lib/api";
@@ -109,12 +109,28 @@ const availabilityLabel = (status: RoomSummary["availabilityStatus"]) => {
 
 const getRoomId = (room: RoomSummary) => room.roomId ?? room.id ?? null;
 
+type RoomSearchOverrides = {
+  keyword?: string;
+  district?: string;
+  roomType?: string;
+  priceRange?: number[];
+};
+
 export default function Rooms() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const highlightParam = searchParams.get("highlight");
+  const highlightedRoomId = (() => {
+    if (!highlightParam) return null;
+    const parsed = Number(highlightParam);
+    return Number.isNaN(parsed) ? null : parsed;
+  })();
+  const highlightedCardRef = useRef<HTMLDivElement | null>(null);
+  const defaultPriceRange: [number, number] = [0, 5000000];
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [keyword, setKeyword] = useState("");
   const [district, setDistrict] = useState("");
   const [roomType, setRoomType] = useState("");
-  const [priceRange, setPriceRange] = useState<number[]>([300000, 1500000]);
+  const [priceRange, setPriceRange] = useState<number[]>(defaultPriceRange);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
@@ -125,19 +141,32 @@ export default function Rooms() {
     [priceRange]
   );
 
-  const fetchRooms = async () => {
+  const fetchRooms = async (overrides?: RoomSearchOverrides) => {
     setIsLoading(true);
     setError(null);
     try {
-      const [minPrice, maxPrice] = priceRange;
-      const regionParam = district || keyword || "서울";
+      const keywordValue = overrides?.keyword ?? keyword;
+      const districtValue = overrides?.district ?? district;
+      const roomTypeValue = overrides?.roomType ?? roomType;
+      const priceRangeValue = overrides?.priceRange ?? priceRange;
+      const [minPrice, maxPrice] = priceRangeValue;
+      const regionParam = districtValue || keywordValue || "";
+      const hasCustomPriceRange =
+        priceRangeValue[0] !== defaultPriceRange[0] ||
+        priceRangeValue[1] !== defaultPriceRange[1];
       const { data } = await api.get<RoomApiResponse[]>("/rooms/search/filter", {
         params: {
           region: regionParam,
-          type: roomType || undefined,
-          minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
-          maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
-          option: keyword || undefined,
+          type: roomTypeValue || undefined,
+          minPrice:
+            hasCustomPriceRange && Number.isFinite(minPrice)
+              ? minPrice
+              : undefined,
+          maxPrice:
+            hasCustomPriceRange && Number.isFinite(maxPrice)
+              ? maxPrice
+              : undefined,
+          option: keywordValue || undefined,
         },
       });
       const list = Array.isArray(data) ? data.map(mapRoomFromApi) : [];
@@ -172,18 +201,60 @@ export default function Rooms() {
     }
   };
 
-
-
   useEffect(() => {
-    fetchRooms();
+    const initialKeyword = searchParams.get("keyword") ?? "";
+    const initialDistrict = searchParams.get("district") ?? "";
+    const initialType = searchParams.get("type") ?? "";
+    const minParam = searchParams.get("minPrice");
+    const maxParam = searchParams.get("maxPrice");
+    const parsedMin = minParam ? Number(minParam) : NaN;
+    const parsedMax = maxParam ? Number(maxParam) : NaN;
+    const hasCustomRange =
+      !Number.isNaN(parsedMin) && !Number.isNaN(parsedMax);
+    const nextRange = hasCustomRange ? [parsedMin, parsedMax] : undefined;
+
+    if (initialKeyword) setKeyword(initialKeyword);
+    if (initialDistrict) setDistrict(initialDistrict);
+    if (initialType) setRoomType(initialType);
+    if (nextRange) setPriceRange(nextRange);
+
+    fetchRooms({
+      keyword: initialKeyword || undefined,
+      district: initialDistrict || undefined,
+      roomType: initialType || undefined,
+      priceRange: nextRange,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!highlightedRoomId) return;
+    const timer = window.setTimeout(() => {
+      highlightedCardRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [rooms, highlightedRoomId]);
+
   const handleSearch = async (event?: React.FormEvent) => {
     event?.preventDefault();
+    const params = new URLSearchParams();
+    if (keyword.trim()) params.set("keyword", keyword.trim());
+    if (district) params.set("district", district);
+    if (roomType) params.set("type", roomType);
+    if (
+      priceRange[0] !== defaultPriceRange[0] ||
+      priceRange[1] !== defaultPriceRange[1]
+    ) {
+      params.set("minPrice", String(priceRange[0]));
+      params.set("maxPrice", String(priceRange[1]));
+    }
+    if (params.toString()) setSearchParams(params, { replace: true });
+    else setSearchParams({}, { replace: true });
     await fetchRooms();
   };
-
   const toggleFavorite = (room: RoomSummary) => {
     const roomId = getRoomId(room);
     if (!roomId) return;
@@ -430,6 +501,8 @@ ${link}`
                     {rooms.map((room) => {
                       const roomId = getRoomId(room);
                       const isFavorite = roomId ? favorites.has(roomId) : false;
+                      const isHighlighted =
+                        roomId !== null && highlightedRoomId === roomId;
                       const tags = extractTags(room);
                       const imageUrl =
                         room.images?.[0]?.imageUrl ??
@@ -438,15 +511,21 @@ ${link}`
                         <Grid
                           size={{ xs: 12, sm: 6 }}
                           key={roomId ?? `${room.title}-${room.address}`}
+                          ref={
+                            isHighlighted ? highlightedCardRef : undefined
+                          }
                         >
                           <Card
                             sx={{
                               borderRadius: 4,
                               overflow: "hidden",
-                              boxShadow: "0 20px 40px rgba(15, 40, 105, 0.12)",
+                              boxShadow: isHighlighted
+                                ? "0 0 0 2px #0c51ff, 0 24px 48px rgba(12, 81, 255, 0.2)"
+                                : "0 20px 40px rgba(15, 40, 105, 0.12)",
                               height: "100%",
                               display: "flex",
                               flexDirection: "column",
+                              transition: "box-shadow 0.2s ease",
                             }}
                           >
                             <Box
@@ -551,11 +630,7 @@ ${link}`
                               <Button
                                 variant="text"
                                 component={RouterLink}
-                                to={
-                                  roomId
-                                    ? `/rooms?highlight=${roomId}`
-                                    : "/rooms"
-                                }
+                                to={roomId ? `/rooms/${roomId}` : "/rooms"}
                               >
                                 자세히 보기
                               </Button>
