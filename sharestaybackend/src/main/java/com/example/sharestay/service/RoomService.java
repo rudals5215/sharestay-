@@ -158,22 +158,20 @@ public class RoomService {
         );
     }
 
-//    // 공통 변환 메서드 (Entity → DTO)
-//    private RoomResponse toResponse(Room room) {
-//    return new RoomResponse(
-//            room.getId(),
-//            room.getTitle(),
-//            room.getRentPrice(),
-//            room.getAddress(),
-//            room.getType(),
-//            room.getAvailabilityStatus(),
-//            room.getDescription()
-//    );
+    // 공통 변환 메서드 (Entity → DTO)
+    private RoomResponse toResponse(Room room) {
+        return new RoomResponse(
+                room.getId(),
+                room.getTitle(),
+                room.getRentPrice(),
+                room.getAddress(),
+                room.getType(),
+                room.getAvailabilityStatus(),
+                room.getDescription()
+        );
 
 
-
-
-
+    }
 }
 
 
