@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 @Data
 @Entity
 @NoArgsConstructor(force = true)
-@RequiredArgsConstructor
 public class Room {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
