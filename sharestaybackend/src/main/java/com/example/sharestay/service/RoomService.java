@@ -46,7 +46,18 @@ public class RoomService {
 
         Room saved = roomRepository.save(room);
 
-        return toResponse(saved);
+        // 이거 builder 안 쓰는 버전으로 만들고 싶음
+//        return RoomResponse.builder()
+//                .id(saved.getId())
+//                .title(saved.getTitle())
+//                .rentPrice(saved.getRentPrice())
+//                .address(saved.getAddress())
+//                .type(saved.getType())
+//                .availabilityStatus(saved.getAvailabilityStatus())
+//                .description(saved.getDescription())
+//                .build();
+
+         return toResponse(saved);
     }
 
     // 방 검색
@@ -116,6 +127,20 @@ public class RoomService {
                 .description(room.getDescription())
                 .build();
     }
+
+    // 공통 변환 메서드 (Entity → DTO)
+    private RoomResponse toResponse(Room room) {
+        return RoomResponse.builder()
+                .id(room.getId())
+                .title(room.getTitle())
+                .rentPrice(room.getRentPrice())
+                .address(room.getAddress())
+                .type(room.getType())
+                .availabilityStatus(room.getAvailabilityStatus())
+                .description(room.getDescription())
+                .build();
+    }
+
 
 
 
