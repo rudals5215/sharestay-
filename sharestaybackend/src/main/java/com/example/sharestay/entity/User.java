@@ -49,4 +49,10 @@ public class User {
     public void prePersist() {
         if (this.signupDate == null) this.signupDate = new Date();
     }
+
+    public User(String username, String password, String role) {
+        this.username = username;
+        this.password = password;
+        this.role = role;
+    }
 }
