@@ -69,6 +69,7 @@ public class RoomController {
         return ResponseEntity.noContent().build();
     }
 
+    // 방 상세 조회 이거 수정해야함
     @Operation(summary = "방 상세 조회", description = "사용자가 특정 방의 상세 정보를 조회합니다.")
     @GetMapping("/rooms/{roomId}")
     public ResponseEntity<RoomResponse> getRoomById(@PathVariable Long roomId) {
