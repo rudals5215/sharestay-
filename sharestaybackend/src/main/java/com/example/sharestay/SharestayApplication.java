@@ -74,12 +74,6 @@ public class SharestayApplication implements CommandLineRunner {
 
         hostRepository.save(host1);
         roomRepository.save(room);
-
-
-
-
-
-
     }
 }
 
