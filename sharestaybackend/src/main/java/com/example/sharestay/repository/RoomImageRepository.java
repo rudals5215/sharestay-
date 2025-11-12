@@ -1,4 +1,7 @@
 package com.example.sharestay.repository;
 
-public interface RoomImageRepository <RoomImage, Long>{
+import java.util.List;
+
+public interface RoomImageRepository <RoomImage, Long> {
+    List<RoomImage> findByRoomId(Long roomId);
 }

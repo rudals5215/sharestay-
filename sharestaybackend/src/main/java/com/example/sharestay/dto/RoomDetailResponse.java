@@ -1,15 +1,15 @@
+// RoomDetailResponse.java
 package com.example.sharestay.dto;
 
-import com.example.sharestay.entity.Room;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.util.List;
 
 @Getter
-@NoArgsConstructor      // JSON 역직렬화, 기본 생성자 필요할 수 있음
+@NoArgsConstructor
 @AllArgsConstructor
-public class RoomResponse {
+public class RoomDetailResponse {
     private Long id;
     private String title;
     private double rentPrice;
@@ -17,6 +17,12 @@ public class RoomResponse {
     private String type;
     private int availabilityStatus;
     private String description;
+    private double latitude;
+    private double longitude;
 
+    // 이미지 URL 리스트
+    private List<String> imageUrls;
 
+    // 공유 링크 URL
+    private String shareLinkUrl;
 }
