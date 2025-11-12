@@ -4,6 +4,7 @@ package com.example.sharestay.service;
 import com.example.sharestay.dto.RoomDetailResponse;
 import com.example.sharestay.entity.Host;
 import com.example.sharestay.entity.RoomImage;
+import com.example.sharestay.entity.User;
 import com.example.sharestay.repository.HostRepository;
 import com.example.sharestay.entity.Room;
 import com.example.sharestay.repository.RoomImageRepository;
