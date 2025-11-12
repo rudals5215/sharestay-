@@ -135,7 +135,7 @@ public class RoomService {
         // 이미지 URL을 방 이미지 엔티티/리포지토리에서 가져왔다고 가정
         List<String> imageUrls = roomImageRepository.findByRoomId(roomId)
                 .stream()
-                .map(img -> img.getUrl())
+                .map(img -> img.getImageUrl())
                 .collect(Collectors.toList());
 
         String shareLinkUrl = null;

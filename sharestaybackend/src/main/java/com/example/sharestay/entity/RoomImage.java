@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@NoArgsConstructor(force = true)
+@NoArgsConstructor
 @Data
 public class RoomImage {
 
