@@ -1,7 +1,7 @@
 package com.example.sharestay.securityconfig;
 
+import com.example.sharestay.security.CustomOAuth2SuccessHandler;
 import com.example.sharestay.security.JwtAuthenticationFilter;
-import com.example.sharestay.service.CustomOAuth2UserService;
 import com.example.sharestay.service.JwtService;
 import com.example.sharestay.service.UserDetailsServiceImpl;
 import java.util.List;
@@ -32,16 +32,15 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtService jwtService;
-    private final CustomOAuth2UserService customOAuth2UserService;
+    private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
     private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
 
     public SecurityConfig(UserDetailsServiceImpl userDetailsService,
-                          JwtService jwtService,
-                          CustomOAuth2UserService customOAuth2UserService,
+                          JwtService jwtService, CustomOAuth2SuccessHandler customOAuth2SuccessHandler,
                           ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider) {
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
-        this.customOAuth2UserService = customOAuth2UserService;
+        this.customOAuth2SuccessHandler = customOAuth2SuccessHandler;
         this.clientRegistrationRepositoryProvider = clientRegistrationRepositoryProvider;
     }
 
@@ -89,6 +88,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/auth/google").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rooms/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
@@ -102,24 +102,11 @@ public class SecurityConfig {
                 // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
+        // oauth2 로그인 설정 (커스텀 핸들러 연결)
         ClientRegistrationRepository registrations = clientRegistrationRepositoryProvider.getIfAvailable();
         if (registrations != null) {
             http.oauth2Login(oauth2 -> oauth2
-                    .userInfoEndpoint(userInfo -> userInfo
-                            .userService(customOAuth2UserService)  //customOAuth2UserService 연결
-                    )
-                    .successHandler((request, response, authentication) -> {
-                        OAuth2User oAuthUser = (OAuth2User) authentication.getPrincipal();
-                        String email = oAuthUser.getAttribute("email");
-
-                        // jwt 발급
-                        String accessToken = jwtService.generateAccessToken(email);
-                        String refreshToken = jwtService.generateRefreshToken(email);
-
-                        response.setHeader("Authorization", "Bearer " + accessToken);
-                        response.setHeader("Refresh-Token", refreshToken);
-                        response.setStatus(200);
-                    })
+                    .successHandler(customOAuth2SuccessHandler) // 핸들러에서 사용자 정보 처리
             );
         }
 
