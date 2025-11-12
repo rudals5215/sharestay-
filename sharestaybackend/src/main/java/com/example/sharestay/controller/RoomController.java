@@ -17,7 +17,6 @@ import java.util.List;
 @Tag(name = "Room API", description = "방 등록 / 수정 / 삭제 / 검색 관련 API")
 public class RoomController {
     private final RoomService roomService;
-    // 안녕하세요
 
     // 방 등록
     @Operation(summary = "방 등록", description = "호스트가 새로운 방을 등록합니다.")
@@ -62,13 +61,21 @@ public class RoomController {
         return ResponseEntity.ok(response);
     }
 
-    // 방 삭제
+    // 방 삭제 (호스트 용)
     @Operation(summary = "방 삭제", description = "특정 방 ID로 방을 삭제합니다.")
     @DeleteMapping("/{roomId}")
     public ResponseEntity<Void> deleteRoom(@PathVariable Long roomId) {
         roomService.deleteRoom(roomId);
         return ResponseEntity.noContent().build();
     }
+
+    @Operation(summary = "방 상세 조회", description = "사용자가 특정 방의 상세 정보를 조회합니다.")
+    @GetMapping("/rooms/{roomId}")
+    public ResponseEntity<RoomResponse> getRoomById(@PathVariable Long roomId) {
+        RoomResponse response = roomService.getRoomById(roomId);
+        return ResponseEntity.ok(response);
+    }
+
 
 
 

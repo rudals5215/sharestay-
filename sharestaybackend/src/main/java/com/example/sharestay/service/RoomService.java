@@ -108,17 +108,31 @@ public class RoomService {
         roomRepository.delete(room);
     }
 
+    @Transactional(readOnly = true)
+    public RoomResponse getRoomById(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+
+        return toResponse(room);
+    }
+
+
     // 공통 변환 메서드 (Entity → DTO)
     private RoomResponse toResponse(Room room) {
-        return RoomResponse.builder()
-                .id(room.getId())
-                .title(room.getTitle())
-                .rentPrice(room.getRentPrice())
-                .address(room.getAddress())
-                .type(room.getType())
-                .availabilityStatus(room.getAvailabilityStatus())
-                .description(room.getDescription())
-                .build();
+    return new RoomResponse(
+            room.getId(),
+            room.getTitle(),
+            room.getRentPrice(),
+            room.getAddress(),
+            room.getType(),
+            room.getAvailabilityStatus(),
+            room.getDescription()
+    );
+
+
+
+
+
     }
 
 
