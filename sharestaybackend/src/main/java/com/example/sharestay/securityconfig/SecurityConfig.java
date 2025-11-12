@@ -1,6 +1,5 @@
 package com.example.sharestay.securityconfig;
 
-import com.example.sharestay.security.CustomOAuth2SuccessHandler;
 import com.example.sharestay.security.JwtAuthenticationFilter;
 import com.example.sharestay.service.JwtService;
 import com.example.sharestay.service.UserDetailsServiceImpl;
@@ -19,7 +18,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -32,15 +30,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtService jwtService;
-    private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
     private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
 
     public SecurityConfig(UserDetailsServiceImpl userDetailsService,
-                          JwtService jwtService, CustomOAuth2SuccessHandler customOAuth2SuccessHandler,
+                          JwtService jwtService,
                           ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider) {
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
-        this.customOAuth2SuccessHandler = customOAuth2SuccessHandler;
         this.clientRegistrationRepositoryProvider = clientRegistrationRepositoryProvider;
     }
 
@@ -101,14 +97,6 @@ public class SecurityConfig {
                 .httpBasic(basic -> basic.disable())
                 // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
-        // oauth2 로그인 설정 (커스텀 핸들러 연결)
-        ClientRegistrationRepository registrations = clientRegistrationRepositoryProvider.getIfAvailable();
-        if (registrations != null) {
-            http.oauth2Login(oauth2 -> oauth2
-                    .successHandler(customOAuth2SuccessHandler) // 핸들러에서 사용자 정보 처리
-            );
-        }
 
         return http.build();
     }

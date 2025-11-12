@@ -3,10 +3,12 @@ package com.example.sharestay.controller;
 import com.example.sharestay.dto.RoomDetailResponse;
 import com.example.sharestay.dto.RoomRequest;
 import com.example.sharestay.dto.RoomResponse;
+import com.example.sharestay.entity.Room;
 import com.example.sharestay.service.RoomService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +26,9 @@ public class RoomController {
     @PostMapping("rooms")
     public ResponseEntity<RoomResponse> createRoom(@RequestBody RoomRequest request) {
         RoomResponse response = roomService.createRoom(request);
-        return ResponseEntity.ok(response);
+//        return ResponseEntity.ok(response);  // 이건 200 ok
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+//        201 Created 상태 코드를 반환하는 것이 REST API 설계 원칙에 더 부합
     }
 
     // 메인화면 검색 (간단 버전)
@@ -41,14 +45,15 @@ public class RoomController {
     @Operation(summary = "필터 방 검색", description = "지역, 타입, 가격, 편의시설 조건으로 방을 검색합니다.")
     @GetMapping("/rooms/filter")
     public ResponseEntity<List<RoomResponse>> filterSearch(
-            @RequestParam(defaultValue = "") String region,
+            @RequestParam(required = false) String region,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) String option
     ) {
-        List<RoomResponse> result = roomService.searchRooms(region, type, minPrice, maxPrice, option);
-        return ResponseEntity.ok(result);
+        // 파라미터가 없으면 전체조회, 있으면 조건부 검색
+        List<RoomResponse> rooms = roomService.searchRooms(region,type,minPrice,maxPrice,option);
+        return ResponseEntity.ok(rooms);
     }
 
     // 방 수정
