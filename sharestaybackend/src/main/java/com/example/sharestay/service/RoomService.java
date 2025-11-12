@@ -1,10 +1,12 @@
 // RoomService.java
 package com.example.sharestay.service;
 
+import com.example.sharestay.dto.RoomDetailResponse;
 import com.example.sharestay.entity.Host;
-import com.example.sharestay.entity.Room;
-import com.example.sharestay.entity.User;
+import com.example.sharestay.entity.RoomImage;
 import com.example.sharestay.repository.HostRepository;
+import com.example.sharestay.entity.Room;
+import com.example.sharestay.repository.RoomImageRepository;
 import com.example.sharestay.repository.RoomRepository;
 import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.dto.RoomRequest;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public class RoomService {
 
     private final RoomRepository roomRepository;
+    private final RoomImageRepository roomImageRepository;
     private final HostRepository hostRepository;
     private final UserRepository userRepository;
 
@@ -45,19 +48,7 @@ public class RoomService {
         );
 
         Room saved = roomRepository.save(room);
-
-        // 이거 builder 안 쓰는 버전으로 만들고 싶음
-//        return RoomResponse.builder()
-//                .id(saved.getId())
-//                .title(saved.getTitle())
-//                .rentPrice(saved.getRentPrice())
-//                .address(saved.getAddress())
-//                .type(saved.getType())
-//                .availabilityStatus(saved.getAvailabilityStatus())
-//                .description(saved.getDescription())
-//                .build();
-
-         return toResponse(saved);
+        return toResponse(saved);
     }
 
     // 방 검색
@@ -66,7 +57,7 @@ public class RoomService {
     public List<RoomResponse> searchRooms(
             String region, String type,
             Double minPrice, Double maxPrice,
-            String amenity
+            String option
     ) {
         String normalizedRegion = region == null ? "" : region;
         List<Room> rooms = roomRepository.searchRooms(
@@ -136,6 +127,36 @@ public class RoomService {
         return toResponse(room);
     }
 
+    @Transactional(readOnly = true)
+    public RoomDetailResponse getRoomDetail(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+
+        // 이미지 URL을 방 이미지 엔티티/리포지토리에서 가져왔다고 가정
+        List<String> imageUrls = roomImageRepository.findByRoomId(roomId)
+                .stream()
+                .map(img -> img.getUrl())
+                .collect(Collectors.toList());
+
+        String shareLinkUrl = null;
+        if (room.getShareLink() != null) {
+            shareLinkUrl = room.getShareLink().getLinkUrl();
+        }
+
+        return new RoomDetailResponse(
+                room.getId(),
+                room.getTitle(),
+                room.getRentPrice(),
+                room.getAddress(),
+                room.getType(),
+                room.getAvailabilityStatus(),
+                room.getDescription(),
+                room.getLatitude(),
+                room.getLongitude(),
+                imageUrls,
+                shareLinkUrl
+        );
+    }
 
     // 공통 변환 메서드 (Entity → DTO)
     private RoomResponse toResponse(Room room) {

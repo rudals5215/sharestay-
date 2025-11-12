@@ -20,5 +20,5 @@ public class RoomImage {
     private Room room;
 
     @Column(nullable = false)
-    private final String imageUrl;
+    private String imageUrl;
 }
