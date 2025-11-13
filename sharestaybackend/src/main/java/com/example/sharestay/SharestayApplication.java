@@ -26,6 +26,7 @@ public class SharestayApplication implements CommandLineRunner {
     private final UserRepository userRepository;
     private final HostRepository hostRepository;
     private final RoomRepository roomRepository;
+    private final FavoriteRepository favoriteRepository;
 
     public static void main(String[] args) {
         SpringApplication.run(SharestayApplication.class, args);
@@ -74,6 +75,12 @@ public class SharestayApplication implements CommandLineRunner {
 
         hostRepository.save(host1);
         roomRepository.save(room);
+
+        // Favorite 객체 생성
+        Favorite favorite = new Favorite();
+        favorite.setUser(user);
+        favorite.setRoom(room);
+        favoriteRepository.save(favorite);
 
 
 
