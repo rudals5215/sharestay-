@@ -154,6 +154,10 @@ public class RoomService {
         );
     }
 
+
+
+
+
     // 공통 변환 메서드 (Entity → DTO)
     private RoomResponse toResponse(Room room) {
     return new RoomResponse(
