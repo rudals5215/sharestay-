@@ -29,7 +29,7 @@ public class BanController {
         // 예: Long adminId = SecurityUtil.getCurrentAdminId();
         Long adminId = 1L; // 임시 관리자 ID
 
-        BanResponse response = banService.banUser(userId, request, adminId);
+        BanResponse response = banService.banUser(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
