@@ -34,19 +34,21 @@ public class RoomService {
                 .orElseThrow(() -> new IllegalArgumentException("Host not found"));
 
         // 지도 들고 올 건데 저 위도 경도는 대체 어떻게 해야하니.. 여기 있는 게 맞니..
-        Room room = new Room(
-                host,
-                request.getTitle(),
-                request.getRentPrice(),
-                request.getAddress(),
-                request.getType(),
-                request.getLatitude(),
-                request.getLongitude(),
-                request.getAvailabilityStatus(),
-                request.getDescription()
-        );
+//        Room room = new Room(   // RoomRequest 에 toEntity 가 있어서 기 코드가 없어도 됨.
+//                host,
+//                request.getTitle(),
+//                request.getRentPrice(),
+//                request.getAddress(),
+//                request.getType(),
+//                request.getLatitude(),
+//                request.getLongitude(),
+//                request.getAvailabilityStatus(),
+//                request.getDescription()
+//        );
+        // new Room(...) 대신 DTO가 스스로 Entity로 변환
+        Room saved = roomRepository.save(request.toEntity(host));
 
-        Room saved = roomRepository.save(room);
+//        Room saved = roomRepository.save(room);  이것도 같이 사라짐
         return toResponse(saved);
     }
 
@@ -79,18 +81,21 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found"));
 
-        // Entity 내부 값 수정 (dirty checking)
-        room.setTitle(request.getTitle());
-        room.setRentPrice(request.getRentPrice());
-        room.setAddress(request.getAddress());
-        room.setType(request.getType());
-        room.setLatitude(request.getLatitude());
-        room.setLongitude(request.getLongitude());
-        room.setAvailabilityStatus(request.getAvailabilityStatus());
-        room.setDescription(request.getDescription());
+        // Entity 내부 값 수정
+//        room.setTitle(request.getTitle());
+//        room.setRentPrice(request.getRentPrice());
+//        room.setAddress(request.getAddress());
+//        room.setType(request.getType());
+//        room.setLatitude(request.getLatitude());
+//        room.setLongitude(request.getLongitude());
+//        room.setAvailabilityStatus(request.getAvailabilityStatus());
+//        room.setDescription(request.getDescription());
 
-        // @Transactional 덕분에 save() 없이 자동 update됨
-        return toResponse(room);
+        // 수정은 Host를 바꾸지 않음 (방 등록자 고정)
+        room.update(request);  // RoomEntity에 update() 만듦
+
+        Room updated = roomRepository.save(room);
+        return toResponse(updated);
     }
 
     // 방 삭제
