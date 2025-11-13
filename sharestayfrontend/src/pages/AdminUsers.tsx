@@ -333,18 +333,19 @@ export default function AdminUsers() {
               minRows={3}
               fullWidth
             />
-            {selectedUser?.roles.includes("HOST") && (
-              <>
-                <TextField
-                  label="호스트 소개"
-                  value={form.hostIntroduction}
-                  onChange={handleChange("hostIntroduction")}
-                  multiline
-                  minRows={3}
-                  fullWidth
-                />
-              </>
-            )}
+            {selectedUser?.roles.includes("HOST") ||
+              (selectedUser?.roles.includes("ADMIN") && (
+                <>
+                  <TextField
+                    label="호스트 소개"
+                    value={form.hostIntroduction}
+                    onChange={handleChange("hostIntroduction")}
+                    multiline
+                    minRows={3}
+                    fullWidth
+                  />
+                </>
+              ))}
           </Stack>
         </DialogContent>
         <DialogActions>

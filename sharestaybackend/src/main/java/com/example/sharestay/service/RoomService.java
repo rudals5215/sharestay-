@@ -1,24 +1,31 @@
-// RoomService.java
 package com.example.sharestay.service;
 
 import com.example.sharestay.dto.RoomDetailResponse;
-import com.example.sharestay.entity.Host;
-import com.example.sharestay.entity.RoomImage;
-import com.example.sharestay.entity.User;
-import com.example.sharestay.repository.HostRepository;
-import com.example.sharestay.entity.Room;
-import com.example.sharestay.repository.RoomImageRepository;
-import com.example.sharestay.repository.RoomRepository;
+import com.example.sharestay.dto.RoomImageResponse;
 import com.example.sharestay.dto.RoomRequest;
 import com.example.sharestay.dto.RoomResponse;
+import com.example.sharestay.entity.Host;
+import com.example.sharestay.entity.Room;
+import com.example.sharestay.repository.HostRepository;
+import com.example.sharestay.repository.RoomImageRepository;
+import com.example.sharestay.repository.RoomRepository;
+import jakarta.annotation.PostConstruct;
+import jakarta.persistence.EntityNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-// 검색, 필터만 // Controller에서 메인 간단 검색 / 상세 검색으로 나눔
 @Service
 @RequiredArgsConstructor
 public class RoomService {
@@ -26,9 +33,17 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final RoomImageRepository roomImageRepository;
     private final HostRepository hostRepository;
+    @Value("${app.upload-dir:uploads}")
+    private String uploadDir;
+    private Path uploadBasePath;
 
-    // 방 등록
-    @Transactional  // DB 트랜잭션 제어 (내부에서 여러 DB 작업 실행 -> 예외 없이 정상 종료 → commit()) 예외를 안에서 잡는 건 x, service 로직에서만 사용하는 것을 추천
+    @PostConstruct
+    void initUploadPath() throws IOException {
+        uploadBasePath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Files.createDirectories(uploadBasePath);
+    }
+
+    @Transactional
     public RoomResponse createRoom(RoomRequest request) {
         Host host = hostRepository.findById(request.getHostId())
                 .orElseThrow(() -> new IllegalArgumentException("Host not found"));
@@ -52,34 +67,32 @@ public class RoomService {
         return toResponse(saved);
     }
 
-    // 방 검색
-    // 검색 service 로직은 하나로 작성하고 controller에서 나눌 것임
     @Transactional(readOnly = true)
     public List<RoomResponse> searchRooms(
-            String region, String type,
-            Double minPrice, Double maxPrice,
+            String region,
+            String type,
+            Double minPrice,
+            Double maxPrice,
             String option
     ) {
-        List<Room> rooms = roomRepository.searchRooms(region, type, minPrice, maxPrice, option);
+        String normalizedRegion = region == null ? "" : region;
+        List<Room> rooms = roomRepository.searchRooms(
+                normalizedRegion,
+                type,
+                minPrice,
+                maxPrice,
+                option
+        );
 
         return rooms.stream()
-                .map(room -> new RoomResponse(
-                        room.getId(),
-                        room.getTitle(),
-                        room.getRentPrice(),
-                        room.getAddress(),
-                        room.getType(),
-                        room.getAvailabilityStatus(),
-                        room.getDescription()
-                ))
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
-    // 방 수정
     @Transactional
     public RoomResponse updateRoom(Long roomId, RoomRequest request) {
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Room not found"));
 
         // Entity 내부 값 수정
 //        room.setTitle(request.getTitle());
@@ -98,11 +111,10 @@ public class RoomService {
         return toResponse(updated);
     }
 
-    // 방 삭제
     @Transactional
     public void deleteRoom(Long roomId) {
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Room not found"));
         roomRepository.delete(room);
     }
 
@@ -127,11 +139,9 @@ public class RoomService {
     @Transactional(readOnly = true)
     public RoomDetailResponse getRoomDetail(Long roomId) {
         Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Room not found"));
 
-        // 이미지 URL을 방 이미지 엔티티/리포지토리에서 가져왔다고 가정
-        List<String> imageUrls = roomImageRepository.findByRoomId(roomId)
-                .stream()
+        List<String> imageUrls = roomImageRepository.findByRoomId(roomId).stream()
                 .map(img -> img.getImageUrl())
                 .collect(Collectors.toList());
 
@@ -154,16 +164,67 @@ public class RoomService {
         );
     }
 
-    // 공통 변환 메서드 (Entity → DTO)
+    @Transactional
+    public List<RoomImageResponse> uploadRoomImages(Long roomId, List<MultipartFile> files) {
+        if (files == null || files.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Room not found"));
+
+        Path roomDir = uploadBasePath.resolve("rooms").resolve(roomId.toString());
+        try {
+            Files.createDirectories(roomDir);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to create upload directory", ex);
+        }
+
+        return files.stream()
+                .filter(file -> file != null && !file.isEmpty())
+                .map(file -> storeImage(room, file, roomDir))
+                .collect(Collectors.toList());
+    }
+
+    private RoomImageResponse storeImage(Room room, MultipartFile file, Path roomDir) {
+        String originalName = StringUtils.cleanPath(file.getOriginalFilename());
+        String filename = UUID.randomUUID() + "_" + originalName;
+        Path targetPath = roomDir.resolve(filename);
+        try {
+            file.transferTo(targetPath.toFile());
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to store image file", ex);
+        }
+
+        String publicUrl = "/uploads/rooms/" + room.getId() + "/" + filename;
+        var roomImage = new com.example.sharestay.entity.RoomImage();
+        roomImage.setRoom(room);
+        roomImage.setImageUrl(publicUrl);
+        roomImage = roomImageRepository.save(roomImage);
+
+        return RoomImageResponse.builder()
+                .id(roomImage.getId())
+                .imageUrl(roomImage.getImageUrl())
+                .build();
+    }
+
     private RoomResponse toResponse(Room room) {
-    return new RoomResponse(
-            room.getId(),
-            room.getTitle(),
-            room.getRentPrice(),
-            room.getAddress(),
-            room.getType(),
-            room.getAvailabilityStatus(),
-            room.getDescription()
-    );
+        List<RoomImageResponse> images = roomImageRepository.findByRoomId(room.getId()).stream()
+                .map(img -> RoomImageResponse.builder()
+                        .id(img.getId())
+                        .imageUrl(img.getImageUrl())
+                        .build())
+                .collect(Collectors.toList());
+
+        return RoomResponse.builder()
+                .id(room.getId())
+                .title(room.getTitle())
+                .rentPrice(room.getRentPrice())
+                .address(room.getAddress())
+                .type(room.getType())
+                .availabilityStatus(room.getAvailabilityStatus())
+                .description(room.getDescription())
+                .images(images.isEmpty() ? Collections.emptyList() : images)
+                .shareLinkUrl(room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null)
+                .build();
     }
 }

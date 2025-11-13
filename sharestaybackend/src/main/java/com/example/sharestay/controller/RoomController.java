@@ -1,49 +1,56 @@
 package com.example.sharestay.controller;
 
 import com.example.sharestay.dto.RoomDetailResponse;
+import com.example.sharestay.dto.RoomImageResponse;
 import com.example.sharestay.dto.RoomRequest;
 import com.example.sharestay.dto.RoomResponse;
 import com.example.sharestay.entity.Room;
 import com.example.sharestay.service.RoomService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/rooms")
 @RequiredArgsConstructor
-@Tag(name = "Room API", description = "방 등록 / 수정 / 삭제 / 검색 관련 API")
+@Tag(name = "Room API", description = "방 등록/조회/수정/삭제 API")
 public class RoomController {
+
     private final RoomService roomService;
 
-    // 방 등록
     @Operation(summary = "방 등록", description = "호스트가 새로운 방을 등록합니다.")
-    @PostMapping("rooms")
+    @PostMapping
     public ResponseEntity<RoomResponse> createRoom(@RequestBody RoomRequest request) {
         RoomResponse response = roomService.createRoom(request);
-//        return ResponseEntity.ok(response);  // 이건 200 ok
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
-//        201 Created 상태 코드를 반환하는 것이 REST API 설계 원칙에 더 부합
+        return ResponseEntity.ok(response);
     }
 
-    // 메인화면 검색 (간단 버전)
-    @Operation(summary = "메인 방 검색", description = "메인에서 간단하게 검색합니다.")
-    @GetMapping("/main")
-    public ResponseEntity<List<RoomResponse>> mainSearch(
-            @RequestParam(required = false) String region) {
-        List<RoomResponse> result = roomService.searchRooms(region, null, null, null, null);
-        return ResponseEntity.ok(result);
-
+    @Operation(summary = "메인 추천용 간단 검색", description = "지역 키워드 기반으로 간단 검색을 수행합니다.")
+    @GetMapping("/search/simple")
+    public ResponseEntity<List<RoomResponse>> simpleSearch(
+            @RequestParam(defaultValue = "") String region
+    ) {
+        return ResponseEntity.ok(
+                roomService.searchRooms(region, null, null, null, null)
+        );
     }
 
-    // 상세 검색 (필터 포함)
-    @Operation(summary = "필터 방 검색", description = "지역, 타입, 가격, 편의시설 조건으로 방을 검색합니다.")
-    @GetMapping("/rooms/filter")
+    @Operation(summary = "필터 검색", description = "지역/타입/가격/옵션 필터를 적용한 검색을 수행합니다.")
+    @GetMapping("/search/filter")
     public ResponseEntity<List<RoomResponse>> filterSearch(
             @RequestParam(required = false) String region,
             @RequestParam(required = false) String type,
@@ -51,24 +58,36 @@ public class RoomController {
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) String option
     ) {
-        // 파라미터가 없으면 전체조회, 있으면 조건부 검색
-        List<RoomResponse> rooms = roomService.searchRooms(region,type,minPrice,maxPrice,option);
-        return ResponseEntity.ok(rooms);
+        return ResponseEntity.ok(
+                roomService.searchRooms(region, type, minPrice, maxPrice, option)
+        );
     }
 
-    // 방 수정
-    @Operation(summary = "방 수정", description = "기존 방 정보를 수정합니다.")
+    @Operation(summary = "방 상세 조회", description = "특정 방의 상세 정보를 조회합니다.")
+    @GetMapping("/{roomId}")
+    public ResponseEntity<RoomDetailResponse> getRoomDetail(@PathVariable Long roomId) {
+        return ResponseEntity.ok(roomService.getRoomDetail(roomId));
+    }
+
+    @Operation(summary = "방 이미지 업로드", description = "특정 방에 이미지를 업로드합니다.")
+    @PostMapping("/{roomId}/images")
+    public ResponseEntity<List<RoomImageResponse>> uploadImages(
+            @PathVariable Long roomId,
+            @RequestPart("files") List<MultipartFile> files
+    ) {
+        return ResponseEntity.ok(roomService.uploadRoomImages(roomId, files));
+    }
+
+    @Operation(summary = "방 정보 수정", description = "특정 방의 기본 정보를 수정합니다.")
     @PutMapping("/{roomId}")
     public ResponseEntity<RoomResponse> updateRoom(
             @PathVariable Long roomId,
             @RequestBody RoomRequest request
     ) {
-        RoomResponse response = roomService.updateRoom(roomId, request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(roomService.updateRoom(roomId, request));
     }
 
-    // 방 삭제 (호스트 용)
-    @Operation(summary = "방 삭제", description = "특정 방 ID로 방을 삭제합니다.")
+    @Operation(summary = "방 삭제", description = "특정 방을 삭제합니다.")
     @DeleteMapping("/{roomId}")
     public ResponseEntity<Void> deleteRoom(@PathVariable Long roomId) {
         roomService.deleteRoom(roomId);
