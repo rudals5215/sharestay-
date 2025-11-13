@@ -34,19 +34,21 @@ public class RoomService {
                 .orElseThrow(() -> new IllegalArgumentException("Host not found"));
 
         // 지도 들고 올 건데 저 위도 경도는 대체 어떻게 해야하니.. 여기 있는 게 맞니..
-        Room room = new Room(
-                host,
-                request.getTitle(),
-                request.getRentPrice(),
-                request.getAddress(),
-                request.getType(),
-                request.getLatitude(),
-                request.getLongitude(),
-                request.getAvailabilityStatus(),
-                request.getDescription()
-        );
+//        Room room = new Room(   // RoomRequest 에 toEntity 가 있어서 기 코드가 없어도 됨.
+//                host,
+//                request.getTitle(),
+//                request.getRentPrice(),
+//                request.getAddress(),
+//                request.getType(),
+//                request.getLatitude(),
+//                request.getLongitude(),
+//                request.getAvailabilityStatus(),
+//                request.getDescription()
+//        );
+        // new Room(...) 대신 DTO가 스스로 Entity로 변환
+        Room saved = roomRepository.save(request.toEntity(host));
 
-        Room saved = roomRepository.save(room);
+//        Room saved = roomRepository.save(room);  이것도 같이 사라짐
         return toResponse(saved);
     }
 
@@ -79,18 +81,21 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found"));
 
-        // Entity 내부 값 수정 (dirty checking)
-        room.setTitle(request.getTitle());
-        room.setRentPrice(request.getRentPrice());
-        room.setAddress(request.getAddress());
-        room.setType(request.getType());
-        room.setLatitude(request.getLatitude());
-        room.setLongitude(request.getLongitude());
-        room.setAvailabilityStatus(request.getAvailabilityStatus());
-        room.setDescription(request.getDescription());
+        // Entity 내부 값 수정
+//        room.setTitle(request.getTitle());
+//        room.setRentPrice(request.getRentPrice());
+//        room.setAddress(request.getAddress());
+//        room.setType(request.getType());
+//        room.setLatitude(request.getLatitude());
+//        room.setLongitude(request.getLongitude());
+//        room.setAvailabilityStatus(request.getAvailabilityStatus());
+//        room.setDescription(request.getDescription());
 
-        // @Transactional 덕분에 save() 없이 자동 update됨
-        return toResponse(room);
+        // 수정은 Host를 바꾸지 않음 (방 등록자 고정)
+        room.update(request);  // RoomEntity에 update() 만듦
+
+        Room updated = roomRepository.save(room);
+        return toResponse(updated);
     }
 
     // 방 삭제
@@ -101,14 +106,24 @@ public class RoomService {
         roomRepository.delete(room);
     }
 
-    @Transactional(readOnly = true)
-    public RoomResponse getRoomById(Long roomId) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+    // 방 검색  (단일 조회용으로만 쓰이는데, 필터/검색 결과에서는 여러 개의 방을 리스트로 가져와야 하므로 이 메서드는 필요없음
+//    @Transactional(readOnly = true)
+//    public RoomResponse getRoomById(Long roomId) {
+//        Room room = roomRepository.findById(roomId)
+//                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+//
+//        return toResponse(room);
+//    }
 
-        return toResponse(room);
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getRoomList() {
+        return roomRepository.findAll()   // 전체 조회 or 나중에 필터 조건 추가 가능
+                .stream()
+                .map(this::toResponse)    // Room → RoomResponse 변환
+                .collect(Collectors.toList());
     }
 
+    // 방 상세보기
     @Transactional(readOnly = true)
     public RoomDetailResponse getRoomDetail(Long roomId) {
         Room room = roomRepository.findById(roomId)
@@ -120,10 +135,9 @@ public class RoomService {
                 .map(img -> img.getImageUrl())
                 .collect(Collectors.toList());
 
-        String shareLinkUrl = null;
-        if (room.getShareLink() != null) {
-            shareLinkUrl = room.getShareLink().getLinkUrl();
-        }
+        String shareLinkUrl = room.getShareLink() != null
+                ? room.getShareLink().getLinkUrl()
+                : null;
 
         return new RoomDetailResponse(
                 room.getId(),

@@ -1,5 +1,6 @@
 package com.example.sharestay.entity;
 
+import com.example.sharestay.dto.RoomRequest;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -73,5 +74,18 @@ public class Room {
         this.description = description;
     }
 
+    // 업데이트 메서드 (RoomRequest 기반)
+    public void update(RoomRequest request) {
+        this.title = request.getTitle();
+        this.rentPrice = request.getRentPrice();
+        this.address = request.getAddress();
+        this.type = request.getType();
+        this.latitude = request.getLatitude();
+        this.longitude = request.getLongitude();
+        this.availabilityStatus = request.getAvailabilityStatus();
+        this.description = request.getDescription();
+    }
+    // update()로, 수정할 때 매번 필드를 하나하나 꺼내서 set 할 필요가 없음.
+    // room.update(request) 하면 끝
 
 }

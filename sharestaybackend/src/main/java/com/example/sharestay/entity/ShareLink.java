@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Entity
 @NoArgsConstructor
 @Data
@@ -22,11 +24,11 @@ public class ShareLink {
     private String linkUrl;
 
     // 링크 자동 생성 로직 (roomId와 상관없이 UUID 기반)
-//    @PrePersist
-//    private void prePersist() {
-//        if (this.linkUrl == null) {
-//            this.linkUrl = "https://sharestay.com/share/" + UUID.randomUUID();
-//        }
-//    }
+    @PrePersist
+    private void prePersist() {
+        if (this.linkUrl == null) {
+            this.linkUrl = "https://sharestay.com/share/" + UUID.randomUUID();
+        }
+    }
 
 }

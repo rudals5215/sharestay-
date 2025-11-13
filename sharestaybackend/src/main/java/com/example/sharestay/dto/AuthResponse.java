@@ -3,7 +3,6 @@ package com.example.sharestay.dto;
 
 import com.example.sharestay.entity.Host;
 import com.example.sharestay.entity.User;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
