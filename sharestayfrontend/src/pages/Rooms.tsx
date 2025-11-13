@@ -1,4 +1,4 @@
-﻿// src/pages/Rooms.tsx
+// src/pages/Rooms.tsx
 import {
   Box,
   Button,
