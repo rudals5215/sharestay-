@@ -13,7 +13,6 @@ public class BanResponse {
     private final LocalDateTime bannedAt;
     private final LocalDateTime expireAt;
     private final boolean isActive;
-    private final Long adminId;
     private final String memo;
 
     public BanResponse(Ban ban) {
@@ -23,7 +22,6 @@ public class BanResponse {
         this.bannedAt = ban.getBannedAt();
         this.expireAt = ban.getExpireAt();
         this.isActive = ban.isActive();
-        this.adminId = ban.getAdminId();
         this.memo = ban.getMemo();
     }
 

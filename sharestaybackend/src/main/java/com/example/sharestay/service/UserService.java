@@ -9,7 +9,6 @@ import com.example.sharestay.dto.SignupRequest;
 import com.example.sharestay.dto.UpdateUserRequest;
 import com.example.sharestay.dto.UserProfileResponse;
 import com.example.sharestay.security.SecurityUtils;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -30,17 +29,16 @@ public class UserService {
             throw new RuntimeException("이미 존재하는 이메일입니다.");
         }
 
-        User user = User.builder()
-                .username(request.getUsername())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .loginType("LOCAL")
-                .nickname(request.getNickname())
-                .address(request.getAddress())
-                .phoneNumber(request.getPhoneNumber())
-                .role(request.getRole())
-                .lifeStyle(request.getLifeStyle())
-                .signupDate(new Date())
-                .build();
+        User user = new User(
+                request.getUsername(),
+                passwordEncoder.encode(request.getPassword()),
+                "LOCAL",
+                request.getNickname(),
+                request.getAddress(),
+                request.getPhoneNumber(),
+                request.getRole(),
+                request.getLifeStyle()
+        );
 
         User savedUser = userRepository.save(user);
         Host host = null;
@@ -52,13 +50,6 @@ public class UserService {
             if (!request.isHostTermsAgreed()) {
                 throw new RuntimeException("호스트 약관에 동의해야 합니다.");
             }
-
-//            host = new Host.HostBuilder()
-//                    .id()
-//                    .introduction(request.getHostIntroduction())
-//                    .termsAgreed(request.isHostTermsAgreed())
-//                    .user(request.)
-//                    .build();
 
             host = new Host(request.getHostIntroduction(), request.isHostTermsAgreed(), savedUser);
             hostRepository.save(host);
@@ -112,12 +103,7 @@ public class UserService {
         if (!"HOST".equalsIgnoreCase(user.getRole()) && !SecurityUtils.isAdmin()) {
             throw new AccessDeniedException("호스트 정보는 호스트 계정만 수정할 수 있습니다.");
         }
-        Host host = hostRepository.findByUser(user)
-                .orElseGet(() -> Host.builder()
-                        .user(user)
-                        .introduction("")
-                        .termsAgreed(true)
-                        .build());
+        Host host = hostRepository.findByUser(user).orElseGet(() -> new Host("", true, user));
 
         host.setIntroduction(request.getHostIntroduction());
         hostRepository.save(host);
@@ -130,18 +116,18 @@ public class UserService {
 
     private UserProfileResponse toResponse(User user) {
         Host host = hostRepository.findByUser(user).orElse(null);
-        return UserProfileResponse.builder()
-                .id(user.getId())
-                .username(user.getUsername())
-                .nickname(user.getNickname())
-                .address(user.getAddress())
-                .phoneNumber(user.getPhoneNumber())
-                .lifeStyle(user.getLifeStyle())
-                .role(user.getRole())
-                .signupDate(user.getSignupDate())
-                .hostIntroduction(host != null ? host.getIntroduction() : null)
-                .hostTermsAgreed(host != null ? host.isTermsAgreed() : null)
-                .build();
+        return new UserProfileResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getNickname(),
+                user.getAddress(),
+                user.getPhoneNumber(),
+                user.getRole(),
+                user.getLifeStyle(),
+                user.getSignupDate(),
+                host != null ? host.getIntroduction() : null,
+                host != null ? host.isTermsAgreed() : false
+        );
     }
 
     private void assertSelfOrAdmin(String username) {

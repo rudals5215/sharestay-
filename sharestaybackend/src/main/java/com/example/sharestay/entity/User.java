@@ -5,13 +5,11 @@ import lombok.*;
 
 import java.util.Date;
 
-@Data
 @Entity
 @Table(name = "users")
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter
 @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -45,14 +43,28 @@ public class User {
     @Column(name = "life_style")
     private String lifeStyle;
 
+    // JPA가 엔티티를 데이터베이스에 저장하기 직전에 호출
     @PrePersist
     public void prePersist() {
         if (this.signupDate == null) this.signupDate = new Date();
     }
 
-    public User(String username, String password, String role) {
+    // local 회원가입 시 사용될 명확한 생성자
+    public User(String username, String password, String loginType, String nickname, String address, String phoneNumber, String role, String lifeStyle) {
         this.username = username;
         this.password = password;
+        this.loginType = loginType;
+        this.nickname = nickname;
+        this.address = address;
+        this.phoneNumber = phoneNumber;
         this.role = role;
+        this.lifeStyle = lifeStyle;
+    }
+
+    // google 전용 회원가입
+    public User(String username, String password, String loginType) {
+        this.username = username;
+        this.password = password;
+        this.loginType = loginType;
     }
 }

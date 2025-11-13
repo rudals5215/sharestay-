@@ -4,11 +4,13 @@ import com.example.sharestay.dto.RoomDetailResponse;
 import com.example.sharestay.dto.RoomImageResponse;
 import com.example.sharestay.dto.RoomRequest;
 import com.example.sharestay.dto.RoomResponse;
+import com.example.sharestay.entity.Room;
 import com.example.sharestay.service.RoomService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +35,8 @@ public class RoomController {
     @Operation(summary = "방 등록", description = "호스트가 새로운 방을 등록합니다.")
     @PostMapping
     public ResponseEntity<RoomResponse> createRoom(@RequestBody RoomRequest request) {
-        return ResponseEntity.ok(roomService.createRoom(request));
+        RoomResponse response = roomService.createRoom(request);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "메인 추천용 간단 검색", description = "지역 키워드 기반으로 간단 검색을 수행합니다.")
@@ -49,7 +52,7 @@ public class RoomController {
     @Operation(summary = "필터 검색", description = "지역/타입/가격/옵션 필터를 적용한 검색을 수행합니다.")
     @GetMapping("/search/filter")
     public ResponseEntity<List<RoomResponse>> filterSearch(
-            @RequestParam(defaultValue = "") String region,
+            @RequestParam(required = false) String region,
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
@@ -90,4 +93,35 @@ public class RoomController {
         roomService.deleteRoom(roomId);
         return ResponseEntity.noContent().build();
     }
+
+    // 방 상세 조회 이거 수정해야함
+//    @Operation(summary = "방 상세 조회", description = "사용자가 특정 방의 상세 정보를 조회합니다.")
+//    @GetMapping("/rooms/{roomId}")
+//    public ResponseEntity<RoomResponse> getRoomById(@PathVariable Long roomId) {
+//        RoomResponse response = roomService.getRoomById(roomId);
+//        return ResponseEntity.ok(response);
+//    }
+
+    // 전체/검색 결과 방 목록
+    @GetMapping
+    public ResponseEntity<List<RoomResponse>> getAllRooms() {
+        List<RoomResponse> rooms = roomService.getRoomList();
+        return ResponseEntity.ok(rooms);
+    }
+
+    // 방 상세 조회
+    @GetMapping("/{roomId}")
+    public ResponseEntity<RoomDetailResponse> getRoomDetail(@PathVariable Long roomId) {
+        RoomDetailResponse detail = roomService.getRoomDetail(roomId);
+        return ResponseEntity.ok(detail);
+    }
+
+
+
+
+
+
+
+
+
 }
