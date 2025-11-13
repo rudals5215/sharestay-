@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+//@Builder
 public class RoomResponse {
     private Long id;
     private String title;
@@ -18,6 +18,6 @@ public class RoomResponse {
     private String type;
     private int availabilityStatus;
     private String description;
-    private List<RoomImageResponse> images;
-    private String shareLinkUrl;
+    private List<RoomImageResponse> images;  // 추가
+    private String shareLinkUrl;  // 추가
 }
