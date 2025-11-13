@@ -21,6 +21,7 @@ type BackendUser = {
   username: string;
   nickname?: string;
   role?: string;
+  roles?: string[];
   address?: string;
   phoneNumber?: string;
   lifeStyle?: string;
@@ -51,20 +52,34 @@ export const AuthContext = createContext<AuthContextType>({
   updateProfile: noop,
 });
 
-function toRoles(role?: string): Roles[] {
-  if (!role) return [];
-  const normalized = role.toUpperCase() as Roles;
-  return [normalized];
+const AVAILABLE_ROLES: Roles[] = ["GUEST", "HOST", "ADMIN"];
+
+const normalizeRole = (value: string): Roles | null => {
+  const normalized = value.replace(/^ROLE_/i, "").toUpperCase();
+  return AVAILABLE_ROLES.includes(normalized as Roles) ? (normalized as Roles) : null;
+};
+
+function toRoles(role?: string, roles?: string[]): Roles[] {
+  const source = roles?.length ? roles : role ? [role] : [];
+  if (!source.length) return [];
+  return Array.from(
+    new Set(
+      source
+        .map(normalizeRole)
+        .filter((roleValue): roleValue is Roles => roleValue !== null),
+    ),
+  );
 }
 
 function mapUser(dto: BackendUser): UserInfo {
+  const normalizedRoles = toRoles(dto.role, dto.roles);
   return {
     id: dto.id,
     username: dto.username,
     nickname: dto.nickname,
     email: dto.username,
-    role: dto.role?.toUpperCase() as Roles | undefined,
-    roles: toRoles(dto.role),
+    role: normalizedRoles[0],
+    roles: normalizedRoles,
     address: dto.address,
     phoneNumber: dto.phoneNumber,
     lifeStyle: dto.lifeStyle,

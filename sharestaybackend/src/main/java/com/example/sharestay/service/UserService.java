@@ -120,8 +120,8 @@ public class UserService {
                 user.getNickname(),
                 user.getAddress(),
                 user.getPhoneNumber(),
-                user.getRole(),
                 user.getLifeStyle(),
+                user.getRole(),
                 user.getSignupDate(),
                 host != null ? host.getIntroduction() : null,
                 host != null ? host.isTermsAgreed() : false

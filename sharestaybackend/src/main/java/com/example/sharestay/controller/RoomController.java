@@ -109,19 +109,10 @@ public class RoomController {
         return ResponseEntity.ok(rooms);
     }
 
-    // 방 상세 조회
-    @GetMapping("/{roomId}")
-    public ResponseEntity<RoomDetailResponse> getRoomDetail(@PathVariable Long roomId) {
-        RoomDetailResponse detail = roomService.getRoomDetail(roomId);
-        return ResponseEntity.ok(detail);
-    }
-
-
-
-
-
-
-
-
-
+//    // 방 상세 조회
+//    @GetMapping("/{roomId}")
+//    public ResponseEntity<RoomDetailResponse> getRoomDetail(@PathVariable Long roomId) {
+//        RoomDetailResponse detail = roomService.getRoomDetail(roomId);
+//        return ResponseEntity.ok(detail);
+//    }
 }
