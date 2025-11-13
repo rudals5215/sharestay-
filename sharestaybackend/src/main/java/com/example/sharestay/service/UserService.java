@@ -9,7 +9,6 @@ import com.example.sharestay.dto.SignupRequest;
 import com.example.sharestay.dto.UpdateUserRequest;
 import com.example.sharestay.dto.UserProfileResponse;
 import com.example.sharestay.security.SecurityUtils;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

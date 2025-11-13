@@ -1,13 +1,14 @@
 package com.example.sharestay;
 
 
+import com.example.sharestay.repository.FavoriteRepository;
 import com.example.sharestay.repository.HostRepository;
 import com.example.sharestay.entity.User;
 import com.example.sharestay.repository.RoomRepository;
 import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.entity.*;
 
-import java.util.Date;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -75,11 +76,6 @@ public class SharestayApplication implements CommandLineRunner {
         favorite.setUser(user);
         favorite.setRoom(room);
         favoriteRepository.save(favorite);
-
-
-
-
-
 
     }
 }
