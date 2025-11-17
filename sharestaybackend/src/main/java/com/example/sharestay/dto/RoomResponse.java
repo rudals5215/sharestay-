@@ -17,6 +17,4 @@ public class RoomResponse {
     private String type;
     private int availabilityStatus;
     private String description;
-
-
 }
