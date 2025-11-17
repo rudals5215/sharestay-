@@ -10,11 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController
+@RestController // 이 클래스가 REST API 컨트롤러
 @RequestMapping("/api/bans")
 @RequiredArgsConstructor
 public class BanController {
-
     private final BanService banService;
 
     /**
@@ -29,7 +28,7 @@ public class BanController {
         // 예: Long adminId = SecurityUtil.getCurrentAdminId();
         Long adminId = 1L; // 임시 관리자 ID
 
-        BanResponse response = banService.banUser(userId, request, adminId);
+        BanResponse response = banService.banUser(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

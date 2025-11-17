@@ -1,6 +1,22 @@
+const assetBaseUrl = (import.meta.env.VITE_BASE_URL ?? "").replace(/\/$/, "");
+
+export const resolveRoomImageUrl = (value?: string | null) => {
+  if (!value) return undefined;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (!assetBaseUrl) return value;
+  const trimmed = value.startsWith("/") ? value.slice(1) : value;
+  return `${assetBaseUrl}/${trimmed}`;
+};
+
+export interface RoomImageApiResponse {
+  id: number;
+  imageUrl: string;
+}
+
 export interface RoomImage {
-  imageId: number;
-  roomId: number;
+  id?: number;
+  imageId?: number;
+  roomId?: number;
   imageUrl: string;
   isPrimary?: boolean;
 }
@@ -49,15 +65,40 @@ export interface RoomApiResponse {
   type: string;
   availabilityStatus: number;
   description?: string;
+  images?: RoomImageApiResponse[];
+  shareLinkUrl?: string | null;
 }
 
-export const mapRoomFromApi = (room: RoomApiResponse): RoomSummary => ({
-  roomId: room.id,
-  id: room.id,
-  title: room.title,
-  rentPrice: room.rentPrice,
-  address: room.address,
-  type: room.type,
-  availabilityStatus: room.availabilityStatus,
-  description: room.description,
-});
+export interface RoomDetailApiResponse extends RoomApiResponse {
+  latitude?: number;
+  longitude?: number;
+  imageUrls?: string[];
+  shareLinkUrl?: string | null;
+}
+
+export interface ShareLinkResponse {
+  linkUrl: string;
+}
+
+export const mapRoomFromApi = (room: RoomApiResponse): RoomSummary => {
+  const normalizedImages: RoomImage[] =
+    room.images?.map((image) => ({
+      id: image.id,
+      imageId: image.id,
+      roomId: room.id,
+      imageUrl: resolveRoomImageUrl(image.imageUrl) ?? image.imageUrl ?? "",
+    })) ?? [];
+
+  return {
+    roomId: room.id,
+    id: room.id,
+    title: room.title,
+    rentPrice: room.rentPrice,
+    address: room.address,
+    type: room.type,
+    availabilityStatus: room.availabilityStatus,
+    description: room.description,
+    images: normalizedImages,
+    shareLinkUrl: room.shareLinkUrl ?? undefined,
+  };
+};

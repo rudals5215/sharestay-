@@ -33,6 +33,7 @@ interface BackendUser {
   username: string;
   nickname?: string;
   role?: string;
+  roles?: string[];
   address?: string;
   phoneNumber?: string;
   lifeStyle?: string;
@@ -43,20 +44,36 @@ interface BackendUser {
 
 interface AdminUser extends UserInfo {}
 
-const mapBackendUser = (user: BackendUser): AdminUser => ({
-  id: user.id,
-  username: user.username,
-  nickname: user.nickname,
-  email: user.username,
-  role: user.role?.toUpperCase() as Roles | undefined,
-  roles: user.role ? [user.role.toUpperCase() as Roles] : [],
-  address: user.address,
-  phoneNumber: user.phoneNumber,
-  lifeStyle: user.lifeStyle,
-  signupDate: user.signupDate,
-  hostIntroduction: user.hostIntroduction,
-  hostTermsAgreed: user.hostTermsAgreed,
-});
+const normalizeRole = (value: string): Roles =>
+  value.toUpperCase() as Roles;
+
+const extractRoles = (user: BackendUser): Roles[] => {
+  if (user.roles?.length) {
+    return Array.from(new Set(user.roles.map(normalizeRole)));
+  }
+  if (user.role) {
+    return [normalizeRole(user.role)];
+  }
+  return [];
+};
+
+const mapBackendUser = (user: BackendUser): AdminUser => {
+  const roles = extractRoles(user);
+  return {
+    id: user.id,
+    username: user.username,
+    nickname: user.nickname,
+    email: user.username,
+    role: roles[0],
+    roles,
+    address: user.address,
+    phoneNumber: user.phoneNumber,
+    lifeStyle: user.lifeStyle,
+    signupDate: user.signupDate,
+    hostIntroduction: user.hostIntroduction,
+    hostTermsAgreed: user.hostTermsAgreed,
+  };
+};
 
 interface EditForm {
   nickname: string;
@@ -333,18 +350,19 @@ export default function AdminUsers() {
               minRows={3}
               fullWidth
             />
-            {selectedUser?.roles.includes("HOST") && (
-              <>
-                <TextField
-                  label="호스트 소개"
-                  value={form.hostIntroduction}
-                  onChange={handleChange("hostIntroduction")}
-                  multiline
-                  minRows={3}
-                  fullWidth
-                />
-              </>
-            )}
+            {selectedUser?.roles.includes("HOST") ||
+              (selectedUser?.roles.includes("ADMIN") && (
+                <>
+                  <TextField
+                    label="호스트 소개"
+                    value={form.hostIntroduction}
+                    onChange={handleChange("hostIntroduction")}
+                    multiline
+                    minRows={3}
+                    fullWidth
+                  />
+                </>
+              ))}
           </Stack>
         </DialogContent>
         <DialogActions>

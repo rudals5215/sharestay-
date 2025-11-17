@@ -1,3 +1,4 @@
+import type { AxiosError } from "axios";
 import {
   Box,
   Button,
@@ -8,24 +9,46 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
-import SiteHeader from "../components/SiteHeader";
+import { useAuth } from "../auth/useAuth";
 import SiteFooter from "../components/SiteFooter";
+import SiteHeader from "../components/SiteHeader";
 import { api } from "../lib/api";
-import type { RoomApiResponse, RoomSummary } from "../types/room";
-import { mapRoomFromApi } from "../types/room";
+import type {
+  RoomDetailApiResponse,
+  RoomImage,
+  RoomSummary,
+  ShareLinkResponse,
+} from "../types/room";
+import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
+
+const fallbackImage = "https://via.placeholder.com/640x360?text=No+Image";
 
 const formatCurrency = (amount?: number) => {
   if (typeof amount !== "number" || Number.isNaN(amount)) return "-";
   return `${amount.toLocaleString()}원/월`;
 };
 
+const isHostOrAdmin = (role?: string) =>
+  role === "HOST" || role === "ADMIN";
+
 export default function RoomDetail() {
   const { roomId } = useParams<{ roomId: string }>();
+  const { user } = useAuth();
+  const canCreateShareLink = isHostOrAdmin(user?.role);
+
   const [room, setRoom] = useState<RoomSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeImage, setActiveImage] = useState<string>(fallbackImage);
+  const [shareLink, setShareLink] = useState<string | null>(null);
+  const [isShareGenerating, setIsShareGenerating] = useState(false);
+
+  const shareButtonLabel = useMemo(
+    () => (shareLink ? "공유 링크 복사" : "공유 링크 만들기"),
+    [shareLink]
+  );
 
   useEffect(() => {
     if (!roomId) {
@@ -38,8 +61,32 @@ export default function RoomDetail() {
       setIsLoading(true);
       setError(null);
       try {
-        const { data } = await api.get<RoomApiResponse>(`/rooms/${roomId}`);
-        setRoom(mapRoomFromApi(data));
+        const { data } = await api.get<RoomDetailApiResponse>(
+          `/rooms/${roomId}`
+        );
+
+        const images: RoomImage[] =
+          data.images?.map((img, index) => ({
+            id: img.id ?? index,
+            imageId: img.id ?? index,
+            roomId: data.id,
+            imageUrl: resolveRoomImageUrl(img.imageUrl) ?? fallbackImage,
+          })) ??
+          data.imageUrls?.map((url, index) => ({
+            id: index,
+            imageId: index,
+            roomId: data.id,
+            imageUrl: resolveRoomImageUrl(url) ?? fallbackImage,
+          })) ??
+          [];
+
+        const mapped: RoomSummary = {
+          ...mapRoomFromApi(data),
+          images,
+        };
+        setRoom(mapped);
+        setActiveImage(images[0]?.imageUrl ?? fallbackImage);
+        setShareLink(data.shareLinkUrl ?? null);
       } catch (err) {
         const message =
           err instanceof Error
@@ -54,6 +101,65 @@ export default function RoomDetail() {
 
     fetchRoom();
   }, [roomId]);
+
+  const tryFetchShareLink = async (): Promise<string | null> => {
+    if (!roomId) return null;
+    try {
+      const { data } = await api.get<ShareLinkResponse>(
+        `/rooms/${roomId}/share`
+      );
+      return data?.linkUrl ?? null;
+    } catch (err) {
+      const status = (err as AxiosError)?.response?.status;
+      if (status === 404) return null;
+      throw err;
+    }
+  };
+
+  const handleShareLink = async () => {
+    if (!roomId) return;
+    setIsShareGenerating(true);
+    try {
+      let link = shareLink ?? (await tryFetchShareLink());
+
+      if (!link) {
+        if (!canCreateShareLink) {
+          alert("공유 링크가 아직 생성되지 않았습니다. 호스트 또는 관리자만 생성할 수 있습니다.");
+          return;
+        }
+        const { data } = await api.post<ShareLinkResponse>(
+          `/rooms/${roomId}/share`
+        );
+        link = data?.linkUrl ?? null;
+      }
+
+      if (!link) {
+        alert("공유 링크를 불러오지 못했습니다.");
+        return;
+      }
+
+      setShareLink(link);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link).catch(() => undefined);
+        alert("공유 링크를 클립보드에 복사했습니다.");
+      } else {
+        alert(link);
+      }
+    } catch (err) {
+      const status = (err as AxiosError)?.response?.status;
+      if (status === 403) {
+        alert("공유 링크 생성은 호스트 또는 관리자만 가능합니다.");
+      } else {
+        const message =
+          err instanceof Error
+            ? err.message
+            : "공유 링크 처리 중 오류가 발생했습니다.";
+        alert(message);
+      }
+    } finally {
+      setIsShareGenerating(false);
+    }
+  };
 
   return (
     <Box sx={{ bgcolor: "#f4f6fb", minHeight: "100vh" }}>
@@ -94,6 +200,48 @@ export default function RoomDetail() {
             }}
           >
             <Stack spacing={3}>
+              <Box
+                component="img"
+                src={activeImage}
+                alt={room.title}
+                sx={{
+                  width: "100%",
+                  height: 320,
+                  objectFit: "cover",
+                  borderRadius: 3,
+                  bgcolor: "#e8ecf4",
+                }}
+              />
+
+              {room.images && room.images.length > 1 && (
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {room.images.map((img) => {
+                    const thumbnail = img.imageUrl ?? fallbackImage;
+                    const key = img.id ?? img.imageId ?? thumbnail;
+                    const isActive = activeImage === thumbnail;
+                    return (
+                      <Box
+                        key={key}
+                        component="img"
+                        src={thumbnail}
+                        alt={room.title}
+                        onClick={() => setActiveImage(thumbnail)}
+                        sx={{
+                          width: 72,
+                          height: 72,
+                          objectFit: "cover",
+                          borderRadius: 2,
+                          border: isActive
+                            ? "2px solid #0c51ff"
+                            : "1px solid rgba(0,0,0,0.08)",
+                          cursor: "pointer",
+                        }}
+                      />
+                    );
+                  })}
+                </Stack>
+              )}
+
               <Stack direction="row" spacing={2} alignItems="center">
                 <Typography variant="h4" fontWeight={800}>
                   {room.title}
@@ -122,23 +270,45 @@ export default function RoomDetail() {
                 <Typography>{room.address}</Typography>
               </Stack>
 
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  상세 설명
-                </Typography>
-                <Typography whiteSpace="pre-line">{room.description}</Typography>
-              </Stack>
+              {room.description && (
+                <Stack spacing={1}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    상세 설명
+                  </Typography>
+                  <Typography whiteSpace="pre-line">
+                    {room.description}
+                  </Typography>
+                </Stack>
+              )}
 
-              <Stack direction="row" spacing={2}>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                alignItems={{ xs: "stretch", sm: "center" }}
+              >
                 <Button
                   variant="contained"
                   component={RouterLink}
                   to="/rooms"
                   sx={{ borderRadius: 999 }}
                 >
-                  목록으로 돌아가기
+                  방 목록으로 돌아가기
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={handleShareLink}
+                  disabled={isShareGenerating}
+                  sx={{ borderRadius: 999 }}
+                >
+                  {shareButtonLabel}
                 </Button>
               </Stack>
+
+              {shareLink && (
+                <Typography variant="body2" color="text.secondary">
+                  {shareLink}
+                </Typography>
+              )}
             </Stack>
           </Paper>
         ) : null}

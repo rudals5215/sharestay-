@@ -26,34 +26,26 @@ public class BanService {
      * 사용자를 정지 처리합니다.
      * @param userId 정지할 사용자 ID
      * @param request 정지 요청 정보
-     * @param adminId 처리하는 관리자 ID
      * @return 생성된 정지 정보
      */
     @Transactional
-    public BanResponse banUser(Long userId, BanRequest request, Long adminId) {
+    public BanResponse banUser(Long userId, BanRequest request) {
         // 1. 사용자가 존재하는지 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 사용자를 찾을 수 없습니다. ID: " + userId));
 
         // 2. 이미 활성 상태의 정지 기록이 있는지 확인
-        banRepository.findByUser_IdAndIsActiveTrue(userId).ifPresent(ban -> {
+        banRepository.findActiveBanByUserId(userId).ifPresent(ban -> {
             throw new IllegalStateException("이미 정지된 사용자입니다.");
         });
 
         // 3. Ban 엔티티 생성
-        Ban ban = Ban.builder()
-                .user(user)
-                .reason(request.getReason())
-                .expireAt(request.getExpireAt())
-                .memo(request.getMemo())
-                .adminId(adminId)
-                .build();
+        Ban ban = Ban.createBan(user, request.getReason(), request.getExpireAt(), request.getMemo());
 
         // 4. 저장 후 DTO로 변환하여 반환
         Ban savedBan = banRepository.save(ban);
         return BanResponse.from(savedBan);
     }
-
     /**
      * 사용자 정지를 해제합니다.
      * @param userId 정지를 해제할 사용자 ID
@@ -61,7 +53,7 @@ public class BanService {
     @Transactional
     public void unbanUser(Long userId) {
         // 1. 활성 상태의 정지 기록을 조회
-        Ban activeBan = banRepository.findByUser_IdAndIsActiveTrue(userId)
+        Ban activeBan = banRepository.findActiveBanByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 사용자에 대한 활성 정지 기록이 없습니다. ID: " + userId));
 
         // 2. 정지 기록을 비활성화
@@ -77,7 +69,7 @@ public class BanService {
         if (!userRepository.existsById(userId)) {
             throw new EntityNotFoundException("해당 사용자를 찾을 수 없습니다. ID: " + userId);
         }
-        return banRepository.findByUser_Id(userId).stream()
+        return banRepository.findByUserId(userId).stream()
                 .map(BanResponse::from)
                 .collect(Collectors.toList());
     }

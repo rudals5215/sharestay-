@@ -1,18 +1,14 @@
 package com.example.sharestay;
 
 
-import com.example.sharestay.entity.Host;
-import com.example.sharestay.entity.Room;
+import com.example.sharestay.repository.FavoriteRepository;
 import com.example.sharestay.repository.HostRepository;
 import com.example.sharestay.entity.User;
 import com.example.sharestay.repository.RoomRepository;
-import com.example.sharestay.repository.RoomRepository;
 import com.example.sharestay.repository.UserRepository;
-
 import com.example.sharestay.entity.*;
-import com.example.sharestay.repository.*;
 
-import java.util.Date;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -40,17 +36,16 @@ public class SharestayApplication implements CommandLineRunner {
             return;
         }
 
-        User user = User.builder()
-                .username("kim1@test.com")
-                .password(encoder.encode("user1234"))
-                .loginType("LOCAL")
-                .nickname("도하 킴")
-                .address("인천, 대한민국")
-                .phoneNumber("010-1234-5678")
-                .role("ADMIN")
-                .lifeStyle("금연 · 반려동물 없음 · 조용한 활동 선호")
-                .signupDate(new Date())
-                .build();
+        User user = new User(
+                "kim1@test.com",
+                encoder.encode("user1234"),
+                "LOCAL",
+                "도하 킴",
+                "인천, 대한민국",
+                "010-1234-5678",
+                "ADMIN",
+                "금연 · 반려동물 없음 · 조용한 활동 선호"
+        );
         userRepository.save(user);
 
 
@@ -82,11 +77,5 @@ public class SharestayApplication implements CommandLineRunner {
         favorite.setRoom(room);
         favoriteRepository.save(favorite);
 
-
-
-
-
-
     }
 }
-

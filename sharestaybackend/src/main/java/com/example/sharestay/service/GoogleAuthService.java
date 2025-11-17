@@ -20,7 +20,9 @@ public class GoogleAuthService {
     private final JwtService jwtService;
     private final UserRepository userRepository;
 
+    @Value("${spring.security.oauth2.client.registration.google.client-id}")
     private String googleClientId;
+
 
     public String authenticateAndGenerateJwt(String idToken) throws Exception {
 
@@ -49,7 +51,7 @@ public class GoogleAuthService {
         // 4. DB에 사용자 등록/조회 로직 추가 (UsernameNotFoundException 방지)
         User user = userRepository.findByUsername(username)
                 .orElseGet(() -> {
-                    User newUser = new User(username, "", "USER");
+                    User newUser = User.createGoogleUser(username);
                     System.out.println("새 Google 사용자(" + username + ")를 DB에 등록했습니다.");
                     return userRepository.save(newUser);
                 });

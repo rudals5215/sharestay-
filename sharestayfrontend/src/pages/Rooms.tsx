@@ -1,4 +1,5 @@
-// src/pages/Rooms.tsx
+﻿// src/pages/Rooms.tsx
+import type { AxiosError } from "axios";
 import {
   Box,
   Button,
@@ -29,11 +30,13 @@ import {
 } from "@mui/icons-material";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
-import SiteHeader from "../components/SiteHeader";
+import { useAuth } from "../auth/useAuth";
 import SiteFooter from "../components/SiteFooter";
+import SiteHeader from "../components/SiteHeader";
 import { api } from "../lib/api";
-import type { RoomApiResponse, RoomSummary } from "../types/room";
+import type { RoomApiResponse, RoomSummary, ShareLinkResponse } from "../types/room";
 import { mapRoomFromApi } from "../types/room";
+import fallbackImageSrc from "../img/no_img.jpg";
 
 const filterFacilities = [
   "에어컨",
@@ -63,9 +66,8 @@ const roomTypes = [
   { value: "APARTMENT", label: "아파트" },
 ];
 
-type ShareLinkResponse = {
-  linkUrl?: string;
-};
+const fallbackImage = fallbackImageSrc;
+
 
 const formatCurrency = (amount?: number) => {
   if (typeof amount !== "number" || Number.isNaN(amount)) return "-";
@@ -117,6 +119,9 @@ type RoomSearchOverrides = {
 };
 
 export default function Rooms() {
+  const { user } = useAuth();
+  const canCreateShareLink =
+    user?.role === "HOST" || user?.role === "ADMIN";
   const [searchParams, setSearchParams] = useSearchParams();
   const highlightParam = searchParams.get("highlight");
   const highlightedRoomId = (() => {
@@ -275,25 +280,49 @@ export default function Rooms() {
     );
   };
 
-  const createShareLink = async (roomId?: number | null) => {
+  const fetchShareLink = async (roomId: number): Promise<string | null> => {
+    try {
+      const { data } = await api.get<ShareLinkResponse>(`/rooms/${roomId}/share`);
+      return data?.linkUrl ?? null;
+    } catch (err) {
+      const status = (err as AxiosError)?.response?.status;
+      if (status === 404) return null;
+      throw err;
+    }
+  };
+
+  const handleShareLink = async (roomId?: number | null) => {
     if (!roomId) return;
     try {
-      const { data } = await api.post<ShareLinkResponse>(`/rooms/${roomId}/share`);
-      const link = data?.linkUrl;
-      if (link && navigator.clipboard?.writeText) {
+      let link = await fetchShareLink(roomId);
+      if (!link) {
+        if (!canCreateShareLink) {
+          alert("공유 링크가 아직 생성되지 않았습니다. 호스트 또는 관리자만 생성할 수 있습니다.");
+          return;
+        }
+        const { data } = await api.post<ShareLinkResponse>(`/rooms/${roomId}/share`);
+        link = data?.linkUrl ?? null;
+      }
+
+      if (!link) {
+        alert("공유 링크를 불러오지 못했습니다.");
+        return;
+      }
+
+      if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link).catch(() => undefined);
       }
-      alert(
-        link
-          ? `공유 링크가 생성되었습니다.
-${link}`
-          : "공유 링크가 생성되었습니다."
-      );
+      alert(`공유 링크가 준비되었습니다.\n${link}`);
     } catch (err) {
+      const status = (err as AxiosError)?.response?.status;
+      if (status === 403) {
+        alert("공유 링크 생성은 호스트 또는 관리자만 가능합니다.");
+        return;
+      }
       const message =
         err instanceof Error
           ? err.message
-          : "공유 링크를 생성하는 중 오류가 발생했습니다.";
+          : "공유 링크를 처리하는 중 오류가 발생했습니다.";
       alert(message);
     }
   };
@@ -505,8 +534,7 @@ ${link}`
                         roomId !== null && highlightedRoomId === roomId;
                       const tags = extractTags(room);
                       const imageUrl =
-                        room.images?.[0]?.imageUrl ??
-                        "https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=900&q=80";
+                        room.images?.[0]?.imageUrl ?? fallbackImage;
                       return (
                         <Grid
                           size={{ xs: 12, sm: 6 }}
@@ -638,7 +666,7 @@ ${link}`
                                 variant="outlined"
                                 size="small"
                                 sx={{ borderRadius: 999 }}
-                                onClick={() => createShareLink(roomId)}
+                                onClick={() => handleShareLink(roomId)}
                               >
                                 공유 링크
                               </Button>

@@ -11,9 +11,8 @@ public class BanResponse {
     private final Long userId;
     private final String reason;
     private final LocalDateTime bannedAt;
-    private final LocalDateTime expireAt;
+    private final LocalDateTime endDate;
     private final boolean isActive;
-    private final Long adminId;
     private final String memo;
 
     public BanResponse(Ban ban) {
@@ -21,9 +20,8 @@ public class BanResponse {
         this.userId = ban.getUser().getId();
         this.reason = ban.getReason();
         this.bannedAt = ban.getBannedAt();
-        this.expireAt = ban.getExpireAt();
+        this.endDate = ban.getEndDate();
         this.isActive = ban.isActive();
-        this.adminId = ban.getAdminId();
         this.memo = ban.getMemo();
     }
 

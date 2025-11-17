@@ -3,15 +3,9 @@ package com.example.sharestay.dto;
 
 import com.example.sharestay.entity.Host;
 import com.example.sharestay.entity.User;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Getter
 public class AuthResponse {
     private String accessToken;
     private String refreshToken;
@@ -22,18 +16,28 @@ public class AuthResponse {
     private String introduction;
     private Boolean termsAgreed;
 
+    private AuthResponse(String accessToken, String refreshToken, String username, String nickname, String role, String introduction, Boolean termsAgreed) {
+        this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
+        this.username = username;
+        this.nickname = nickname;
+        this.role = role;
+        this.introduction = introduction;
+        this.termsAgreed = termsAgreed;
+    }
+
     public static AuthResponse from(User user, Host host) {
         String accessToken = "fake-jwt-token-for-" + user.getUsername();
         String refreshToken = "fake-refresh-token";
 
-        return AuthResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .username(user.getUsername())
-                .nickname(user.getNickname())
-                .role(user.getRole())
-                .introduction(host != null ? host.getIntroduction() : null)
-                .termsAgreed(host != null && host.isTermsAgreed())
-                .build();
+        return new AuthResponse(
+                accessToken,
+                refreshToken,
+                user.getUsername(),
+                user.getNickname(),
+                user.getRole(),
+                host != null ? host.getIntroduction() : null,
+                host != null && host.isTermsAgreed()
+        );
     }
 }

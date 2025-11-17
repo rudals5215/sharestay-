@@ -231,13 +231,17 @@ export default function ListRoom() {
       };
 
       const { data } = await api.post<RoomApiResponse>("/rooms", payload);
-
-      alert(
-        `룸 정보가 등록되었습니다.${
-          images.length ? "\n(이미지 업로드는 추후 지원 예정입니다.)" : ""
-        }`
-      );
       const createdRoomId = data?.id ?? (data as { roomId?: number }).roomId;
+
+      if (createdRoomId && images.length > 0) {
+        const formData = new FormData();
+        images.forEach((file) => formData.append("files", file));
+        await api.post(`/rooms/${createdRoomId}/images`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+
+      alert("룸 정보가 등록되었습니다.");
       handleReset();
       navigate(
         createdRoomId ? `/rooms?highlight=${createdRoomId}` : "/rooms",
