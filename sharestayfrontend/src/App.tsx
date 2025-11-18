@@ -27,6 +27,7 @@ import SafetyMap from "./pages/SafetyMap";
 import LifestyleSetup from "./pages/LifestyleSetup";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { AuthProvider } from "./auth/AuthContext";
+import LoginSuccess from "./pages/LoginSuccess";
 
 const theme = createTheme({
   palette: {
@@ -71,6 +72,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/login-success" element={<LoginSuccess />} />
             <Route path="/guide" element={<Guide />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/rooms/:roomId" element={<RoomDetail />} />
