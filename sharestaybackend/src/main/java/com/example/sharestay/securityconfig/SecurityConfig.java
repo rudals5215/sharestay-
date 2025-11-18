@@ -1,6 +1,8 @@
 package com.example.sharestay.securityconfig;
 
+import com.example.sharestay.security.CustomSuccessHandler;
 import com.example.sharestay.security.JwtAuthenticationFilter;
+import com.example.sharestay.service.CustomUserService;
 import com.example.sharestay.service.JwtService;
 import com.example.sharestay.service.UserDetailsServiceImpl;
 import java.util.List;
@@ -31,13 +33,21 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtService jwtService;
     private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider;
+    private final CustomUserService customUserService;
+    private final CustomSuccessHandler customSuccessHandler;
 
-    public SecurityConfig(UserDetailsServiceImpl userDetailsService,
-                          JwtService jwtService,
-                          ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider) {
+    public SecurityConfig(
+            UserDetailsServiceImpl userDetailsService,
+            JwtService jwtService,
+            ObjectProvider<ClientRegistrationRepository> clientRegistrationRepositoryProvider,
+            CustomUserService customUserService,
+            CustomSuccessHandler customSuccessHandler
+    ) {
         this.userDetailsService = userDetailsService;
         this.jwtService = jwtService;
         this.clientRegistrationRepositoryProvider = clientRegistrationRepositoryProvider;
+        this.customUserService = customUserService;
+        this.customSuccessHandler = customSuccessHandler;
     }
 
     public void configGlobal(AuthenticationManagerBuilder auth) throws Exception {
@@ -60,7 +70,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setExposedHeaders(List.of("Authorization", "Refresh-Token"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -97,6 +107,13 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
+
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfo ->
+                                userInfo.userService(customUserService)
+                        )
+                        .successHandler(customSuccessHandler)
+                )
                 // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

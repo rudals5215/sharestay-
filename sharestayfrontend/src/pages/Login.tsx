@@ -17,6 +17,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../auth/useAuth";
 import { Link as RouterLink } from "react-router-dom";
 
+// const GOOGLE_OAUTH2_URL = "http://localhost:8080/login/oauth2/code/sharestay/google";
+const GOOGLE_OAUTH2_URL ="http://localhost:8080/oauth2/authorization/google";
+
 const schema = z.object({
   username: z
     .string()
@@ -41,6 +44,10 @@ export default function Login() {
     await login(values.username, values.password);
     window.location.href = "/";
   };
+
+  const handleGoogleLogin = () => {
+    window.location.href = GOOGLE_OAUTH2_URL;
+  }
 
   return (
     <Box
@@ -139,6 +146,20 @@ export default function Login() {
             sx={{ borderRadius: 2, py: 1.4, fontWeight: 700 }}
           >
             {isSubmitting ? "로그인 중..." : "로그인"}
+          </Button>
+          <Button
+            variant="outlined"
+            size="large"
+            onClick={handleGoogleLogin}
+            sx={{
+              borderRadius: 2,
+              py: 1.4, 
+              fontWeight: 700,
+              borderColor: "#040505ff",
+              color: "#4285F4",
+            }}
+          >
+            구글 로그인
           </Button>
         </Stack>
       </Paper>
