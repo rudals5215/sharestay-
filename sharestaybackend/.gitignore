@@ -37,4 +37,4 @@ out/
 .vscode/
 
 *.properties
-**/firebase-*.json
+*.json
