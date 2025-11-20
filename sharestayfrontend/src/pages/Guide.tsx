@@ -109,7 +109,7 @@ export default function Guide() {
 
           <Grid container spacing={3}>
             {steps.map((step) => (
-              <Grid size={{ xs: 12, md: 4 }} key={step.title}>
+              <Grid item xs= {12} md= {4} key={step.title}>
                 <Card
                   sx={{
                     borderRadius: 4,

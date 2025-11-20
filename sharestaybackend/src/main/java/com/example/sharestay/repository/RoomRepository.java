@@ -36,6 +36,16 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     편의시설은 description 안에 단어로 포함된다고 가정 (LIKE %amenity%)
  */
 
+    @Query(value = "SELECT * FROM room r WHERE " +
+            "(6371 * acos(cos(radians(:userLat)) * cos(radians(r.latitude)) * " +
+            "cos(radians(r.longitude) - radians(:userLng)) + sin(radians(:userLat)) * " +
+            "sin(radians(r.latitude)))) <= :radiusKm", nativeQuery = true)
+    List<Room> findRoomsNearLocation(
+            @Param("userLat") double userLat,
+            @Param("userLng") double userLng,
+            @Param("radiusKm") double radiusKm
+    );
+
 
 
 }
