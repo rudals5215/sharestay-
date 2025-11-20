@@ -91,9 +91,10 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html",
-                                "/api/favorites/**"
+                                "/swagger-ui.html"
                         ).permitAll()
+                        .requestMatchers(HttpMethod.POST,"/api/favorites/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/map/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/google").permitAll()
