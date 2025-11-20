@@ -1,4 +1,4 @@
-// src/pages/Guide.tsx
+﻿// src/pages/Guide.tsx
 import {
   Avatar,
   Box,
@@ -43,7 +43,7 @@ const steps = [
   },
 ];
 
-const tabs = ["시작하기", "단계별 가이드", "자주 묻는 질문"];
+const tabs = ["시작하기", "이용 가이드", "자주 묻는 질문"];
 
 export default function Guide() {
   return (
@@ -60,18 +60,12 @@ export default function Guide() {
           <Stack spacing={3} alignItems="center" textAlign="center">
             <Chip label="Guide" color="primary" variant="outlined" />
             <Typography variant="h3" fontWeight={800}>
-              ShareStay+ 이용방법
+              ShareStay+ 이용 가이드
             </Typography>
             <Typography variant="h6" color="text.secondary" maxWidth={640}>
-              안전하고 신뢰할 수 있는 룸쉐어링 서비스를 처음 이용하시나요?
-              단계별 가이드를 통해 쉽게 시작하세요!
+              처음 이용하신다면 아래 순서를 참고해 빠르게 맞춤 서비스를 경험해 보세요.
             </Typography>
-            <Stack
-              direction="row"
-              spacing={1}
-              flexWrap="wrap"
-              justifyContent="center"
-            >
+            <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center">
               {tabs.map((tab, index) => (
                 <Button
                   key={tab}
@@ -97,37 +91,44 @@ export default function Guide() {
             <Typography variant="h4" fontWeight={800}>
               ShareStay+ 시작하기
             </Typography>
-            <Typography
-              color="text.secondary"
-              maxWidth={640}
-              alignSelf="center"
-            >
-              몇 분만 투자하면 안전하고 편리한 룸쉐어링 서비스를 이용할 수
-              있습니다.
+            <Typography color="text.secondary" maxWidth={640} alignSelf="center">
+              몇 분만 투자하면 안전하고 신뢰할 수 있는 룸쉐어링 서비스를 바로 이용할 수 있습니다.
             </Typography>
           </Stack>
 
-          <Grid container spacing={3}>
+          <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
             {steps.map((step) => (
-              <Grid item xs= {12} md= {4} key={step.title}>
-                <Card
+              <Card
+                key={step.title}
+                sx={{
+                  flex: 1,
+                  borderRadius: 4,
+                  height: "100%",
+                  boxShadow: "0 16px 32px rgba(15, 40, 105, 0.12)",
+                  display: "flex",
+                }}
+              >
+                <CardContent
                   sx={{
-                    borderRadius: 4,
-                    height: "100%",
-                    boxShadow: "0 16px 32px rgba(15, 40, 105, 0.12)",
+                    p: 4,
+                    display: "flex",
+                    flexDirection: "row",
+                    gap: 3,
+                    alignItems: "center",
                   }}
                 >
-                  <CardContent sx={{ p: 4, display: "grid", gap: 2 }}>
-                    <Avatar
-                      sx={{
-                        bgcolor: "rgba(12, 81, 255, 0.12)",
-                        color: "primary.main",
-                        width: 56,
-                        height: 56,
-                      }}
-                    >
-                      {step.icon}
-                    </Avatar>
+                  <Avatar
+                    sx={{
+                      bgcolor: "rgba(12, 81, 255, 0.12)",
+                      color: "primary.main",
+                      width: 56,
+                      height: 56,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {step.icon}
+                  </Avatar>
+                  <Stack spacing={1} textAlign="left">
                     <Typography variant="h6" fontWeight={700}>
                       {step.title}
                     </Typography>
@@ -140,11 +141,11 @@ export default function Guide() {
                       variant="outlined"
                       sx={{ alignSelf: "flex-start" }}
                     />
-                  </CardContent>
-                </Card>
-              </Grid>
+                  </Stack>
+                </CardContent>
+              </Card>
             ))}
-          </Grid>
+          </Stack>
 
           <Box
             sx={{
@@ -157,35 +158,16 @@ export default function Guide() {
           >
             <Stack spacing={2}>
               <Typography variant="h5" fontWeight={800}>
-                지금 바로 시작하세요!
+                지금 바로 시작해 보세요
               </Typography>
-              <Typography
-                color="text.secondary"
-                maxWidth={540}
-                alignSelf="center"
-              >
-                ShareStay+와 함께 안전하고 신뢰할 수 있는 룸쉐어링 경험을
-                시작해보세요.
+              <Typography color="text.secondary" maxWidth={540} alignSelf="center">
+                ShareStay+와 함께 안전하고 믿을 수 있는 룸쉐어링 경험을 시작해 보세요.
               </Typography>
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={2}
-                justifyContent="center"
-              >
-                <Button
-                  variant="contained"
-                  size="large"
-                  href="/signup"
-                  sx={{ borderRadius: 999, px: 4 }}
-                >
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+                <Button variant="contained" size="large" href="/signup" sx={{ borderRadius: 999, px: 4 }}>
                   무료 회원가입
                 </Button>
-                <Button
-                  variant="outlined"
-                  size="large"
-                  href="/rooms"
-                  sx={{ borderRadius: 999, px: 4 }}
-                >
+                <Button variant="outlined" size="large" href="/rooms" sx={{ borderRadius: 999, px: 4 }}>
                   방 둘러보기
                 </Button>
               </Stack>
