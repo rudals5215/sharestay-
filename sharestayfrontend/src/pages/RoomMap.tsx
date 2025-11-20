@@ -1,38 +1,62 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Box, CircularProgress, Alert, Paper, Select, MenuItem, Slider, TextField, Button, Typography, SelectChangeEvent } from "@mui/material";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Box, CircularProgress, Alert, Paper, Select, MenuItem, Slider, TextField, Button, Typography, SelectChangeEvent, List, ListItem, ListItemAvatar, Avatar, ListItemText, Divider, ListItemButton, Modal } from "@mui/material";
 import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
 import { api } from "../lib/api";
 import type { RoomSummary } from "../types/room";
-import { mapRoomFromApi } from "../types/room";
+import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
 
 declare global {
   interface Window {
     kakao: any;         // 카카오맵 SDK가 타입스크립트용 타입 정의를 제공하지 않기 때문에 any 사용
+    navigateToRoomDetail?: (roomId: number) => void;
   }
 }
+
+const roomTypes = [
+  { value: "ALL", label: "전체" },
+  { value: "ONE_ROOM", label: "원룸" },
+  { value: "TWO_ROOM", label: "투룸" },
+  { value: "OFFICETEL", label: "오피스텔" },
+  { value: "APARTMENT", label: "아파트" },
+  { value: "ETC", label: "기타" },
+];
 
 const RoomMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);       // 지도 인스턴스를 저장할 ref
   const clustererRef = useRef<any>(null);         // 클러스터러 인스턴스를 저장할 ref
   const location = useLocation();                 // 현재 경로 정보를 가져옵니다.
+  const navigate = useNavigate();                 // useNavigate 훅 추가
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [rooms, setRooms] = useState<RoomSummary[]>([]); // 지도에 표시될 방 목록 상태 추가
+  const infoWindowRef = useRef<any>(null);        // 인포윈도우 인스턴스를 저장할 ref
   // 필터 상태
-  const [buildingType, setBuildingType] = useState<string>("ALL");
+  const [type, setType] = useState<string>("ALL");
   const [priceRange, setPriceRange] = useState<number[]>([0, 100]); // 예: 0만원 ~ 100만원
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false); // 필터 모달 표시 여부 상태
 
-  const handleBuildingTypeChange = (event: SelectChangeEvent<string>) => {
-    setBuildingType(event.target.value);
+  const handleTypeChange = (event: SelectChangeEvent<string>) => {
+    setType(event.target.value);
   };
 
   const handlePriceChange = (event: Event, newValue: number | number[]) => {
     setPriceRange(newValue as number[]);
   };
+
+  // 인포윈도우에서 상세 페이지로 이동하기 위한 전역 함수 정의
+  // Kakao Maps InfoWindow의 content는 HTML 문자열이므로, React 컴포넌트의 navigate를 직접 호출할 수 없음
+  useEffect(() => {
+    window.navigateToRoomDetail = (roomId: number) => {
+      navigate(`/rooms/${roomId}`);
+    };
+
+    return () => {
+      delete window.navigateToRoomDetail; // 컴포넌트 언마운트 시 전역 함수 정리
+    };
+  }, [navigate]);
 
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps) {
@@ -134,8 +158,8 @@ const RoomMap: React.FC = () => {
         minPrice: priceRange[0] * 10000, // API 명세에 맞게 단위를 조정해야 합니다. (예: 만원 -> 원)
         maxPrice: priceRange[1] * 10000,
       };
-      if (buildingType !== "ALL") {
-        params.buildingType = buildingType;
+      if (type !== "ALL") {
+        params.type = type; // 'buildingType'을 'type'으로 변경
       }
 
       const { data } = await api.get("/map/rooms/near", { params });
@@ -143,6 +167,7 @@ const RoomMap: React.FC = () => {
       console.log("API 응답 데이터:", data); // [추가] API 응답을 콘솔에서 확인
 
       const roomList: RoomSummary[] = Array.isArray(data) ? data.map(mapRoomFromApi) : [];
+      setRooms(roomList); // 방 목록 상태 업데이트
 
       console.log("매핑된 방 목록:", roomList); // [추가] 매핑된 데이터를 콘솔에서 확인
 
@@ -158,6 +183,12 @@ const RoomMap: React.FC = () => {
   const updateMarkers = (rooms: RoomSummary[]) => {
     if (!clustererRef.current) return;
 
+    // 기존 인포윈도우 닫기
+    if (infoWindowRef.current) {
+      infoWindowRef.current.close();
+      infoWindowRef.current = null;
+    }
+
     console.log(`${rooms.length}개의 마커를 생성합니다.`); // [추가] 생성될 마커 수 확인
 
     // 방(숙소) 마커에 사용할 커스텀 아이콘을 설정합니다.
@@ -169,13 +200,40 @@ const RoomMap: React.FC = () => {
 
 
     const markers = rooms.map((room) => {
-      if (room.latitude && room.longitude) {
+      if (room.latitude && room.longitude && room.id) { // room.id 추가
         const markerPosition = new window.kakao.maps.LatLng(room.latitude, room.longitude);
-        return new window.kakao.maps.Marker({
+        const marker = new window.kakao.maps.Marker({
           position: markerPosition,
           title: room.title,
           image: roomMarkerImage, // 커스텀 마커 아이콘을 적용합니다.
         });
+
+        // 인포윈도우 내용 구성
+        const roomImageUrl = room.images?.[0]?.imageUrl ? resolveRoomImageUrl(room.images[0].imageUrl) : 'https://via.placeholder.com/150x80?text=No+Image';
+        const infoWindowContent = `
+          <div style="padding:5px;font-size:12px;width:150px;text-align:center;">
+            <img src="${roomImageUrl}" style="width:100%;height:80px;object-fit:cover;margin-bottom:5px;" onerror="this.onerror=null;this.src='https://via.placeholder.com/150x80?text=No+Image';" />
+            <div style="font-weight:bold;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${room.title}</div>
+            <div style="margin-bottom:5px;">${room.rentPrice.toLocaleString()}원</div>
+            ${room.id ? `<a href="/rooms/${room.id}" style="color:blue;text-decoration:underline;cursor:pointer;" onclick="event.preventDefault(); window.navigateToRoomDetail(${room.id});">상세보기</a>` : ''}
+          </div>
+        `;
+
+        // 마커에 클릭 이벤트 리스너 추가
+        window.kakao.maps.event.addListener(marker, 'click', () => {
+          // 기존 인포윈도우가 있다면 닫기
+          if (infoWindowRef.current) {
+            infoWindowRef.current.close();
+          }
+          const infowindow = new window.kakao.maps.InfoWindow({
+            content: infoWindowContent,
+            removable: true, // 닫기 버튼 표시
+          });
+          infowindow.open(mapInstanceRef.current, marker);
+          infoWindowRef.current = infowindow; // 현재 열린 인포윈도우 저장
+        });
+
+        return marker;
       }
       return null;
     }).filter((marker): marker is any => marker !== null);
@@ -208,15 +266,25 @@ const RoomMap: React.FC = () => {
     if (!mapInstanceRef.current) return;
     const center = mapInstanceRef.current.getCenter();
     fetchRoomsNearby(center.getLat(), center.getLng());
+    setIsFilterModalOpen(false); // 필터 적용 후 모달을 닫습니다.
   };
 
   const handleResetFilter = () => {
-    setBuildingType("ALL");
+    // 상태를 먼저 업데이트하고, 콜백 함수에서 fetch를 호출하여 비동기 문제를 해결합니다.
+    setType("ALL");
     setPriceRange([0, 100]);
-    setSearchQuery("");
-    // 필터 초기화 후, '적용' 버튼을 누르면 현재 지도 중심 기준으로 다시 검색됩니다.
-    // 또는 handleApplyFilter()를 호출하여 즉시 적용할 수도 있습니다.
-    handleApplyFilter();
+    setIsFilterModalOpen(false);
+    // 이 경우, 상태가 즉시 반영되지 않아도 다음 렌더링 사이클에서 반영되므로,
+    // 적용 버튼을 누르거나 지도를 움직이면 초기화된 값으로 검색됩니다.
+    // 즉시 반영을 원한다면 fetchRoomsNearby에 초기화된 값을 직접 넘겨야 합니다.
+    if (mapInstanceRef.current) {
+      const center = mapInstanceRef.current.getCenter();
+      // fetchRoomsNearby를 호출하되, 파라미터를 직접 지정해줍니다.
+      // 하지만 현재 fetchRoomsNearby는 전역 상태를 사용하므로,
+      // 이 방법보다는 '적용'을 누르도록 유도하는 것이 더 간단합니다.
+      // 여기서는 단순히 상태만 초기화하고 모달을 닫습니다.
+      // 사용자가 지도를 움직이거나 '적용'을 다시 누르면 초기화된 값이 반영됩니다.
+    }
   };
 
   const handleSearch = () => {
@@ -228,6 +296,7 @@ const RoomMap: React.FC = () => {
         const newPos = new window.kakao.maps.LatLng(data[0].y, data[0].x);
         mapInstanceRef.current.setCenter(newPos);
         fetchRoomsNearby(newPos.getLat(), newPos.getLng());
+        setSearchQuery(""); // 검색 후 검색창 내용 초기화
       } else {
         setError("검색 결과가 없습니다.");
       }
@@ -240,7 +309,16 @@ const RoomMap: React.FC = () => {
     }
   };
 
-
+  const modalStyle = {
+    position: 'absolute' as 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 400,
+    bgcolor: 'background.paper',
+    boxShadow: 24,
+    p: 4,
+  };
 
 
   return (
@@ -249,62 +327,109 @@ const RoomMap: React.FC = () => {
       <Box
         component="main"
         sx={{
-          flexGrow: 1,
-          position: "relative",
-          width: "100%",
+          display: 'flex',
+          flexDirection: 'row',
           height: "calc(100vh - 65px)", // 전체 화면 높이에서 헤더 높이(약 65px)를 뺌
         }}
       >
+        {/* 왼쪽 패널 */}
         <Paper
           elevation={3}
           sx={{
-            position: 'absolute',
-            top: 16,
-            left: 16,
-            zIndex: 10,
-            p: 2,
+            width: 400,
+            flexShrink: 0,
             display: 'flex',
             flexDirection: 'column',
-            gap: 2,
-            minWidth: 300,
+            p: 2,
+            overflowY: 'hidden', // 전체 패널 스크롤 방지
           }}
         >
-          <Box>
-            <Typography gutterBottom>건물 유형</Typography>
-            <Select value={buildingType} onChange={handleBuildingTypeChange} fullWidth size="small">
-              <MenuItem value="ALL">전체</MenuItem>
-              <MenuItem value="APARTMENT">아파트</MenuItem>
-              <MenuItem value="VILLA">빌라</MenuItem>
-              <MenuItem value="OFFICETEL">오피스텔</MenuItem>
-            </Select>
-          </Box>
-          <Box>
-            <Typography gutterBottom>가격 범위 (만원)</Typography>
-            <Slider
-              value={priceRange}
-              onChange={handlePriceChange}
-              valueLabelDisplay="auto"
-              min={0}
-              max={100}
-              marks={[{ value: 0, label: '0' }, { value: 100, label: '100+' }]}
-            />
-          </Box>
+          {/* 지역 검색 */}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <TextField label="지역 검색" variant="outlined" size="small" fullWidth value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyPress={handleKeyPress} />
             <Button variant="contained" onClick={handleSearch} sx={{ whiteSpace: 'nowrap' }}>검색</Button>
           </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
-            <Button variant="outlined" onClick={handleResetFilter} fullWidth>초기화</Button>
-            <Button variant="contained" color="primary" onClick={handleApplyFilter} fullWidth>적용</Button>
+
+          {/* 주변 방 목록 헤더 및 필터 버튼 */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, mb: 1 }}>
+            <Typography variant="h6">주변 방 목록</Typography>
+            <Button variant="outlined" size="small" onClick={() => setIsFilterModalOpen(true)}>
+              필터
+            </Button>
+          </Box>
+
+          {/* 주변 방 목록 */}
+          <Box sx={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', borderTop: '1px solid #eee', pt: 1 }}>
+            <List dense>
+              {rooms.length === 0 ? (
+                <ListItem key="no-rooms-found">
+                  <ListItemText primary="주변에 방이 없습니다." secondary="지도를 이동하거나 필터를 변경해보세요." />
+                </ListItem>
+              ) : (
+                rooms.map((room) => (
+                  <React.Fragment key={room.id}>
+                    <ListItem disablePadding>
+                      <ListItemButton onClick={() => room.id && navigate(`/rooms/${room.id}`)}>
+                        <ListItemAvatar>
+                          <Avatar variant="rounded" src={resolveRoomImageUrl(room.images?.[0]?.imageUrl)} alt={room.title} sx={{ width: 56, height: 56, mr: 1 }} />
+                        </ListItemAvatar>
+                        <ListItemText primary={room.title} secondary={`${room.rentPrice.toLocaleString()}원 | ${room.address}`} />
+                      </ListItemButton>
+                    </ListItem>
+                    <Divider component="li" />
+                  </React.Fragment>
+                ))
+              )}
+            </List>
           </Box>
         </Paper>
-        <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
+        {/* 오른쪽 지도 영역 */}
+        <Box ref={mapRef} sx={{ width: '100%', height: '100%' }} />
         {(isLoading || error) && (
-          <Box position="absolute" top={16} right={16} p={2} zIndex={10}>
+          <Box position="absolute" top={16} right={16} p={2} zIndex={1000}>
             {isLoading && <CircularProgress />}
             {error && <Alert severity="warning" onClose={() => setError(null)}>{error}</Alert>}
           </Box>
         )}
+        {/* 필터 모달 */}
+        <Modal
+          open={isFilterModalOpen}
+          onClose={() => setIsFilterModalOpen(false)}
+          aria-labelledby="filter-modal-title"
+        >
+          <Box sx={modalStyle}>
+            <Typography id="filter-modal-title" variant="h6" component="h2" sx={{ mb: 2 }}>
+              필터
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <Box>
+                <Typography gutterBottom>타입</Typography>
+                <Select value={type} onChange={handleTypeChange} fullWidth size="small" displayEmpty>
+                  {roomTypes.map((roomType) => (
+                    <MenuItem key={roomType.value} value={roomType.value}>
+                      {roomType.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Box>
+              <Box>
+                <Typography gutterBottom>가격 범위 (만원)</Typography>
+                <Slider
+                  value={priceRange}
+                  onChange={handlePriceChange}
+                  valueLabelDisplay="auto"
+                  min={0}
+                  max={100}
+                  marks={[{ value: 0, label: '0' }, { value: 100, label: '100+' }]}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mt: 2 }}>
+                <Button variant="outlined" onClick={handleResetFilter} fullWidth>초기화</Button>
+                <Button variant="contained" color="primary" onClick={handleApplyFilter} fullWidth>적용</Button>
+              </Box>
+            </Box>
+          </Box>
+        </Modal>
       </Box>
     </Box>
   );
