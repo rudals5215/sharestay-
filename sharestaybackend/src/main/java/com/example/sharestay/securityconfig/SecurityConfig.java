@@ -114,5 +114,19 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+
+        // 파이어베이스 테스트용
+//        http
+//                .csrf(csrf -> csrf.disable())
+//                .cors(cors -> cors.disable())  // 테스트용 CORS 풀기
+//                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+//                .authorizeHttpRequests(auth -> auth
+//                        .anyRequest().permitAll()   // 🔥 모든 요청 허용
+//                )
+//                .formLogin(form -> form.disable())
+//                .httpBasic(basic -> basic.disable())
+//                .oauth2Login(oauth -> oauth.disable()); // OAuth2도 테스트 중 비활성화
+
+//        return http.build();
     }
 }

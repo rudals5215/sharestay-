@@ -6,6 +6,7 @@ import com.example.sharestay.dto.RoomDetailResponse;
 import com.example.sharestay.entity.Host;
 import com.example.sharestay.entity.RoomImage;
 import com.example.sharestay.entity.User;
+import com.example.sharestay.repository.FavoriteRepository;
 import com.example.sharestay.repository.HostRepository;
 import com.example.sharestay.entity.Room;
 import com.example.sharestay.repository.RoomImageRepository;
@@ -30,6 +31,7 @@ public class RoomService {
     private final RoomImageRepository roomImageRepository;
     private final HostRepository hostRepository;
     private final FirebaseService firebaseService;  // Firebase 업로드용
+    private final FavoriteRepository favoriteRepository;
 
     // 방 등록
     @Transactional  // DB 트랜잭션 제어 (내부에서 여러 DB 작업 실행 -> 예외 없이 정상 종료 → commit()) 예외를 안에서 잡는 건 x, service 로직에서만 사용하는 것을 추천
@@ -87,16 +89,6 @@ public class RoomService {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found"));
 
-        // Entity 내부 값 수정
-//        room.setTitle(request.getTitle());
-//        room.setRentPrice(request.getRentPrice());
-//        room.setAddress(request.getAddress());
-//        room.setType(request.getType());
-//        room.setLatitude(request.getLatitude());
-//        room.setLongitude(request.getLongitude());
-//        room.setAvailabilityStatus(request.getAvailabilityStatus());
-//        room.setDescription(request.getDescription());
-
         // 수정은 Host를 바꾸지 않음 (방 등록자 고정)
         room.update(request);  // RoomEntity에 update() 만듦
 
@@ -107,6 +99,9 @@ public class RoomService {
     // 방 삭제
     @Transactional
     public void deleteRoom(Long roomId) {
+        // 1. Favorite 먼저 삭제
+        favoriteRepository.deleteByRoomId(roomId);
+
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found"));
         roomRepository.delete(room);
