@@ -29,6 +29,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import RoomMap from "./pages/RoomMap";
 import { AuthProvider } from "./auth/AuthContext";
 import LoginSuccess from "./pages/LoginSuccess";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const theme = createTheme({
   palette: {
@@ -107,10 +108,10 @@ function App() {
               }
             />
             <Route
-              path="/admin/users"
+              path="/admin"
               element={
                 <ProtectedRoute requireRoles={["ADMIN"]}>
-                  <AdminUsers />
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />

@@ -101,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
+    const url = new URL(window.location.href);
     const token = getAccessToken();
     const username = getStoredUsername();
     if (!token || !username) {
