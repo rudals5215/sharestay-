@@ -1,4 +1,3 @@
-// RoomDetailResponse.java
 package com.example.sharestay.dto;
 
 import lombok.Getter;
