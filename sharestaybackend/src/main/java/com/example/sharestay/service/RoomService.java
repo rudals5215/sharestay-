@@ -2,7 +2,7 @@
 package com.example.sharestay.service;
 
 import com.example.sharestay.dto.RoomDetailResponse;
-import com.example.sharestay.dto.RoomImageResponse;
+//import com.example.sharestay.dto.RoomImageResponse;
 import com.example.sharestay.entity.Host;
 import com.example.sharestay.entity.RoomImage;
 import com.example.sharestay.entity.User;
@@ -44,17 +44,12 @@ public class RoomService {
             for (MultipartFile file : files) {
                 String imageUrl = firebaseService.uploadFile(file);
 
-                RoomImage image = new RoomImage();
-                image.setRoom(room);
-                image.setImageUrl(imageUrl);
-                room.getRoomImages().add(image);
+                RoomImage image = new RoomImage(room, imageUrl);
+                room.getRoomImages().add(image); // room의 이미지 목록에 추가
             }
         }
 
-        // Room + RoomImages 저장
-        Room saved = roomRepository.save(room);
-
-        Room savedRoom = roomRepository.save(room);
+        Room savedRoom = roomRepository.save(room); // room을 저장하면 roomImages도 함께 저장됨
 
         return toResponse(savedRoom);
 
@@ -159,19 +154,11 @@ public class RoomService {
 
     // 공통 변환 메서드 (Entity → DTO)
     private RoomResponse toResponse(Room room) {
-        // RoomImage → RoomImageResponse 변환    // 추가
-        List<RoomImageResponse> imageResponses = null;
-        if (room.getRoomImages() != null) {
-            imageResponses = room.getRoomImages().stream()
-                    .map(img -> new RoomImageResponse(img.getId(), img.getImageUrl()))
-                    .collect(Collectors.toList());
-        }
 
-        // ShareLink URL 처리   // 추가
-        String shareLinkUrl = null;
-        if (room.getShareLink() != null) {
-            shareLinkUrl = room.getShareLink().getLinkUrl();
-        }
+        List<String> imageUrls = room.getRoomImages()
+                .stream()
+                .map(RoomImage::getImageUrl)
+                .toList();
 
         return new RoomResponse(
                 room.getId(),
@@ -181,10 +168,8 @@ public class RoomService {
                 room.getType(),
                 room.getAvailabilityStatus(),
                 room.getDescription(),
-                imageResponses,
-                shareLinkUrl
+                imageUrls,
+                null
         );
-
-
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -64,60 +65,84 @@ public class SecurityConfig {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("Authorization", "Refresh-Token"));
-        configuration.setAllowCredentials(true);
+//    @Bean
+//    public CorsConfigurationSource corsConfigurationSource() {
+//        CorsConfiguration configuration = new CorsConfiguration();
+//        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+//        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+//        configuration.setAllowedHeaders(List.of("*"));
+//        configuration.setExposedHeaders(List.of("Authorization", "Refresh-Token"));
+//        configuration.setAllowCredentials(true);
+//
+//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+//        source.registerCorsConfiguration("/**", configuration);
+//        return source;
+//    }
+//
+//    @Bean
+//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+//        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtService, userDetailsService);
+//
+//        http
+//                .csrf(csrf -> csrf.disable()) // 기존 유지
+////                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 반영
+//                .cors(cors -> cors.disable())  // 파이어베이스 테스트용으로 위에꺼 주석하고 이거 추가
+//                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 STATELESS로 (JWT 방식)
+//                .authorizeHttpRequests(auth -> auth
+//                                // Swagger/OpenAPI 관련 URL 모두 허용  // swagger url 403 떠서 이거 추가함
+//                                .requestMatchers(
+//                                        "/v3/api-docs/**",
+//                                        "/swagger-ui/**",
+//                                        "/swagger-ui.html"
+//                                ).permitAll()
+//                                .requestMatchers(HttpMethod.POST,"/api/favorites/**").permitAll()
+//                                .requestMatchers(HttpMethod.GET,"/api/map/**").permitAll()
+//                                .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+//                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+//                                .requestMatchers("/api/auth/google").permitAll()
+////                        .requestMatchers(HttpMethod.GET, "/api/rooms/**").permitAll()
+////                        .requestMatchers(HttpMethod.POST, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
+////                        .requestMatchers(HttpMethod.PUT, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
+////                        .requestMatchers(HttpMethod.PATCH, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
+////                        .requestMatchers(HttpMethod.DELETE, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
+//                                .requestMatchers("/api/login", "/api/signup").permitAll() // 로그인/회원가입은 인증 없이
+//                                // 파이어베이스 테스트용으로 차단 해제
+//                                .requestMatchers("/api/rooms/**").permitAll()
+//                                .anyRequest().authenticated() // 그 외 요청은 인증 필요
+//                )
+//                .formLogin(form -> form.disable())
+//                .httpBasic(basic -> basic.disable())
+//
+//                .oauth2Login(oauth -> oauth
+//                        .userInfoEndpoint(userInfo ->
+//                                userInfo.userService(customUserService)
+//                        )
+//                        .successHandler(customSuccessHandler)
+//                )
+//                // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
+//                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+//
+//        return http.build();
+//    }
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
-    }
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        JwtAuthenticationFilter jwtFilter = new JwtAuthenticationFilter(jwtService, userDetailsService);
+    http
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .sessionManagement(AbstractHttpConfigurer::disable)
 
-        http
-                .csrf(csrf -> csrf.disable()) // 기존 유지
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 설정 반영
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션을 STATELESS로 (JWT 방식)
-                .authorizeHttpRequests(auth -> auth
-                        // Swagger/OpenAPI 관련 URL 모두 허용  // swagger url 403 떠서 이거 추가함
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.POST,"/api/favorites/**").permitAll()
-                        .requestMatchers(HttpMethod.GET,"/api/map/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/google").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/rooms/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
-                        .requestMatchers("/api/login", "/api/signup").permitAll() // 로그인/회원가입은 인증 없이
-                        .anyRequest().authenticated() // 그 외 요청은 인증 필요
-                )
-                .formLogin(form -> form.disable())
-                .httpBasic(basic -> basic.disable())
+            // ⛔ OAuth2 완전 비활성화
+            .oauth2Login(oauth -> oauth.disable())
 
-                .oauth2Login(oauth -> oauth
-                        .userInfoEndpoint(userInfo ->
-                                userInfo.userService(customUserService)
-                        )
-                        .successHandler(customSuccessHandler)
-                )
-                // JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 등록
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            // 🔥 모든 요청 허용!!
+            .authorizeHttpRequests(auth -> auth
+                    .anyRequest().permitAll()
+            );
 
-        return http.build();
-    }
+    return http.build();
+}
 }

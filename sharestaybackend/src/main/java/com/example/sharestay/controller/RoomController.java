@@ -1,7 +1,7 @@
 package com.example.sharestay.controller;
 
 import com.example.sharestay.dto.RoomDetailResponse;
-import com.example.sharestay.dto.RoomImageResponse;
+//import com.example.sharestay.dto.RoomImageResponse;
 import com.example.sharestay.dto.RoomRequest;
 import com.example.sharestay.dto.RoomResponse;
 import com.example.sharestay.entity.Room;
@@ -28,8 +28,8 @@ public class RoomController {
     @Operation(summary = "방 등록", description = "호스트가 방 정보를 입력하고 이미지를 업로드합니다.")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RoomResponse> createRoom(
-            @ModelAttribute RoomRequest request,        // 제목/가격/주소 등
-            @RequestPart(required = false) List<MultipartFile> files  // 이미지 리스트
+            @ModelAttribute RoomRequest request,        // 제목/가격/주소 등  @ModelAttribute + @RequestPart 이 조합 스프링에서 잘 안돌아감
+            @RequestParam(required = false) List<MultipartFile> files  // 이미지 리스트
     ) {
         RoomResponse response = roomService.createRoom(request, files);
         return ResponseEntity.ok(response);

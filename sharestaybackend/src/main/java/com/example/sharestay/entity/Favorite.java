@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public class Favorite {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "favorite_id", nullable = false, updatable = false)
     private Long id;
 

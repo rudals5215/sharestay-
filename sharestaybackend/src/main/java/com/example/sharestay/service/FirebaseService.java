@@ -46,7 +46,9 @@ public class FirebaseService {
                     + "?alt=media";
 
         } catch (IOException e) {
+            e.printStackTrace();
             throw new RuntimeException("Firebase 파일 업로드 중 오류 발생", e);
+
         }
     }
 
