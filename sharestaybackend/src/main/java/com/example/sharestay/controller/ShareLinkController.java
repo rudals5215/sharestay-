@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/rooms")
 @RequiredArgsConstructor
-@Tag(name = "ShareLink API", description = "Room별 공유 링크 생성 및 조회 API") // Swagger UI 상단에 그룹으로 표시됨됨됨됨됨됨
+@Tag(name = "ShareLink API", description = "Room별 공유 링크 생성 및 조회 API") // Swagger UI 상단에 그룹으로 표시됨
 public class ShareLinkController {
 
     private final ShareLinkService shareLinkService;
