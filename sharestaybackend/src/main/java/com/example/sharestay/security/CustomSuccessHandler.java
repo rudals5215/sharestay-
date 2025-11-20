@@ -16,51 +16,15 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.util.UUID;
 
-//@Component
-//@Slf4j
-//public class CustomSuccessHandler implements AuthenticationSuccessHandler {
-//
-//    private final JwtService jwtService;
-//    private final UserRepository userRepository;
-//
-//    @Value("${oauth2.success.redirect-url}")
-//    private String redirectUrl;
-//
-//    public CustomSuccessHandler(JwtService jwtService, UserRepository userRepository) {
-//        this.jwtService = jwtService;
-//        this.userRepository = userRepository;
-//    }
-//
-//    @Override
-//    public void onAuthenticationSuccess(HttpServletRequest request,
-//                                        HttpServletResponse response,
-//                                        Authentication authentication) throws IOException {
-//        log.info("구글 로그인 석세스 핸들러 진입");
-//        // OAuth2 유저 정보(email)
-//        String email = authentication.getName();
-//
-//        // DB에 없으면 생성
-//        User user = userRepository.findByUsername(email)
-//                .orElseGet(() -> userRepository.save(User.createGoogleUser(email)));
-//
-//        // JWT 발급
-//        String accessToken = jwtService.generateAccessToken(email);
-//        String refreshToken = jwtService.generateRefreshToken(email);
-//
-//        // React 페이지로 리다이렉트 + query param으로 토큰 전달
-//        String redirectWithToken = redirectUrl + "?accessToken=" + accessToken + "&refreshToken=" + refreshToken;
-//        response.sendRedirect(redirectWithToken);
-//    }
-//}
-@Component
-@Slf4j
+@Component   // Spring 빈으로 등록, 스프링 컨테이너가 관리
+@Slf4j       // 로그 찍을 수 있게 Lombok 사용
 public class CustomSuccessHandler implements AuthenticationSuccessHandler {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${oauth2.success.redirect-url}")
+    @Value("${oauth2.success.redirect-url}")      // 로그인 성공 후 리다이렉트할 프론트 URL
     private String redirectUrl;
 
     public CustomSuccessHandler(JwtService jwtService,
@@ -71,14 +35,16 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
         this.passwordEncoder = passwordEncoder;
     }
 
+    // 로그인 성공 시 호출되는 메서드
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
 
-        log.info("구글 로그인 석세스 핸들러 진입");
+        log.info("구글 로그인 석세스 핸들러 진입");  // 핸들러 진입 로그
 
-        String email = authentication.getName();   // = "email"
+        // 1️⃣ 인증 객체에서 이메일 가져오기
+        String email = authentication.getName();   // 구글 로그인 시 이메일 반환
 
         userRepository.findByUsername(email)
                 .orElseGet(() -> {
@@ -86,6 +52,7 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
                     return userRepository.save(User.createGoogleUser(email, encodedPassword));
                 });
 
+        // 3️⃣ JWT Access Token과 Refresh Token 생성
         String accessToken = jwtService.generateAccessToken(email);
         String refreshToken = jwtService.generateRefreshToken(email);
 
@@ -97,6 +64,7 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
                 .build(true)
                 .toUriString();
 
+        // 5️⃣ 프론트 페이지로 리다이렉트
         response.sendRedirect(redirectWithToken);
     }
 }

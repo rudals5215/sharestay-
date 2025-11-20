@@ -19,7 +19,7 @@ public class User {
     @Column(nullable = false, updatable = false, name = "user_id")
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String username;
 
     @Column(nullable = false, name = "password_hash")
