@@ -4,6 +4,7 @@ import com.example.sharestay.entity.User;
 import com.example.sharestay.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 //
 //@Service
 //@RequiredArgsConstructor
@@ -69,6 +71,7 @@ import java.util.Map;
 public class CustomUserService extends DefaultOAuth2UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) {
@@ -82,9 +85,11 @@ public class CustomUserService extends DefaultOAuth2UserService {
 
         User user = userRepository.findByUsername(email)
                 .orElseGet(() -> {
-                    User newUser = User.createGoogleUser(email);
-                    newUser.setNickname(name != null ? name : "GoogleUser");
-                    newUser.setPhoneNumber("000-0000-0000");
+                    String encodedPassword = passwordEncoder.encode(UUID.randomUUID().toString());
+                    User newUser = User.createGoogleUser(email, encodedPassword);
+                    if (name != null && !name.isBlank()) {
+                        newUser.setNickname(name);
+                    }
                     return userRepository.save(newUser);
                 });
 

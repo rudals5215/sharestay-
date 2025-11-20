@@ -1,6 +1,7 @@
-// src/pages/LoginSuccess.tsx
+﻿// src/pages/LoginSuccess.tsx
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { setAccessToken, setStoredUsername } from "../lib/api";
 
 export default function LoginSuccess() {
   const navigate = useNavigate();
@@ -10,15 +11,19 @@ export default function LoginSuccess() {
 
     const accessToken = params.get("accessToken");
     const refreshToken = params.get("refreshToken");
+    const username = params.get("username");
 
     if (accessToken) {
-      localStorage.setItem("accessToken", accessToken);
+      setAccessToken(accessToken);
     }
     if (refreshToken) {
       localStorage.setItem("refreshToken", refreshToken);
     }
+    if (username) {
+      setStoredUsername(username);
+    }
 
-    // 저장 완료 → 홈으로 이동
+    // 로그인 처리 후 홈으로 이동
     navigate("/", { replace: true });
   }, [navigate]);
 
