@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.UUID;
 
 @Component   // Spring 빈으로 등록, 스프링 컨테이너가 관리
 @Slf4j       // 로그 찍을 수 있게 Lombok 사용

@@ -24,8 +24,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import EditIcon from "@mui/icons-material/Edit";
 import { api } from "../lib/api";
-import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
 import type { Roles, UserInfo } from "../auth/types";
 
 interface BackendUser {
@@ -189,132 +187,123 @@ export default function AdminUsers() {
   const rows = useMemo(() => users, [users]);
 
   return (
-    <Box minHeight="100vh" display="flex" flexDirection="column">
-      <SiteHeader />
-      <Container sx={{ flex: 1, py: { xs: 4, md: 6 } }}>
-        <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, boxShadow: 4 }}>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            mb={3}
-          >
-            <Box>
-              <Typography variant="h5" fontWeight={700}>
-                회원 관리
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                전체 회원 정보를 조회하고 프로필 데이터를 수정할 수 있습니다.
-              </Typography>
-            </Box>
-            <Button variant="outlined" onClick={fetchUsers} disabled={loading}>
-              새로고침
-            </Button>
-          </Stack>
+    <>
+      <Paper sx={{ p: { xs: 2, md: 3 }, borderRadius: 3, boxShadow: 4 }}>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
+          <Box>
+            <Typography variant="h5" fontWeight={700}>
+              회원 관리
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              전체 회원 정보를 조회하고 프로필 데이터를 수정할 수 있습니다.
+            </Typography>
+          </Box>
+          <Button variant="outlined" onClick={fetchUsers} disabled={loading}>
+            새로고침
+          </Button>
+        </Stack>
 
-          {loading ? (
-            <Box display="grid" sx={{ placeItems: "center" }} minHeight={200}>
-              <CircularProgress />
-            </Box>
-          ) : error ? (
-            <Typography color="error">{error}</Typography>
-          ) : rows.length === 0 ? (
-            <Typography>등록된 회원이 없습니다.</Typography>
-          ) : (
-            <Box sx={{ overflowX: "auto" }}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>회원</TableCell>
-                    <TableCell>닉네임</TableCell>
-                    <TableCell>역할</TableCell>
-                    <TableCell>연락처</TableCell>
-                    <TableCell>주소 (선택)</TableCell>
-                    <TableCell>라이프스타일 (선택)</TableCell>
-                    <TableCell>호스트 소개</TableCell>
-                    <TableCell>가입일</TableCell>
-                    <TableCell align="right">관리</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rows.map((user) => (
-                    <TableRow key={user.id} hover>
-                      <TableCell>
-                        <Stack
-                          direction="row"
-                          spacing={1.5}
-                          alignItems="center"
-                        >
-                          <Avatar sx={{ bgcolor: "primary.main" }}>
-                            {user.nickname?.slice(0, 1)?.toUpperCase() ??
-                              user.username.slice(0, 1).toUpperCase()}
-                          </Avatar>
-                          <Box>
-                            <Typography fontWeight={600}>
-                              {user.username}
+        {loading ? (
+          <Box display="grid" sx={{ placeItems: "center" }} minHeight={200}>
+            <CircularProgress />
+          </Box>
+        ) : error ? (
+          <Typography color="error">{error}</Typography>
+        ) : rows.length === 0 ? (
+          <Typography>등록된 회원이 없습니다.</Typography>
+        ) : (
+          <Box sx={{ overflowX: "auto" }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>회원</TableCell>
+                  <TableCell>닉네임</TableCell>
+                  <TableCell>역할</TableCell>
+                  <TableCell>연락처</TableCell>
+                  <TableCell>주소 (선택)</TableCell>
+                  <TableCell>라이프스타일 (선택)</TableCell>
+                  <TableCell>호스트 소개</TableCell>
+                  <TableCell>가입일</TableCell>
+                  <TableCell align="right">관리</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((user) => (
+                  <TableRow key={user.id} hover>
+                    <TableCell>
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Avatar sx={{ bgcolor: "primary.main" }}>
+                          {user.nickname?.slice(0, 1)?.toUpperCase() ??
+                            user.username.slice(0, 1).toUpperCase()}
+                        </Avatar>
+                        <Box>
+                          <Typography fontWeight={600}>
+                            {user.username}
+                          </Typography>
+                          {user.email && (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              {user.email}
                             </Typography>
-                            {user.email && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                {user.email}
-                              </Typography>
-                            )}
-                          </Box>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>{user.nickname ?? "-"}</TableCell>
-                      <TableCell>
-                        <Stack direction="row" spacing={1}>
-                          {user.roles.map((role) => (
-                            <Chip
-                              key={role}
-                              label={role}
-                              size="small"
-                              color="secondary"
-                            />
-                          ))}
-                        </Stack>
-                      </TableCell>
-                      <TableCell>{user.phoneNumber ?? "-"}</TableCell>
-                      <TableCell>{user.address ?? "-"}</TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{ whiteSpace: "pre-wrap" }}
-                        >
-                          {user.lifeStyle ?? "-"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{ whiteSpace: "pre-wrap" }}
-                        >
-                          {user.hostIntroduction ?? "-"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {user.signupDate
-                          ? new Date(user.signupDate).toLocaleDateString()
-                          : "-"}
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton onClick={() => handleOpenDialog(user)}>
-                          <EditIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Box>
-          )}
-        </Paper>
-      </Container>
-      <SiteFooter />
-
+                          )}
+                        </Box>
+                      </Stack>
+                    </TableCell>
+                    <TableCell>{user.nickname ?? "-"}</TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        {user.roles.map((role) => (
+                          <Chip
+                            key={role}
+                            label={role}
+                            size="small"
+                            color="secondary"
+                          />
+                        ))}
+                      </Stack>
+                    </TableCell>
+                    <TableCell>{user.phoneNumber ?? "-"}</TableCell>
+                    <TableCell>{user.address ?? "-"}</TableCell>
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {user.lifeStyle ?? "-"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        sx={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {user.hostIntroduction ?? "-"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      {user.signupDate
+                        ? new Date(user.signupDate).toLocaleDateString()
+                        : "-"}
+                    </TableCell>
+                    <TableCell align="right">
+                      <IconButton onClick={() => handleOpenDialog(user)}>
+                        <EditIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Box>
+        )}
+      </Paper>
       <Dialog
         open={dialogOpen}
         onClose={handleCloseDialog}
@@ -350,19 +339,16 @@ export default function AdminUsers() {
               minRows={3}
               fullWidth
             />
-            {selectedUser?.roles.includes("HOST") ||
-              (selectedUser?.roles.includes("ADMIN") && (
-                <>
-                  <TextField
-                    label="호스트 소개"
-                    value={form.hostIntroduction}
-                    onChange={handleChange("hostIntroduction")}
-                    multiline
-                    minRows={3}
-                    fullWidth
-                  />
-                </>
-              ))}
+            {(selectedUser?.roles.includes("HOST") || selectedUser?.roles.includes("ADMIN")) && (
+              <TextField
+                label="호스트 소개"
+                value={form.hostIntroduction}
+                onChange={handleChange("hostIntroduction")}
+                multiline
+                minRows={3}
+                fullWidth
+              />
+            )}
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -374,6 +360,6 @@ export default function AdminUsers() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
 }
