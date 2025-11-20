@@ -16,10 +16,10 @@ public class User {
     @Column(nullable = false, updatable = false, name = "user_id")
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String username;
 
-    @Column(nullable = false, name = "password_hash")
+    @Column(name = "password_hash")
     private String password; //OAuth2 유저는 null이 가능
 
     @Column(nullable = false)

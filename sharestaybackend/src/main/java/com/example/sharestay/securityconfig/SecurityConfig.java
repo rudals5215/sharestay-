@@ -103,6 +103,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
                         .requestMatchers("/api/login", "/api/signup").permitAll() // 로그인/회원가입은 인증 없이
+                        .requestMatchers("/login-success").permitAll()
+                        .requestMatchers("/oauth2/**").permitAll()
+
                         .anyRequest().authenticated() // 그 외 요청은 인증 필요
                 )
                 .formLogin(form -> form.disable())
