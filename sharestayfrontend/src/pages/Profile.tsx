@@ -1,20 +1,29 @@
-﻿﻿// src/pages/Profile.tsx
+﻿// src/pages/Profile.tsx
 import {
   Avatar,
   Box,
   Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardMedia,
+  CircularProgress,
   Container,
   Divider,
+  Grid,
   Stack,
   TextField,
   Typography,
   useTheme,
 } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/useAuth";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
-
+import { fetchFavoriteRooms } from "../lib/favorites";
+import type { FavoriteRoom } from "../types/favorite";
+import { extractFavoriteImageUrl } from "../types/favorite";
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80";
 
@@ -31,6 +40,9 @@ export default function Profile() {
   const { user, logout, updateProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [favoriteRooms, setFavoriteRooms] = useState<FavoriteRoom[]>([]);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [favoriteError, setFavoriteError] = useState<string | null>(null);
   const [form, setForm] = useState<ProfileForm>({
     nickname: "",
     address: "",
@@ -49,6 +61,39 @@ export default function Profile() {
         hostIntroduction: user.hostIntroduction ?? "",
       });
     }
+  }, [user?.id]);
+
+  useEffect(() => {
+    let ignore = false;
+    if (!user?.id) {
+      setFavoriteRooms([]);
+      return;
+    }
+    setFavoriteLoading(true);
+    setFavoriteError(null);
+    fetchFavoriteRooms(user.id)
+      .then((data) => {
+        if (!ignore) {
+          setFavoriteRooms(data);
+        }
+      })
+      .catch((error) => {
+        if (ignore) return;
+        const message =
+          error instanceof Error
+            ? error.message
+            : "즐겨찾기 목록을 불러오지 못했습니다.";
+        setFavoriteError(message);
+        setFavoriteRooms([]);
+      })
+      .finally(() => {
+        if (!ignore) {
+          setFavoriteLoading(false);
+        }
+      });
+    return () => {
+      ignore = true;
+    };
   }, [user?.id]);
 
   const roles = useMemo(
@@ -305,6 +350,32 @@ export default function Profile() {
                 />
               </Box>
 
+              <Box>
+                <Typography variant="h6" fontWeight={700} gutterBottom>
+                  좋아요한 방
+                </Typography>
+                <Divider sx={{ mb: 3 }} />
+                {favoriteLoading ? (
+                  <Stack alignItems="center" py={4}>
+                    <CircularProgress />
+                  </Stack>
+                ) : favoriteError ? (
+                  <Typography color="error">{favoriteError}</Typography>
+                ) : favoriteRooms.length === 0 ? (
+                  <Typography color="text.secondary">
+                    아직 좋아요한 방이 없습니다.
+                  </Typography>
+                ) : (
+                  <Grid container spacing={2}>
+                    {favoriteRooms.map((item) => (
+                      <Grid key={item.roomId} item xs={12} sm={6}>
+                        <FavoriteRoomCard room={item} />
+                      </Grid>
+                    ))}
+                  </Grid>
+                )}
+              </Box>
+
               {roles.includes("HOST") && (
                 <Box>
                   <Typography variant="h6" fontWeight={700} gutterBottom>
@@ -395,3 +466,59 @@ function TextAreaRow({ value, editing = false, onChange }: TextAreaRowProps) {
     </Typography>
   );
 }
+
+type FavoriteRoomCardProps = {
+  room: FavoriteRoom;
+};
+
+function FavoriteRoomCard({ room }: FavoriteRoomCardProps) {
+  const imageUrl = extractFavoriteImageUrl(room.roomImg);
+  const likedAtLabel = room.likedAt
+    ? new Date(room.likedAt).toLocaleDateString()
+    : null;
+
+  return (
+    <Card
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        borderRadius: 3,
+        boxShadow: 3,
+      }}
+    >
+      {imageUrl && (
+        <CardMedia
+          component="img"
+          height="160"
+          image={imageUrl}
+          alt={room.roomName}
+          sx={{ objectFit: "cover" }}
+        />
+      )}
+      <CardContent sx={{ flex: 1 }}>
+        <Stack spacing={0.5}>
+          <Typography variant="subtitle1" fontWeight={700}>
+            {room.roomName}
+          </Typography>
+          {likedAtLabel && (
+            <Typography variant="caption" color="text.secondary">
+              {likedAtLabel}에 저장
+            </Typography>
+          )}
+        </Stack>
+      </CardContent>
+      <CardActions sx={{ px: 2, pb: 2 }}>
+        <Button
+          size="small"
+          component={RouterLink}
+          to={room.roomId ? `/rooms/${room.roomId}` : "/rooms"}
+          sx={{ borderRadius: 999 }}
+        >
+          상세 보기
+        </Button>
+      </CardActions>
+    </Card>
+  );
+}
+

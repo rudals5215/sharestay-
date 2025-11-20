@@ -28,12 +28,13 @@ import {
   LocationOn,
   Search,
 } from "@mui/icons-material";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import { api } from "../lib/api";
+import { fetchFavoriteRooms, toggleFavoriteRoom } from "../lib/favorites";
 import type { RoomApiResponse, RoomSummary, ShareLinkResponse } from "../types/room";
 import { mapRoomFromApi } from "../types/room";
 import fallbackImageSrc from "../img/no_img.jpg";
@@ -183,16 +184,6 @@ export default function Rooms() {
         };
       });
       setRooms(normalized);
-      setFavorites((prev) => {
-        const next = new Set<number>();
-        normalized.forEach((room) => {
-          const roomId = getRoomId(room);
-          if (roomId && prev.has(roomId)) {
-            next.add(roomId);
-          }
-        });
-        return next;
-      });
     } catch (err) {
       const message =
         err instanceof Error
@@ -200,7 +191,6 @@ export default function Rooms() {
           : "방 정보를 불러오는 중 오류가 발생했습니다.";
       setError(message);
       setRooms([]);
-      setFavorites(new Set());
     } finally {
       setIsLoading(false);
     }
@@ -260,9 +250,45 @@ export default function Rooms() {
     else setSearchParams({}, { replace: true });
     await fetchRooms();
   };
-  const toggleFavorite = (room: RoomSummary) => {
+  const loadFavorites = useCallback(async () => {
+    if (!user?.id) {
+      setFavorites(new Set());
+      setRooms((prev) =>
+        prev.map((room) => ({ ...room, isFavorite: false }))
+      );
+      return;
+    }
+    try {
+      const favoriteRooms = await fetchFavoriteRooms(user.id);
+      const next = new Set<number>();
+      favoriteRooms.forEach((item) => {
+        if (typeof item.roomId === "number") {
+          next.add(item.roomId);
+        }
+      });
+      setFavorites(next);
+      setRooms((prev) =>
+        prev.map((room) => {
+          const roomId = getRoomId(room);
+          return roomId ? { ...room, isFavorite: next.has(roomId) } : room;
+        })
+      );
+    } catch (error) {
+      console.error("Failed to load favorites", error);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadFavorites();
+  }, [loadFavorites]);
+
+  const toggleFavorite = async (room: RoomSummary) => {
     const roomId = getRoomId(room);
     if (!roomId) return;
+    if (!user?.id) {
+      alert("로그인이 필요한 기능입니다.");
+      return;
+    }
     const currentlyFavorite = favorites.has(roomId);
     setFavorites((prev) => {
       const next = new Set(prev);
@@ -278,6 +304,27 @@ export default function Rooms() {
         getRoomId(item) === roomId ? { ...item, isFavorite: !currentlyFavorite } : item
       )
     );
+    try {
+      await toggleFavoriteRoom(user.id, roomId);
+      await loadFavorites();
+    } catch (error) {
+      console.error("Failed to toggle favorite", error);
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        if (currentlyFavorite) {
+          next.add(roomId);
+        } else {
+          next.delete(roomId);
+        }
+        return next;
+      });
+      setRooms((prev) =>
+        prev.map((item) =>
+          getRoomId(item) === roomId ? { ...item, isFavorite: currentlyFavorite } : item
+        )
+      );
+      alert("즐겨찾기 처리에 실패했습니다. 다시 시도해 주세요.");
+    }
   };
 
   const fetchShareLink = async (roomId: number): Promise<string | null> => {
