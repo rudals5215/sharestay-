@@ -1,5 +1,6 @@
 package com.example.sharestay.controller;
 
+import com.example.sharestay.dto.FavoriteDto;
 import com.example.sharestay.entity.Favorite;
 import com.example.sharestay.entity.Room;
 import com.example.sharestay.entity.User;
@@ -8,11 +9,9 @@ import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.service.FavoriteService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -38,5 +37,15 @@ public class FavoriteController {
             favoriteService.addFavorite(user, room);
             return ResponseEntity.ok("즐겨찾기에 추가되었습니다.");
         }
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<List<FavoriteDto>> getFavorites(@RequestParam Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        List<FavoriteDto> rooms = favoriteService.getFavoritesByUser(user)
+                                                    .stream()
+                                                    .map(FavoriteDto::new)
+                                                    .toList();;
+        return ResponseEntity.ok(rooms);
     }
 }
