@@ -366,19 +366,26 @@ const RoomMap: React.FC = () => {
                   <ListItemText primary="주변에 방이 없습니다." secondary="지도를 이동하거나 필터를 변경해보세요." />
                 </ListItem>
               ) : (
-                rooms.map((room) => (
-                  <React.Fragment key={room.id}>
-                    <ListItem disablePadding>
-                      <ListItemButton onClick={() => room.id && navigate(`/rooms/${room.id}`)}>
-                        <ListItemAvatar>
-                          <Avatar variant="rounded" src={resolveRoomImageUrl(room.images?.[0]?.imageUrl)} alt={room.title} sx={{ width: 56, height: 56, mr: 1 }} />
-                        </ListItemAvatar>
-                        <ListItemText primary={room.title} secondary={`${room.rentPrice.toLocaleString()}원 | ${room.address}`} />
-                      </ListItemButton>
-                    </ListItem>
-                    <Divider component="li" />
-                  </React.Fragment>
-                ))
+                rooms.map((room) => ([
+                  <ListItem key={room.id} disablePadding>
+                    <ListItemButton onClick={() => navigate(`/rooms/${room.id}`)}>
+                      <ListItemAvatar>
+                        <Avatar
+                          variant="rounded"
+                          src={resolveRoomImageUrl(room.images?.[0]?.imageUrl)}
+                          alt={room.title}
+                          sx={{ width: 56, height: 56, mr: 1 }}
+                        />
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={room.title}
+                        secondary={`${room.rentPrice.toLocaleString()}원 | ${room.address}`}
+                      />
+                    </ListItemButton>
+                  </ListItem>,
+
+                  <Divider key={`divider-${room.id}`} component="li" />,
+                ]))
               )}
             </List>
           </Box>
