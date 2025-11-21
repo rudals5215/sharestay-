@@ -1,5 +1,5 @@
 ﻿﻿// src/pages/Rooms.tsx
-import type { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import {
   Box,
   Button,
@@ -160,7 +160,7 @@ export default function Rooms() {
       const hasCustomPriceRange =
         priceRangeValue[0] !== defaultPriceRange[0] ||
         priceRangeValue[1] !== defaultPriceRange[1];
-      const { data } = await api.get<RoomApiResponse[]>("/rooms/search/filter", {
+      const { data } = await api.get<RoomApiResponse[]>("/rooms/search", {
         params: {
           region: regionParam,
           type: roomTypeValue || undefined,
@@ -185,10 +185,18 @@ export default function Rooms() {
       });
       setRooms(normalized);
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "방 정보를 불러오는 중 오류가 발생했습니다.";
+      let message = "방 정보를 불러오는 중 오류가 발생했습니다.";
+      if (err instanceof AxiosError) {
+        if (err.response) {
+          // 서버가 응답했지만, 2xx 상태 코드가 아닌 경우
+          message = `서버 응답 오류: ${err.response.status} - ${
+            err.response.data?.message ?? "내용 없음"
+          }`;
+        } else if (err.request) {
+          // 요청은 보냈으나 응답을 받지 못한 경우 (CORS, 네트워크 문제 등)
+          message = "서버로부터 응답을 받지 못했습니다. CORS 또는 네트워크 설정을 확인해주세요.";
+        }
+      }
       setError(message);
       setRooms([]);
     } finally {
@@ -284,12 +292,15 @@ export default function Rooms() {
 
   const toggleFavorite = async (room: RoomSummary) => {
     const roomId = getRoomId(room);
-    if (!roomId) return;
+    // if (!roomId) return;
     if (!user?.id) {
       alert("로그인이 필요한 기능입니다.");
       return;
     }
-    const currentlyFavorite = favorites.has(roomId);
+    // const currentlyFavorite = favorites.has(roomId);
+    // 여기 두 줄이 추가된 부분임. 나중에 재수정할 수도 있음.
+    if (!roomId) return;
+    const currentlyFavorite = favorites.has(roomId); // user.id 체크 후 roomId 체크
     setFavorites((prev) => {
       const next = new Set(prev);
       if (currentlyFavorite) {
