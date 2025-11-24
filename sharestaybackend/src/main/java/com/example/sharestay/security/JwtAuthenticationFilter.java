@@ -49,4 +49,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+
+        // JWT 검사 제외할 URL 목록
+        return path.startsWith("/api/rooms")
+                || path.startsWith("/api/auth/google")
+                || path.startsWith("/oauth2")
+                || path.startsWith("/login-success")
+                || path.startsWith("/v3/api-docs")
+                || path.startsWith("/swagger-ui");
+    }
 }
