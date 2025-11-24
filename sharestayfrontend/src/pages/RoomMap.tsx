@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -19,22 +19,22 @@ import {
   ListItemText,
   Divider,
   ListItemButton, Stack, Chip,
-  Modal
+  Modal, IconButton
 } from "@mui/material";
 import SiteHeader from "../components/SiteHeader";
-import { api } from "../lib/api";
+import CloseIcon from '@mui/icons-material/Close';
+import { api, getAccessToken } from "../lib/api";
 import type { RoomSummary } from "../types/room";
 import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
 
 declare global {
   interface Window {
-    kakao: any;         // 카카오맵 SDK가 타입스크립트용 타입 정의를 제공하지 않기 때문에 any 사용
-    navigateToRoomDetail?: (roomId: number) => void;
+    kakao: any; // 카카오맵 SDK가 타입스크립트용 타입 정의를 제공하지 않기 때문에 any 사용
   }
 }
 
 const roomTypeOptions = [
-  { value: "", label: "전체 유형" },
+  { value: "", label: "전체" },
   { value: "ONE_ROOM", label: "원룸" },
   { value: "TWO_ROOM", label: "투룸" },
   { value: "OFFICETEL", label: "오피스텔" },
@@ -55,21 +55,20 @@ const filterFacilities = [
 const RoomMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);       // 지도 인스턴스를 저장할 ref
-  const clustererRef = useRef<any>(null);         // 클러스터러 인스턴스를 저장할 ref
   const navigate = useNavigate();                 // useNavigate 훅 추가
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rooms, setRooms] = useState<RoomSummary[]>([]); // 지도에 표시될 방 목록 상태 추가
-  const infoWindowRef = useRef<any>(null);        // 인포윈도우 인스턴스를 저장할 ref
 
-  const defaultPriceRange: [number, number] = [200000, 2000000];
+  const defaultPriceRange: [number, number] = [0, 5000000];
   // 필터 상태
   const [roomType, setRoomType] = useState<string>("");
   const [priceRange, setPriceRange] = useState<number[]>(defaultPriceRange);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [facilities, setFacilities] = useState<Set<string>>(new Set());
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null); // 선택된 방 ID 상태
+  
   const handleToggleFacility = (facility: string) => {
     setFacilities(prev => {
       const next = new Set(prev);
@@ -83,25 +82,12 @@ const RoomMap: React.FC = () => {
     setPriceRange(newValue as number[]);
   };
 
-  // 인포윈도우에서 상세 페이지로 이동하기 위한 전역 함수 정의
-  // Kakao Maps InfoWindow의 content는 HTML 문자열이므로, React 컴포넌트의 navigate를 직접 호출할 수 없음
-  useEffect(() => {
-    window.navigateToRoomDetail = (roomId: number) => {
-      navigate(`/rooms/${roomId}`);
-    };
-
-    return () => {
-      delete window.navigateToRoomDetail; // 컴포넌트 언마운트 시 전역 함수 정리
-    };
-  }, [navigate]);
-
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps) {
       setError("카카오맵 SDK를 불러오지 못했습니다.");
       setIsLoading(false);
       return;
     }
-
 
     window.kakao.maps.load(() => {
       const mapContainer = mapRef.current;
@@ -121,13 +107,6 @@ const RoomMap: React.FC = () => {
               level: 5,
             });
             mapInstanceRef.current = map; // 생성된 지도 인스턴스를 ref에 저장
-
-            // 2-1. 마커 클러스터러 생성
-            clustererRef.current = new window.kakao.maps.MarkerClusterer({
-              map: map, // 클러스터러를 적용할 지도
-              averageCenter: true, // 클러스터 마커의 위치를 마커들의 평균 좌표로 설정
-              minLevel: 6, // 클러스터링을 시작할 최소 지도 레벨
-            });
 
             // 현재 위치에 특별한 마커 표시
             new window.kakao.maps.Marker({
@@ -158,13 +137,6 @@ const RoomMap: React.FC = () => {
             });
             mapInstanceRef.current = map; // 생성된 지도 인스턴스를 ref에 저장
 
-            // 2-1. 마커 클러스터러 생성
-            clustererRef.current = new window.kakao.maps.MarkerClusterer({
-              map: map,
-              averageCenter: true,
-              minLevel: 6,
-            });
-
             // 4. 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
             window.kakao.maps.event.addListener(map, 'idle', () => {
               if (mapInstanceRef.current) {
@@ -184,11 +156,11 @@ const RoomMap: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 최초 렌더링 시에만 지도를 초기화합니다.
 
-  const fetchRoomsNearby = async (lat: number, lng: number) => {
+  const fetchRoomsNearby = useCallback(async (lat: number, lng: number) => {
     setIsLoading(true);
     setError(null);
     try {
-      const params: any = {
+      const params: Record<string, any> = {
         lat,
         lng,
         radiusKm: 3, // 반경을 3km로 설정합니다.
@@ -202,109 +174,131 @@ const RoomMap: React.FC = () => {
         params.options = Array.from(facilities);
       }
 
-      const { data } = await api.get("/map/rooms/near", { params });
+      const token = getAccessToken();
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const { data } = await api.get("/map/rooms/near", {
+        params,
+        headers,
+      });
 
       console.log("API 응답 데이터:", data); // [추가] API 응답을 콘솔에서 확인
 
-      const roomList: RoomSummary[] = Array.isArray(data) ? data.map(mapRoomFromApi) : [];
+      const rawRoomList: RoomSummary[] = Array.isArray(data) ? data.map(mapRoomFromApi) : [];
+
+      // ID를 기준으로 중복된 방을 제거합니다.
+      const uniqueRooms = Array.from(new Map(rawRoomList.map(room => [room.id, room])).values());
+      // id가 없는 데이터는 필터링합니다.
+      const roomList = uniqueRooms.filter(room => room.id != null);
+
       setRooms(roomList); // 방 목록 상태 업데이트
 
       console.log("매핑된 방 목록:", roomList); // [추가] 매핑된 데이터를 콘솔에서 확인
 
-      updateMarkers(roomList);
     } catch (err) {
       console.error("주변 방 정보 로딩 실패:", err); // [추가] 실제 에러를 콘솔에 출력
       setError("주변 방 정보를 불러오는 중 오류가 발생했습니다.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [priceRange, roomType, facilities]);
 
-  const updateMarkers = (rooms: RoomSummary[]) => {
-    if (!clustererRef.current) return;
+  // useMemo를 사용하여 마커 객체들을 메모이제이션합니다.
+  // rooms 배열이 변경될 때만 마커를 다시 생성합니다.
+  const markers = useMemo(() => {    
+    // 1. 그룹화 기준 거리를 30m로 고정
+    const distanceThreshold = 30;
 
-    // 기존 인포윈도우 닫기
-    if (infoWindowRef.current) {
-      infoWindowRef.current.close();
-      infoWindowRef.current = null;
-    }
+    // 2. 수동 클러스터링 로직
+    const clusters: RoomSummary[][] = [];
+    const clusteredRoomIds = new Set<number>();
 
-    
-    // 방(숙소) 마커에 사용할 커스텀 아이콘을 설정합니다.
-    console.log(`${rooms.length}개의 마커를 생성합니다.`); // [추가] 생성될 마커 수 확인
-    const roomMarkerImageSrc = 'http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png'; // 주황색 마커 아이콘
-    const imageSize = new window.kakao.maps.Size(33, 36); // 마커 이미지의 크기
-    const imageOption = { offset: new window.kakao.maps.Point(16, 36) }; // 마커의 좌표에 일치시킬 이미지 안의 좌표
-    
-    const roomMarkerImage = new window.kakao.maps.MarkerImage(roomMarkerImageSrc, imageSize, imageOption);
-    
-    
-    const markers = rooms.map((room) => {
-      if (room.latitude && room.longitude && room.id) { // room.id 추가
-        const markerPosition = new window.kakao.maps.LatLng(room.latitude, room.longitude);
-        const marker = new window.kakao.maps.Marker({
-          position: markerPosition,
-          title: room.title,
-          image: roomMarkerImage, // 커스텀 마커 아이콘을 적용합니다.
-        });
+    const getDistanceInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+      const R = 6371e3; // metres
+      const φ1 = lat1 * Math.PI/180; const φ2 = lat2 * Math.PI/180;
+      const Δφ = (lat2-lat1) * Math.PI/180; const Δλ = (lon2-lon1) * Math.PI/180;
+      const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    };
 
-        // 인포윈도우 내용 구성
-        const roomImageUrl = room.images?.[0]?.imageUrl ? resolveRoomImageUrl(room.images[0].imageUrl) : 'https://via.placeholder.com/150x80?text=No+Image';
-        const infoWindowContent = `
-          <div style="padding:5px;font-size:12px;width:150px;text-align:center;">
-            <img src="${roomImageUrl}" style="width:100%;height:80px;object-fit:cover;margin-bottom:5px;" onerror="this.onerror=null;this.src='https://via.placeholder.com/150x80?text=No+Image';" />
-            <div style="font-weight:bold;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${room.title}</div>
-            <div style="margin-bottom:5px;">${room.rentPrice.toLocaleString()}원</div>
-            ${room.id ? `<a href="/rooms/${room.id}" style="color:blue;text-decoration:underline;cursor:pointer;" onclick="event.preventDefault(); window.navigateToRoomDetail(${room.id});">상세보기</a>` : ''}
-          </div>
-        `;
+    rooms.forEach(room => {
+      if (!room.id || clusteredRoomIds.has(room.id) || !room.latitude || !room.longitude) return;
 
-        // 마커에 클릭 이벤트 리스너 추가
-        window.kakao.maps.event.addListener(marker, 'click', () => {
-          // 기존 인포윈도우가 있다면 닫기
-          if (infoWindowRef.current) {
-            infoWindowRef.current.close();
-          }
-          const infowindow = new window.kakao.maps.InfoWindow({
-            content: infoWindowContent,
-            removable: true, // 닫기 버튼 표시
-          });
-          infowindow.open(mapInstanceRef.current, marker);
-          infoWindowRef.current = infowindow; // 현재 열린 인포윈도우 저장
-        });
+      const currentCluster: RoomSummary[] = [room];
+      clusteredRoomIds.add(room.id);
 
-        return marker;
+      rooms.forEach(targetRoom => {
+        if (!targetRoom.id || clusteredRoomIds.has(targetRoom.id) || !targetRoom.latitude || !targetRoom.longitude) return;
+        const distance = getDistanceInMeters(room.latitude!, room.longitude!, targetRoom.latitude, targetRoom.longitude);
+        if (distance <= distanceThreshold) {
+          currentCluster.push(targetRoom);
+          clusteredRoomIds.add(targetRoom.id);
+        }
+      });
+      clusters.push(currentCluster);
+    });
+
+    // 3. 클러스터/단일 오버레이 생성
+    return clusters.map(cluster => {
+      const representativeRoom = cluster[0];
+      if (!representativeRoom.latitude || !representativeRoom.longitude || !representativeRoom.id) return null;
+
+      const position = new window.kakao.maps.LatLng(representativeRoom.latitude, representativeRoom.longitude);
+      let contentText = '';
+      const isSelected = cluster.some(room => room.id === selectedRoomId);
+
+      if (cluster.length > 1) {
+        const otherCount = cluster.length - 1;
+        contentText = `${representativeRoom.rentPrice.toLocaleString()}원 외 ${otherCount}개`;
+      } else {
+        contentText = `${representativeRoom.rentPrice.toLocaleString()}원`;
       }
-      return null;
-    }).filter((marker): marker is any => marker !== null);
 
-    clustererRef.current.clear();
-    clustererRef.current.addMarkers(markers);
-  };
+      const content = `<div style="background-color:${isSelected ? '#ff5722' : '#fff'};color:${isSelected ? '#fff' : '#000'};border:1px solid #888;border-radius:4px;padding:4px 8px;font-size:12px;font-weight:bold;white-space:nowrap;cursor:pointer;transition:background-color 0.2s, color 0.2s;">${contentText}</div>`;
+
+      const overlay = new window.kakao.maps.CustomOverlay({ position, content, yAnchor: 1 });
+      overlay.cluster = cluster;
+      overlay.customOnClick = () => handleRoomItemClick(cluster);
+      return overlay;
+    }).filter((overlay): overlay is any => overlay !== null);
+
+  }, [rooms, selectedRoomId]);
+
+  // 생성된 오버레이들을 지도에 업데이트하는 useEffect
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    if (!map.customOverlays) map.customOverlays = [];
+    map.customOverlays.forEach((overlay: any) => overlay.setMap(null));
+    map.customOverlays = [];
+
+    markers.forEach((overlay: any) => {
+      overlay.setMap(map);
+      overlay.a.addEventListener('click', overlay.customOnClick);
+      map.customOverlays.push(overlay);
+    });
+  }, [markers]);
 
   // 지도 컨테이너의 크기 변경을 감지하고 relayout을 호출하는 useEffect
   useEffect(() => {
     const mapContainer = mapRef.current;
     if (!mapContainer) return;
 
-    // ResizeObserver를 생성하고 콜백 함수를 정의합니다.
     const observer = new ResizeObserver(() => {
       if (mapInstanceRef.current) {
-        // 지도 컨테이너 크기가 변경될 때마다 relayout 함수를 호출합니다.
         mapInstanceRef.current.relayout();
       }
     });
-
-    // mapContainer에 대한 관찰을 시작합니다.
     observer.observe(mapContainer);
 
-    // 컴포넌트가 언마운트될 때 관찰을 중단합니다.
     return () => observer.disconnect();
   }, []);
 
   const handleApplyFilter = () => {
     if (!mapInstanceRef.current) return;
     const center = mapInstanceRef.current.getCenter();
+    setSelectedRoomId(null); // 필터 적용 시 선택 해제
     fetchRoomsNearby(center.getLat(), center.getLng());
     setIsFilterModalOpen(false); // 필터 적용 후 모달을 닫습니다.
   };
@@ -313,12 +307,9 @@ const RoomMap: React.FC = () => {
     setRoomType("");
     setPriceRange(defaultPriceRange);
     setFacilities(new Set());
+    setSelectedRoomId(null); // 필터 초기화 시 선택 해제
+    // 상태 변경 후 useEffect가 데이터 fetching을 처리하므로 모달만 닫습니다.
     setIsFilterModalOpen(false);
-    // 즉시 검색을 원하면 아래 주석을 해제하세요.
-    // if (mapInstanceRef.current) {
-    //   const center = mapInstanceRef.current.getCenter();
-    //   fetchRoomsNearby(center.getLat(), center.getLng());
-    // }
   };
 
   const handleSearch = () => {
@@ -327,6 +318,7 @@ const RoomMap: React.FC = () => {
     new window.kakao.maps.services.Places().keywordSearch(searchQuery, (data: any, status: any) => {
       if (status === window.kakao.maps.services.Status.OK) {
         const newPos = new window.kakao.maps.LatLng(data[0].y, data[0].x);
+        setSelectedRoomId(null); // 새로운 지역 검색 시 선택 해제
         mapInstanceRef.current.setCenter(newPos);
         fetchRoomsNearby(newPos.getLat(), newPos.getLng());
         setSearchQuery(""); // 검색 후 검색창 내용 초기화
@@ -342,6 +334,33 @@ const RoomMap: React.FC = () => {
     }
   };
 
+  // 가격 포맷팅 함수
+  const formatPriceLabel = (value: number) => {
+    if (value >= 2000000) {
+      return '200만+';
+    }
+    if (value === 0) return '0원';
+    return `${value / 10000}만`;
+  };
+
+  // 목록에서 방 클릭 시 호출될 함수
+  const handleRoomItemClick = (clusterOrRoom: RoomSummary[] | RoomSummary) => {
+    const cluster = Array.isArray(clusterOrRoom) ? clusterOrRoom : [clusterOrRoom];
+    const representativeRoom = cluster[0];
+
+    if (!mapInstanceRef.current || !representativeRoom.latitude || !representativeRoom.longitude || !representativeRoom.id) return;
+
+    // 1. 지도 이동
+    const position = new window.kakao.maps.LatLng(representativeRoom.latitude, representativeRoom.longitude);
+    mapInstanceRef.current.panTo(position);
+
+    // 2. 클릭된 방(또는 클러스터의 대표 방)의 ID를 상태로 저장
+    setSelectedRoomId(representativeRoom.id);
+
+    // 클러스터를 클릭한 경우, 해당 클러스터의 모든 방을 보여주기 위해
+    // displayedRooms 로직에서 selectedRoomId를 사용하므로, 여기서는 ID만 설정하면 됨
+  };
+
   const modalStyle = {
     position: 'absolute' as 'absolute',
     top: '50%',
@@ -353,6 +372,23 @@ const RoomMap: React.FC = () => {
     p: 4,
   };
 
+  // 목록에 표시할 방 목록을 결정합니다.
+  const displayedRooms = useMemo(() => {
+    if (selectedRoomId) {
+      // markers 배열에서 해당 클러스터를 찾습니다.
+      const selectedMarker = markers.find(marker =>
+        marker.cluster.some((room: RoomSummary) => room.id === selectedRoomId)
+      );
+
+      if (selectedMarker) {
+        return selectedMarker.cluster;
+      }
+      // 만약 markers에서 못찾는 경우(엣지 케이스)를 대비해 단일 방이라도 보여줍니다.
+      const selectedRoom = rooms.find(room => room.id === selectedRoomId);
+      return selectedRoom ? [selectedRoom] : [];
+    }
+    return rooms;
+  }, [rooms, selectedRoomId, markers]);
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <SiteHeader activePath="/rooms" />
@@ -385,7 +421,15 @@ const RoomMap: React.FC = () => {
 
             {/* 주변 방 목록 헤더 및 필터 버튼 */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, mb: 1 }}>
-              <Typography variant="h6">주변 방 목록</Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="h6">주변 방 목록</Typography>
+                {displayedRooms.length > 0 && <Chip label={`총 ${displayedRooms.length}개`} size="small" />}
+                {selectedRoomId && (
+                  <Button size="small" variant="text" onClick={() => setSelectedRoomId(null)} sx={{ ml: 1 }}>
+                    전체 보기
+                  </Button>
+                )}
+              </Stack>
               <Button variant="outlined" size="small" onClick={() => setIsFilterModalOpen(true)}>
                 필터
               </Button>
@@ -395,15 +439,23 @@ const RoomMap: React.FC = () => {
           {/* 주변 방 목록 */}
           <Box sx={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto', pt: 1 }}>
             <List dense>
-              {rooms.length === 0 ? (
+              {displayedRooms.length === 0 ? (
                 <ListItem key="no-rooms-found">
                   <ListItemText primary="주변에 방이 없습니다." secondary="지도를 이동하거나 필터를 변경해보세요." />
                 </ListItem>
               ) : (
-                rooms.map((room) => (
+                displayedRooms.map((room) => (
                   [
-                    <ListItem key={room.id} disablePadding>
-                      <ListItemButton onClick={() => room.id && navigate(`/rooms/${room.id}`)} >
+                    <ListItem
+                      key={room.id}
+                      id={`room-item-${room.id}`}
+                      disablePadding
+                      sx={{
+                        backgroundColor: selectedRoomId === room.id ? 'action.hover' : 'transparent',
+                        transition: 'background-color 0.3s',
+                      }}
+                    >
+                      <ListItemButton onClick={() => navigate(`/rooms/${room.id}`)}>
                           <ListItemAvatar>
                             <Avatar
                               variant="rounded"
@@ -423,7 +475,7 @@ const RoomMap: React.FC = () => {
                 ))
               )}
             </List>
-          </Box>
+          </Box>          
         </Paper>
         {/* 오른쪽 지도 영역 */}
         <Box ref={mapRef} sx={{ width: '100%', height: '100%' }} />
@@ -440,9 +492,15 @@ const RoomMap: React.FC = () => {
           aria-labelledby="filter-modal-title"
         >
           <Box sx={modalStyle}>
-            <Typography id="filter-modal-title" variant="h6" component="h2" sx={{ mb: 2 }}>
-              필터
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography id="filter-modal-title" variant="h6" component="h2">
+                필터
+              </Typography>
+              <IconButton onClick={() => setIsFilterModalOpen(false)} sx={{ p: 0.5 }}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+
             <Stack spacing={3}>
               <Stack spacing={1}>
                 <Typography variant="subtitle2" color="text.secondary">
@@ -465,12 +523,13 @@ const RoomMap: React.FC = () => {
                   value={priceRange}
                   onChange={handlePriceChange}
                   valueLabelDisplay="auto"
+                  valueLabelFormat={formatPriceLabel} // 툴팁 포맷 적용
                   min={0}
-                  max={5000000}
-                  step={50000}
+                  max={2000000}
+                  step={10000}
                 />
                 <Typography variant="caption" color="text.secondary">
-                  {priceRange[0].toLocaleString()}원 ~ {priceRange[1].toLocaleString()}원
+                  {formatPriceLabel(priceRange[0])} ~ {formatPriceLabel(priceRange[1])}
                 </Typography>
               </Stack>
 

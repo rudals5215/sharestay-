@@ -74,7 +74,7 @@ export {
 
 // const api = axios.create({
 // baseURL: import.meta.env.VITE_API_BASE,
-// headers: { "Content-Type": "application/json" },
+// headers: { "Content-Type": "application/json-" },
 // });
 
 // // 토큰/유저정보 관리

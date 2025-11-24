@@ -59,6 +59,7 @@ export interface RoomRequestPayload {
 
 export interface RoomApiResponse {
   id: number;
+  roomId?: number; // roomId 필드 추가
   title: string;
   rentPrice: number;
   address: string;
@@ -84,20 +85,22 @@ export interface ShareLinkResponse {
 
 export const mapRoomFromApi = (
   room: RoomApiResponse & {
-    latitude?: number; longitude?: number
+    latitude?: number; longitude?: number;
   }
 ): RoomSummary => {
+  const roomId = room.roomId ?? room.id; // roomId가 있으면 사용, 없으면 id 사용
+
   const normalizedImages: RoomImage[] =
     room.images?.map((image) => ({
       id: image.id,
       imageId: image.id,
-      roomId: room.id,
+      roomId: roomId,
       imageUrl: resolveRoomImageUrl(image.imageUrl) ?? image.imageUrl ?? "",
     })) ?? [];
 
   return {
-    roomId: room.id,
-    id: room.id,
+    roomId: roomId,
+    id: roomId,
     title: room.title,
     rentPrice: room.rentPrice,
     address: room.address,
