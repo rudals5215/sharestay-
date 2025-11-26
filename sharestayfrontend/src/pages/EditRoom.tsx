@@ -364,7 +364,7 @@ export default function EditRoom() {
               <Stack spacing={4}>
                 <SectionTitle icon={<HomeWork color="primary" />} title="기본 정보" />
                 <Grid container spacing={3}>
-                  <Grid item xs={12}>
+                  <Grid size={{ xs: 12 }}>
                     <FormTextField
                       name="title"
                       control={control}
@@ -372,7 +372,7 @@ export default function EditRoom() {
                       placeholder="예: 홍대입구역 도보 3분 원룸"
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormTextField
                       name="rentPrice"
                       control={control}
@@ -385,7 +385,7 @@ export default function EditRoom() {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormTextField
                       name="type"
                       control={control}
@@ -399,7 +399,7 @@ export default function EditRoom() {
                       ))}
                     </FormTextField>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormTextField
                       name="availabilityStatus"
                       control={control}
@@ -413,7 +413,7 @@ export default function EditRoom() {
                       ))}
                     </FormTextField>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormTextField
                       name="address"
                       control={control}
@@ -428,7 +428,7 @@ export default function EditRoom() {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormTextField
                       name="latitude"
                       control={control}
@@ -436,7 +436,7 @@ export default function EditRoom() {
                       placeholder="37.12345"
                     />
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <FormTextField
                       name="longitude"
                       control={control}
