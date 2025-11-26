@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -29,7 +30,7 @@ public class User {
     private String loginType; // local or google
 
     @Column(nullable = false, unique = true)
-    private String nickname;
+    String nickname = "google_" + UUID.randomUUID().toString().substring(0, 8);
 
     @Column(name = "address")
     private String address;
@@ -82,15 +83,17 @@ public class User {
 
     public static User createGoogleUser(String email, String encodedPassword) {
         String safePassword = encodedPassword != null ? encodedPassword : "";
-        User user = new User(email,
+        User user = new User(
+                email, // username(email)
                 safePassword,
                 "google",
-                "GoogleUser",
+                "google_" + UUID.randomUUID().toString().substring(0, 6), // unique nickname
                 null,
                 "000-0000-0000",
                 "GUEST",
                 null,
-                false); // 새로 생성된 구글 유저는 밴 상태가 아님
+                false
+        );
         return user;
     }
 

@@ -44,19 +44,43 @@ export default function Login() {
 
   const [searchParams] = useSearchParams();
 
+  // 🔥 [1] 구글 로그인 시 error=banned_user 처리
   useEffect(() => {
     const error = searchParams.get("error");
     if (error === "banned_user") {
       alert("정지된 계정입니다. 관리자에게 문의하세요.");
-      // URL에서 에러 파라미터를 제거하여, 페이지를 새로고침해도 알림이 다시 뜨지 않도록 할 수 있습니다.
-      // (선택 사항)
-      // window.history.replaceState({}, document.title, "/login");
+      return; // 에러 상태에서는 로그인 로직 실행 금지
     }
   }, [searchParams]);
 
+  // 🔥 [2] 구글 로그인 성공 처리 (accessToken 있을 때만)
+  useEffect(() => {
+    const accessToken = searchParams.get("accessToken");
+    const refreshToken = searchParams.get("refreshToken");
+    const username = searchParams.get("username");
+    const error = searchParams.get("error");
+
+    if (error) return; // 에러인 경우 로그인 시도 금지
+
+    if (accessToken && refreshToken) {
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem("username", username || "");
+
+      window.location.href = "/";
+    }
+  }, [searchParams]);
+
+  // 🔥 [3] 로컬 로그인 → 여기서도 banned 처리 catch됨
   const onSubmit = async (values: FormValues) => {
-    await login(values.username, values.password);
-    window.location.href = "/";
+    try {
+      await login(values.username, values.password);
+      window.location.href = "/";
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "로그인에 실패했습니다.";
+      alert(message);
+    }
   };
 
   const handleGoogleLogin = () => {
@@ -84,6 +108,7 @@ export default function Login() {
         }}
       >
         <Stack spacing={3} component="form" onSubmit={handleSubmit(onSubmit)}>
+
           <Box textAlign="center">
             <Typography
               component={RouterLink}
@@ -97,6 +122,7 @@ export default function Login() {
             </Typography>
           </Box>
 
+          {/* 이메일 입력 */}
           <Stack spacing={1}>
             <TextField
               label="이메일"
@@ -114,6 +140,7 @@ export default function Login() {
             />
           </Stack>
 
+          {/* 비밀번호 입력 */}
           <Stack spacing={1}>
             <TextField
               label="비밀번호"
@@ -131,6 +158,8 @@ export default function Login() {
               }}
             />
           </Stack>
+
+          {/* 회원가입 / 비밀번호 찾기 */}
           <Stack
             direction="row"
             justifyContent="space-between"
@@ -152,6 +181,7 @@ export default function Login() {
             </Link>
           </Stack>
 
+          {/* 로컬 로그인 버튼 */}
           <Button
             type="submit"
             variant="contained"
@@ -161,13 +191,15 @@ export default function Login() {
           >
             {isSubmitting ? "로그인 중..." : "로그인"}
           </Button>
+
+          {/* 구글 로그인 버튼 */}
           <Button
             variant="outlined"
             size="large"
             onClick={handleGoogleLogin}
             sx={{
               borderRadius: 2,
-              py: 1.4, 
+              py: 1.4,
               fontWeight: 700,
               borderColor: "#040505ff",
               color: "#4285F4",
@@ -175,8 +207,10 @@ export default function Login() {
           >
             구글 로그인
           </Button>
+
         </Stack>
       </Paper>
     </Box>
   );
 }
+챙ㄷ 

@@ -23,7 +23,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         Optional<User> user = userRepository.findByUsername(username);
 
         UserBuilder builder = null;
-        if (user.isPresent()) {
+        if(user.isPresent()) {
             User currentUser = user.get();
             builder = org.springframework.security.core.userdetails.User.withUsername(username);
             builder.password(currentUser.getPassword());
@@ -32,5 +32,6 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             throw new UsernameNotFoundException("User not found.");
         }
         return builder.build();
+
     }
 }
