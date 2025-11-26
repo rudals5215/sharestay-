@@ -9,6 +9,7 @@ import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.entity.*;
 
 
+import com.example.sharestay.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -26,6 +27,7 @@ public class SharestayApplication implements CommandLineRunner {
     private final HostRepository hostRepository;
     private final RoomRepository roomRepository;
     private final FavoriteRepository favoriteRepository;
+    private final RoomService roomService;
 
     public static void main(String[] args) {
         SpringApplication.run(SharestayApplication.class, args);
@@ -184,7 +186,7 @@ public class SharestayApplication implements CommandLineRunner {
         Room room1 = new Room(
                 host1,
                 "홍대입구 근처 원룸",
-                55.5,
+                550000,
                 "서울특별시 마포구 서교동 12-3",
                 "원룸",
                 37.557123,
@@ -196,7 +198,7 @@ public class SharestayApplication implements CommandLineRunner {
         Room room2 = new Room(
                 host1,
                 "합정역 루프탑 사용 가능 쉐어하우스",
-                45.0,
+                450000,
                 "서울특별시 마포구 합정동 321-8",
                 "쉐어하우스",
                 37.549911,
@@ -209,7 +211,7 @@ public class SharestayApplication implements CommandLineRunner {
         Room room3 = new Room(
                 host2,
                 "강남역 도보 5분 원룸",
-                80.0,
+                300000,
                 "서울특별시 강남구 역삼동 123-4",
                 "원룸",
                 37.497942,
@@ -221,7 +223,7 @@ public class SharestayApplication implements CommandLineRunner {
         Room room4 = new Room(
                 host2,
                 "건대입구역 풀옵션 원룸",
-                58.5,
+                250000,
                 "서울특별시 광진구 화양동 22-10",
                 "원룸",
                 37.540408,
@@ -234,7 +236,7 @@ public class SharestayApplication implements CommandLineRunner {
         Room room5 = new Room(
                 host3,
                 "신촌역 근처 투룸",
-                65.0,
+                400000,
                 "서울특별시 서대문구 창천동 45-7",
                 "투룸",
                 37.559819,
@@ -246,7 +248,7 @@ public class SharestayApplication implements CommandLineRunner {
         Room room6 = new Room(
                 host3,
                 "잠실새내역 오피스텔 원룸",
-                75.0,
+                350000,
                 "서울특별시 송파구 잠실동 200-15",
                 "오피스텔",
                 37.511822,
@@ -277,6 +279,10 @@ public class SharestayApplication implements CommandLineRunner {
         favoriteRepository.save(favorite1);
         favoriteRepository.save(favorite2);
         favoriteRepository.save(favorite3);
+
+
+        // ⚠ 개발용: 더미 데이터에만 한 번 돌리고, 끝난 뒤에는 주석 처리해 두기
+        roomService.backfillShareLinks();
     }
 
 }
