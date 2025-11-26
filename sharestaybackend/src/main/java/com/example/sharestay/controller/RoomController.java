@@ -49,6 +49,19 @@ public class RoomController {
         );
     }
 
+    /**
+     * Frontend simple search endpoint compatibility.
+     * Reuses the main searchRooms logic but only takes region.
+     */
+    @GetMapping("/search/simple")
+    public ResponseEntity<List<RoomResponse>> searchRoomsSimple(
+            @RequestParam(required = false) String region
+    ) {
+        return ResponseEntity.ok(
+                roomService.searchRooms(region, null, null, null, null)
+        );
+    }
+
 
 //    @Operation(summary = "방 이미지 업로드", description = "특정 방에 이미지를 업로드합니다.")
 //    @PostMapping("/{roomId}/images")

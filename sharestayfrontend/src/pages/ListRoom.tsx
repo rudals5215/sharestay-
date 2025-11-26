@@ -298,7 +298,7 @@ export default function ListRoom() {
               />
 
               <Grid container spacing={3}>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <FormTextField
                     name="title"
                     control={control}
@@ -307,7 +307,7 @@ export default function ListRoom() {
                   />
                 </Grid>
 
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <FormTextField
                     name="rentPrice"
                     control={control}
@@ -322,7 +322,7 @@ export default function ListRoom() {
                   />
                 </Grid>
 
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <FormTextField
                     name="type"
                     control={control}
@@ -341,7 +341,7 @@ export default function ListRoom() {
                   </FormTextField>
                 </Grid>
 
-                <Grid item xs={12} md={4}>
+                <Grid size={{ xs: 12, md: 4 }}>
                   <FormTextField
                     name="availabilityStatus"
                     control={control}
@@ -363,7 +363,7 @@ export default function ListRoom() {
               />
 
               <Grid container spacing={3}>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <FormTextField
                     name="address"
                     control={control}
@@ -372,7 +372,7 @@ export default function ListRoom() {
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormTextField
                     name="latitude"
                     control={control}
@@ -381,7 +381,7 @@ export default function ListRoom() {
                   />
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <FormTextField
                     name="longitude"
                     control={control}
@@ -506,7 +506,7 @@ function CheckboxGroup({
   return (
     <Grid container spacing={1.5}>
       {options.map((option) => (
-        <Grid item xs={12} sm={6} md={3} key={option}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={option}>
           <FormControlLabel
             control={
               <Checkbox

@@ -463,7 +463,7 @@ export default function Rooms() {
           </Paper>
 
           <Grid container spacing={4}>
-            <Grid item xs={12} md={3}>
+            <Grid size={{ xs: 12, md: 3 }}>
               <Paper
                 sx={{
                   p: 3,
@@ -538,7 +538,7 @@ export default function Rooms() {
                 </Stack>
               </Paper>
             </Grid>
-            <Grid item xs={12} md={9}>
+            <Grid size={{ xs: 12, md: 9 }}>
               <Stack spacing={3}>
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
@@ -607,7 +607,7 @@ export default function Rooms() {
                         room.images?.[0]?.imageUrl ?? fallbackImage;
                       return (
                         <Grid
-                          item xs={12} sm={6}
+                          size={{ xs: 12, sm: 6 }}
                           key={roomId ?? `${room.title}-${room.address}`}
                           ref={
                             isHighlighted ? highlightedCardRef : undefined
