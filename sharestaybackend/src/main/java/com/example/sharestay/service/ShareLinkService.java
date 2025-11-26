@@ -13,39 +13,44 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ShareLinkService {
     private final RoomRepository roomRepository;
-    private final ShareLinkRepository shareLinkRepository;
+    // private final ShareLinkRepository shareLinkRepository; // ❌ 이거는 사실 안 써도 됨
 
-    @Transactional  // 스프링프레임 워크껄로 import
-    public ShareLinkResponse createShareLink(Long roomId) {
+    // ✅ 이미 Room 저장 시점에 ShareLink가 자동 생성된다는 가정 하에
+    @Transactional(readOnly = true)
+    public ShareLinkResponse getShareLink(Long roomId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found"));
 
-        if (room.getShareLink() != null) {
-//            return room.getShareLink(); // 이미 존재하면 재사용
-
-            return ShareLinkResponse.builder()
-                    .linkUrl(room.getShareLink().getLinkUrl())
-                    .build();
+        ShareLink shareLink = room.getShareLink();
+        if (shareLink == null) {   // 이러면 진짜로 뭔가 꼬인 상황
+            throw new IllegalArgumentException("공유 링크가 존재하지 않습니다.");
         }
 
-        ShareLink link = new ShareLink();
-        link.setRoom(room);
-        shareLinkRepository.save(link);
-        room.setShareLink(link);
-
-        return ShareLinkResponse.builder()
-                .linkUrl(link.getLinkUrl())
-                .build();
-    }
-
-    public ShareLinkResponse getShareLink(Long roomId) {
-        ShareLink shareLink = shareLinkRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("공유 링크가 존재하지 않습니다."));
         return ShareLinkResponse.builder()
                 .linkUrl(shareLink.getLinkUrl())
                 .build();
     }
 
+    // ✅ 필요하다면 “혹시라도 없는 경우 새로 생성”하는 메서드를 이렇게 둘 수 있음
+    @Transactional
+    public ShareLinkResponse createShareLink(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
 
+        // 이미 있으면 그거 재사용
+        if (room.getShareLink() != null) {
+            return ShareLinkResponse.builder()
+                    .linkUrl(room.getShareLink().getLinkUrl())
+                    .build();
+        }
 
+        // 정말 예외적으로 없는 경우만 새로 만들어줌
+        ShareLink shareLink = new ShareLink();
+        room.setShareLink(shareLink);   // 양방향 + cascade
+        roomRepository.save(room);
+
+        return ShareLinkResponse.builder()
+                .linkUrl(shareLink.getLinkUrl())
+                .build();
+    }
 }

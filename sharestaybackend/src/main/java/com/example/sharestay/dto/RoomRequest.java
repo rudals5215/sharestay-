@@ -20,10 +20,12 @@ public class RoomRequest {   // 방 등록, 수정 할 때 필요함
     private double rentPrice;
     private String address;
     private String type;
-    private double latitude;
-    private double longitude;
+
     private int availabilityStatus;
     private String description;
+
+    private double latitude;
+    private double longitude;
 
     public Room toEntity(Host host) {
         return new Room(

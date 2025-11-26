@@ -3,12 +3,10 @@ package com.example.sharestay.service;
 
 import com.example.sharestay.dto.RoomDetailResponse;
 //import com.example.sharestay.dto.RoomImageResponse;
-import com.example.sharestay.entity.Host;
-import com.example.sharestay.entity.RoomImage;
-import com.example.sharestay.entity.User;
+import com.example.sharestay.dto.RoomImageResponse;
+import com.example.sharestay.entity.*;
 import com.example.sharestay.repository.FavoriteRepository;
 import com.example.sharestay.repository.HostRepository;
-import com.example.sharestay.entity.Room;
 import com.example.sharestay.repository.RoomImageRepository;
 import com.example.sharestay.repository.RoomRepository;
 import com.example.sharestay.dto.RoomRequest;
@@ -40,6 +38,11 @@ public class RoomService {
                 .orElseThrow(() -> new IllegalArgumentException("Host not found"));
 
         Room room = request.toEntity(host);
+
+        // 여기서 ShareLink 엔티티를 직접 생성해서 Room과 연관 걸어주기
+        ShareLink shareLink = new ShareLink();
+        room.setShareLink(shareLink);   // 한 줄로 양쪽 세팅 + cascade 로 같이 저장
+        roomRepository.save(room);
 
         // 이미지 업로드 및 RoomImage 엔티티 생성
         if (files != null && !files.isEmpty()) {
@@ -150,9 +153,9 @@ public class RoomService {
     // 공통 변환 메서드 (Entity → DTO)
     private RoomResponse toResponse(Room room) {
 
-        List<String> imageUrls = room.getRoomImages()
+        List<RoomImageResponse> imageUrls = room.getRoomImages()
                 .stream()
-                .map(RoomImage::getImageUrl)
+                .map(img -> new RoomImageResponse(img.getId(), img.getImageUrl()))
                 .toList();
 
         return new RoomResponse(
@@ -164,7 +167,7 @@ public class RoomService {
                 room.getAvailabilityStatus(),
                 room.getDescription(),
                 imageUrls,
-                null
+                room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null
         );
     }
 }

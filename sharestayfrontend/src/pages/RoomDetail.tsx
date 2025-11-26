@@ -23,6 +23,7 @@ import type {
 } from "../types/room";
 import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
 import fallbackImageSrc from "../img/no_img.jpg";
+import ShareIcon from "@mui/icons-material/Share";
 
 const fallbackImage = fallbackImageSrc;
 
@@ -47,7 +48,7 @@ export default function RoomDetail() {
   const [isShareGenerating, setIsShareGenerating] = useState(false);
 
   const shareButtonLabel = useMemo(
-    () => (shareLink ? "공유 링크 복사" : "공유 링크 만들기"),
+    () => (shareLink ? "공유 링크 복사" : "공유"),
     [shareLink]
   );
 
@@ -121,7 +122,7 @@ export default function RoomDetail() {
     if (!roomId) return;
     setIsShareGenerating(true);
     try {
-      let link = shareLink ?? (await tryFetchShareLink());
+      let link = shareLink ?? room?.shareLinkUrl ?? (await tryFetchShareLink());
 
       if (!link) {
         if (!canCreateShareLink) {
@@ -142,10 +143,8 @@ export default function RoomDetail() {
       setShareLink(link);
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link).catch(() => undefined);
-        alert("공유 링크를 클립보드에 복사했습니다.");
-      } else {
-        alert(link);
       }
+      alert(`공유 링크가 준비되었습니다.\n${link}`);
     } catch (err) {
       const status = (err as AxiosError)?.response?.status;
       if (status === 403) {
@@ -300,6 +299,7 @@ export default function RoomDetail() {
                   onClick={handleShareLink}
                   disabled={isShareGenerating}
                   sx={{ borderRadius: 999 }}
+                  startIcon={<ShareIcon />}
                 >
                   {shareButtonLabel}
                 </Button>

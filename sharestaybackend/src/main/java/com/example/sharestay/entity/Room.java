@@ -53,6 +53,13 @@ public class Room {
     @OneToOne(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     private ShareLink shareLink;
 
+    public void setShareLink(ShareLink shareLink) {
+        this.shareLink = shareLink;
+        if (shareLink != null && shareLink.getRoom() != this) {
+            shareLink.setRoom(this);  // 주인 쪽도 맞춰줌
+        }
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id")
     private Host host;

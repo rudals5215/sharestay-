@@ -1,4 +1,4 @@
-// src/pages/ListRoom.tsx
+// src/pages/ListRoom.tsx  방등록
 import {
   Alert,
   Box,
@@ -218,28 +218,44 @@ export default function ListRoom() {
         .filter(Boolean)
         .join("\n\n");
 
-      const payload: RoomRequestPayload = {
-        hostId: hostId!,
-        title: values.title,
-        rentPrice,
-        address: values.address,
-        type: values.type,
-        latitude: latitudeValue ?? 0,
-        longitude: longitudeValue ?? 0,
-        availabilityStatus: availabilityCode,
-        description: composedDescription,
-      };
+        // ⭐ 변경 1: JSON payload 대신 FormData 생성
+    const formData = new FormData();
+    formData.append("hostId", String(hostId!));
+    formData.append("title", values.title);
+    formData.append("rentPrice", String(rentPrice));
+    formData.append("address", values.address);
+    formData.append("type", values.type);
+    formData.append("availabilityStatus", String(availabilityCode));
+    formData.append("description", composedDescription);
+    formData.append("latitude", String(latitudeValue ?? 0));
+    formData.append("longitude", String(longitudeValue ?? 0));
 
-      const { data } = await api.post<RoomApiResponse>("/rooms", payload);
-      const createdRoomId = data?.id ?? (data as { roomId?: number }).roomId;
+      // ⭐ 변경 2: 이미지 파일들을 files 필드로 함께 전송
+    images.forEach((file) => {
+      formData.append("files", file);
+    });
 
-      if (createdRoomId && images.length > 0) {
-        const formData = new FormData();
-        images.forEach((file) => formData.append("files", file));
-        await api.post(`/rooms/${createdRoomId}/images`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+    // ⭐ 변경 3: 엔드포인트 + multipart 전송으로 한 번에 요청
+    //   - api 인스턴스 baseURL이 `http://localhost:8080` 이라면 "/api/rooms"
+    //   - baseURL이 `http://localhost:8080/api` 라면 "/rooms"로 맞추기
+    const { data } = await api.post<RoomApiResponse>(
+      "/rooms", // 🔥 여기 엔드포인트가 핵심
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
       }
+    );
+
+    const createdRoomId = data?.id ?? (data as { roomId?: number }).roomId;
+
+    // ⭐ 변경 4: 별도 /images 업로드 API는 더 이상 호출 X
+    // if (createdRoomId && images.length > 0) {
+    //   const formData = new FormData();
+    //   images.forEach((file) => formData.append("files", file));
+    //   await api.post(`/rooms/${createdRoomId}/images`, formData, {
+    //     headers: { "Content-Type": "multipart/form-data" },
+    //   });
+    // }
 
       alert("룸 정보가 등록되었습니다.");
       handleReset();

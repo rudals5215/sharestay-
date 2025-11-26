@@ -181,7 +181,7 @@ export default function Home() {
     try {
       const regionParam = heroDistrict || heroKeyword || "서울";
       const { data } = await api.get<RoomApiResponse[]>(
-        "/rooms/search/simple",
+        "/rooms/search",   // 여기 뒤에 simple을 지움
         { params: { region: regionParam } }
       );
       const list = Array.isArray(data)
