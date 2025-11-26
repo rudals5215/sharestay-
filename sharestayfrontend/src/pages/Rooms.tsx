@@ -1,4 +1,4 @@
-﻿// src/pages/Rooms.tsx  방검색
+// src/pages/Rooms.tsx  방검색
 import type { AxiosError } from "axios";
 import {
   Box,
@@ -216,7 +216,6 @@ export default function Rooms() {
   }
 }, [keyword, district, roomType, priceRange, favorites]);
 
-
   useEffect(() => {
     const initialKeyword = searchParams.get("keyword") ?? "";
     const initialDistrict = searchParams.get("district") ?? "";
@@ -305,12 +304,15 @@ export default function Rooms() {
 
   const toggleFavorite = async (room: RoomSummary) => {
     const roomId = getRoomId(room);
-    if (!roomId) return;
+    // if (!roomId) return;
     if (!user?.id) {
       alert("로그인이 필요한 기능입니다.");
       return;
     }
-    const currentlyFavorite = favorites.has(roomId);
+    // const currentlyFavorite = favorites.has(roomId);
+    // 여기 두 줄이 추가된 부분임. 나중에 재수정할 수도 있음.
+    if (!roomId) return;
+    const currentlyFavorite = favorites.has(roomId); // user.id 체크 후 roomId 체크
     setFavorites((prev) => {
       const next = new Set(prev);
       if (currentlyFavorite) {
@@ -462,7 +464,7 @@ export default function Rooms() {
           </Paper>
 
           <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid item xs={12} md={3}>
               <Paper
                 sx={{
                   p: 3,
@@ -537,7 +539,7 @@ export default function Rooms() {
                 </Stack>
               </Paper>
             </Grid>
-            <Grid size={{ xs: 12, md: 9 }}>
+            <Grid item xs={12} md={9}>
               <Stack spacing={3}>
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
@@ -606,7 +608,7 @@ export default function Rooms() {
                         room.images?.[0]?.imageUrl ?? fallbackImage;
                       return (
                         <Grid
-                          size={{ xs: 12, sm: 6 }}
+                          item xs={12} sm={6}
                           key={roomId ?? `${room.title}-${room.address}`}
                           ref={
                             isHighlighted ? highlightedCardRef : undefined

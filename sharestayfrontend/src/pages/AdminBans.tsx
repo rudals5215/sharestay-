@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -15,6 +16,7 @@ import {
   TextField,
   Typography,
   CircularProgress,
+  MenuItem,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
@@ -31,6 +33,7 @@ interface BanRecord {
 interface User {
   id: number;
   username: string;
+  nickname?: string;
 }
 
 export default function AdminBans() {
@@ -56,13 +59,27 @@ export default function AdminBans() {
     setLoading(false);
   };
 
+  // 날짜 및 시간 형식을 안전하게 변환하는 헬퍼 함수
+  const formatDateTime = (dateString?: string | null) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) { // 유효하지 않은 날짜인 경우
+        return "-";
+      }
+      return date.toLocaleString();
+    } catch (e) {
+      return "-"; // 변환 중 오류 발생 시
+    }
+  };
+
   useEffect(() => {
-    fetchUsers();
+    void fetchUsers();
   }, []);
 
   useEffect(() => {
     if (selectedUserId) {
-      fetchBanRecords(selectedUserId);
+      void fetchBanRecords(selectedUserId);
     }
   }, [selectedUserId]);
 
@@ -84,7 +101,7 @@ export default function AdminBans() {
         expireAt: endDate || null,
         memo,
       });
-      fetchBanRecords(selectedUserId);
+      void fetchBanRecords(selectedUserId);
       handleCloseDialog();
     } catch (err) {
       alert("정지 등록 중 오류가 발생했습니다.");
@@ -95,7 +112,7 @@ export default function AdminBans() {
     if (!selectedUserId) return;
     try {
       await api.delete(`/bans/${banId}`);
-      fetchBanRecords(selectedUserId);
+      void fetchBanRecords(selectedUserId);
     } catch (err) {
       alert("정지 해제 중 오류가 발생했습니다.");
     }
@@ -130,17 +147,16 @@ export default function AdminBans() {
         <TextField
             select
             label="사용자 선택"
-            value={selectedUserId?.toString() ?? ""}
+            value={selectedUserId ?? ""}
             onChange={(e) => setSelectedUserId(Number(e.target.value))}
-            SelectProps={{ native: true }}
             sx={{ mb: 2, minWidth: 240 }}
             size="small"
           >
-          <option value="">선택하세요</option>
+          <MenuItem value=""><em>선택하세요</em></MenuItem>
           {users.map((user) => (
-            <option key={user.id} value={user.id}>
-              {user.username}
-            </option>
+            <MenuItem key={user.id} value={user.id}>
+              {user.nickname ?? user.username} ({user.username})
+            </MenuItem>
           ))}
         </TextField>
 
@@ -165,16 +181,14 @@ export default function AdminBans() {
                 {banRecords.map((ban) => (
                   <TableRow key={ban.id}>
                     <TableCell>{ban.reason}</TableCell>
-                    <TableCell>
-                      {new Date(ban.bannedAt).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      {ban.endDate
-                        ? new Date(ban.endDate).toLocaleString()
-                        : "-"}
-                    </TableCell>
+                    <TableCell>{formatDateTime(ban.bannedAt)}</TableCell>
+                    <TableCell>{formatDateTime(ban.endDate)}</TableCell>
                     <TableCell>{ban.memo ?? "-"}</TableCell>
-                    <TableCell>{ban.isActive ? "활성" : "해제"}</TableCell>
+                    <TableCell>
+                      {ban.isActive ? (
+                        <Chip label="활성" color="error" size="small" />
+                      ) : (<Chip label="해제" size="small" />)}
+                    </TableCell>
                     <TableCell align="right">
                       {ban.isActive && (
                         <Button

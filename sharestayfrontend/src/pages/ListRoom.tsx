@@ -31,6 +31,9 @@ import type {
   RoomRequestPayload,
 } from "../types/room";
 
+// ------------------------------
+// Zod Schema
+// ------------------------------
 const roomSchema = z.object({
   title: z.string().min(1, "모집 제목을 입력해주세요."),
   rentPrice: z
@@ -65,6 +68,9 @@ const roomSchema = z.object({
 
 type FormValues = z.infer<typeof roomSchema>;
 
+// ------------------------------
+// Options
+// ------------------------------
 const roomTypes = [
   { value: "ONE_ROOM", label: "원룸" },
   { value: "TWO_ROOM", label: "투룸" },
@@ -271,6 +277,7 @@ export default function ListRoom() {
       alert(message);
     }
   };
+
   return (
     <Box sx={{ bgcolor: "#f4f6fb", minHeight: "100vh" }}>
       <SiteHeader activePath="/list-room" />
@@ -305,8 +312,9 @@ export default function ListRoom() {
                 icon={<HomeWork color="primary" />}
                 title="기본 정보"
               />
+
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12 }}>
+                <Grid item xs={12}>
                   <FormTextField
                     name="title"
                     control={control}
@@ -314,7 +322,8 @@ export default function ListRoom() {
                     placeholder="예: 강남역 도보 5분 깔끔한 원룸 룸메이트 구해요"
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
+
+                <Grid item xs={12} md={4}>
                   <FormTextField
                     name="rentPrice"
                     control={control}
@@ -328,7 +337,8 @@ export default function ListRoom() {
                     }}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
+
+                <Grid item xs={12} md={4}>
                   <FormTextField
                     name="type"
                     control={control}
@@ -346,7 +356,8 @@ export default function ListRoom() {
                     ))}
                   </FormTextField>
                 </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
+
+                <Grid item xs={12} md={4}>
                   <FormTextField
                     name="availabilityStatus"
                     control={control}
@@ -366,8 +377,9 @@ export default function ListRoom() {
                 icon={<LocationOn color="primary" />}
                 title="주소 및 위치"
               />
+
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12 }}>
+                <Grid item xs={12}>
                   <FormTextField
                     name="address"
                     control={control}
@@ -375,7 +387,8 @@ export default function ListRoom() {
                     placeholder="예: 서울특별시 강남구 역삼동 123-45"
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
+
+                <Grid item xs={12} md={6}>
                   <FormTextField
                     name="latitude"
                     control={control}
@@ -383,7 +396,8 @@ export default function ListRoom() {
                     placeholder="예: 37.4981"
                   />
                 </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
+
+                <Grid item xs={12} md={6}>
                   <FormTextField
                     name="longitude"
                     control={control}
@@ -434,6 +448,7 @@ export default function ListRoom() {
                 <Button variant="outlined" onClick={handleImagePick}>
                   사진 추가 ({images.length}/6)
                 </Button>
+
                 {images.length > 0 && (
                   <Stack spacing={0.5}>
                     {images.map((file) => (
@@ -443,6 +458,7 @@ export default function ListRoom() {
                     ))}
                   </Stack>
                 )}
+
                 <Typography variant="caption" color="text.secondary">
                   최대 6장까지 업로드 가능합니다. (JPG, PNG 형식)
                 </Typography>
@@ -474,6 +490,9 @@ export default function ListRoom() {
   );
 }
 
+// ------------------------------
+// Components
+// ------------------------------
 function SectionTitle({
   icon,
   title,
@@ -503,7 +522,7 @@ function CheckboxGroup({
   return (
     <Grid container spacing={1.5}>
       {options.map((option) => (
-        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={option}>
+        <Grid item xs={12} sm={6} md={3} key={option}>
           <FormControlLabel
             control={
               <Checkbox
