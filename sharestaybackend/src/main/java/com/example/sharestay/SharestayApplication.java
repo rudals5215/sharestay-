@@ -10,12 +10,14 @@ import com.example.sharestay.entity.*;
 
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+@Slf4j
 @SpringBootApplication
 @RequiredArgsConstructor
 public class SharestayApplication implements CommandLineRunner {
@@ -45,10 +47,11 @@ public class SharestayApplication implements CommandLineRunner {
                 "010-1234-5678",
                 "ADMIN",
                 "금연 · 반려동물 없음 · 조용한 활동 선호",
-                false // banned 상태 추가
+                true // banned 상태
         );
         userRepository.save(user);
 
+        log.info("//============================================Banned? " + userRepository.findByUsername("kim1@test.com").get().isBanned());
 
         Host host1 = new Host(
                 "깨끗한 방을 좋아하는 호스트입니다.",  // introduction

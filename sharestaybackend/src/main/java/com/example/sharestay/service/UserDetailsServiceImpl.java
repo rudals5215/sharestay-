@@ -2,6 +2,7 @@ package com.example.sharestay.service;
 
 import com.example.sharestay.entity.User;
 import com.example.sharestay.repository.UserRepository;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -20,18 +21,23 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Optional<User> user = userRepository.findByUsername(username);
+        Optional<User> userOpt = userRepository.findByUsername(username);
 
-        UserBuilder builder = null;
-        if(user.isPresent()) {
-            User currentUser = user.get();
-            builder = org.springframework.security.core.userdetails.User.withUsername(username);
-            builder.password(currentUser.getPassword());
-            builder.roles(currentUser.getRole());
-        } else {
+        if (userOpt.isEmpty()) {
             throw new UsernameNotFoundException("User not found.");
         }
-        return builder.build();
 
+        User currentUser = userOpt.get();
+
+        // ⭐ 핵심: 밴된 경우 인증 차단
+        if (currentUser.isBanned()) {
+            throw new DisabledException("User is banned.");
+        }
+
+        UserBuilder builder = org.springframework.security.core.userdetails.User.withUsername(username);
+        builder.password(currentUser.getPassword());
+        builder.roles(currentUser.getRole());
+
+        return builder.build();
     }
 }

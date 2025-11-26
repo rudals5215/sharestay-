@@ -1,6 +1,7 @@
 package com.example.sharestay.security;
 
 import com.example.sharestay.entity.User;
+import com.example.sharestay.exception.BannedUserException;
 import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,19 +46,6 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
         // 1) 사용자 조회
         User user = userRepository.findByUsername(email).orElse(null);
 
-        // 2) 존재하는 경우 → 밴 체크
-        if (user != null && user.isBanned()) {
-            log.warn("Banned user login attempt: {}", email);
-
-            String redirectUrlWithError = UriComponentsBuilder
-                    .fromHttpUrl(redirectUrl)
-                    .queryParam("error", "banned_user")
-                    .build(true)
-                    .toUriString();
-
-            response.sendRedirect(redirectUrlWithError);
-            return;
-        }
 
         // 3) 구글 신규 사용자 자동 생성
         if (user == null) {
@@ -69,6 +57,13 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
 
             user = User.createGoogleUser(email, encodedPassword);
             userRepository.save(user);
+        }
+
+
+        // 2) 존재하는 경우 → 밴 체크
+        if (user != null && user.isBanned()) {
+            log.warn("Banned user login attempt: {}", email);
+            throw new BannedUserException("정지된 계정입니다. 관리자에게 문의하세요.");
         }
 
         // 4) 정상 사용자 → JWT 발급

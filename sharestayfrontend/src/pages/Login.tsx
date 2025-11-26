@@ -8,8 +8,7 @@ import {
   Stack,
   TextField,
   Typography,
-} 
-from "@mui/material";
+} from "@mui/material";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useForm } from "react-hook-form";
@@ -18,9 +17,9 @@ import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../auth/useAuth";
 import { Link as RouterLink, useSearchParams } from "react-router-dom";
+import axios from "axios";
 
-// const GOOGLE_OAUTH2_URL = "http://localhost:8080/login/oauth2/code/sharestay/google";
-const GOOGLE_OAUTH2_URL ="http://localhost:8080/oauth2/authorization/google";
+const GOOGLE_OAUTH2_URL = "http://localhost:8080/oauth2/authorization/google";
 
 const schema = z.object({
   username: z
@@ -44,39 +43,48 @@ export default function Login() {
 
   const [searchParams] = useSearchParams();
 
-  // 🔥 [1] 구글 로그인 시 error=banned_user 처리
+  // 🔹 [1] 구글 로그인에서 banned 처리
   useEffect(() => {
     const error = searchParams.get("error");
     if (error === "banned_user") {
       alert("정지된 계정입니다. 관리자에게 문의하세요.");
-      return; // 에러 상태에서는 로그인 로직 실행 금지
+      return;
     }
   }, [searchParams]);
 
-  // 🔥 [2] 구글 로그인 성공 처리 (accessToken 있을 때만)
+  // 🔹 [2] 구글 로그인 성공 처리
   useEffect(() => {
     const accessToken = searchParams.get("accessToken");
     const refreshToken = searchParams.get("refreshToken");
     const username = searchParams.get("username");
     const error = searchParams.get("error");
 
-    if (error) return; // 에러인 경우 로그인 시도 금지
+    if (error) return; // banned 등 에러 상태면 로그인 금지
 
     if (accessToken && refreshToken) {
       localStorage.setItem("accessToken", accessToken);
       localStorage.setItem("refreshToken", refreshToken);
       localStorage.setItem("username", username || "");
-
       window.location.href = "/";
     }
   }, [searchParams]);
 
-  // 🔥 [3] 로컬 로그인 → 여기서도 banned 처리 catch됨
+  // 🔹 [3] 로컬 로그인 처리 + banned 처리 통일
   const onSubmit = async (values: FormValues) => {
     try {
       await login(values.username, values.password);
       window.location.href = "/";
-    } catch (error) {
+    } catch (error: any) {
+      // Axios 기반 에러 처리
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        const data = error.response?.data;
+        if (status === 403 && data?.error === "banned_user") {
+          alert("정지된 계정입니다. 관리자에게 문의하세요.");
+          return;
+        }
+      }
+      // 일반 에러 처리
       const message =
         error instanceof Error ? error.message : "로그인에 실패했습니다.";
       alert(message);
@@ -85,7 +93,7 @@ export default function Login() {
 
   const handleGoogleLogin = () => {
     window.location.href = GOOGLE_OAUTH2_URL;
-  }
+  };
 
   return (
     <Box
@@ -108,7 +116,6 @@ export default function Login() {
         }}
       >
         <Stack spacing={3} component="form" onSubmit={handleSubmit(onSubmit)}>
-
           <Box textAlign="center">
             <Typography
               component={RouterLink}
@@ -207,10 +214,8 @@ export default function Login() {
           >
             구글 로그인
           </Button>
-
         </Stack>
       </Paper>
     </Box>
   );
 }
-챙ㄷ 
