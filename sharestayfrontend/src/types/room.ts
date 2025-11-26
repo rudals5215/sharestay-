@@ -91,7 +91,9 @@ export interface RoomApiResponse {
   availabilityStatus: number;
   description: string;
   images: RoomImageResponse[];
-  shareLinkUrl?: string;  
+  imageUrls?: string[];      // optional fallback list of URLs
+  shareLinkUrl?: string | null;
+  shareLink?: { linkUrl?: string | null }; // 일부 백엔드 응답이 객체를 줄 수 있음
 }
 
 /**
@@ -112,7 +114,8 @@ export interface RoomDetailApiResponse {
   longitude: number;
   images?: RoomImageResponse[];  // List<RoomImageResponse> (optional for compatibility)
   imageUrls?: string[];          // List<String> (optional fallback)
-  shareLinkUrl: string | null;
+  shareLinkUrl?: string | null;
+  shareLink?: { linkUrl?: string | null };
 }
 
 /**
@@ -156,6 +159,6 @@ export const mapRoomFromApi = (
     availabilityStatus: room.availabilityStatus,
     description: room.description,
     images: normalizedImages,
-    shareLinkUrl: room.shareLinkUrl ?? undefined,
+    shareLinkUrl: room.shareLinkUrl ?? room.shareLink?.linkUrl ?? undefined,
   };
 };
