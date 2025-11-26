@@ -35,11 +35,15 @@ public class SharestayApplication implements CommandLineRunner {
     public void run(String... args) {
         PasswordEncoder encoder = new BCryptPasswordEncoder();
 
+        // 이미 초기 데이터 있으면 다시 안 넣기
         if (userRepository.existsByUsername("kim1@test.com")) {
             return;
         }
 
-        User user = new User(
+    /* -------------------------
+       1. ADMIN 계정 2개
+    -------------------------- */
+        User admin1 = new User(
                 "kim1@test.com",
                 encoder.encode("user1234"),
                 "LOCAL",
@@ -49,104 +53,230 @@ public class SharestayApplication implements CommandLineRunner {
                 "ADMIN",
                 "금연 · 반려동물 없음 · 조용한 활동 선호"
         );
-        userRepository.save(user);
+        userRepository.save(admin1);
+
+        User admin2 = new User(
+                "admin2@test.com",
+                encoder.encode("admin2345"),
+                "LOCAL",
+                "관리자2",
+                "서울, 대한민국",
+                "010-2222-9999",
+                "ADMIN",
+                "시스템 운영 및 모니터링 담당 관리자 계정"
+        );
+        userRepository.save(admin2);
 
 
+    /* -------------------------
+       2. HOST 계정 3개
+    -------------------------- */
+        User hostUser1 = new User(
+                "host1@test.com",
+                encoder.encode("host1234"),
+                "LOCAL",
+                "홍대 호스트",
+                "서울 마포구",
+                "010-1111-1111",
+                "HOST",
+                "깨끗한 방을 좋아하는 호스트입니다."
+        );
+        userRepository.save(hostUser1);
+
+        User hostUser2 = new User(
+                "host2@test.com",
+                encoder.encode("host2234"),
+                "LOCAL",
+                "강남 호스트",
+                "서울 강남구",
+                "010-2222-1111",
+                "HOST",
+                "직장인과 장기 거주자를 선호합니다."
+        );
+        userRepository.save(hostUser2);
+
+        User hostUser3 = new User(
+                "host3@test.com",
+                encoder.encode("host3234"),
+                "LOCAL",
+                "잠실 호스트",
+                "서울 송파구",
+                "010-3333-1111",
+                "HOST",
+                "교통과 치안을 중시하는 호스트입니다."
+        );
+        userRepository.save(hostUser3);
+
+
+    /* -------------------------
+       3. GUEST 계정 3개
+    -------------------------- */
+        User guest1 = new User(
+                "guest1@test.com",
+                encoder.encode("guest1234"),
+                "LOCAL",
+                "김게스트",
+                "부산 해운대",
+                "010-4444-4444",
+                "GUEST",
+                "조용한 환경과 청결한 방을 선호합니다."
+        );
+        userRepository.save(guest1);
+
+        User guest2 = new User(
+                "guest2@test.com",
+                encoder.encode("guest2234"),
+                "LOCAL",
+                "박여행",
+                "대구 수성구",
+                "010-5555-5555",
+                "GUEST",
+                "가성비 좋은 방을 선호합니다."
+        );
+        userRepository.save(guest2);
+
+        User guest3 = new User(
+                "guest3@test.com",
+                encoder.encode("guest3234"),
+                "LOCAL",
+                "최출장",
+                "서울 노원구",
+                "010-6666-5555",
+                "GUEST",
+                "주차 가능 숙소를 선호합니다."
+        );
+        userRepository.save(guest3);
+
+
+    /* -------------------------
+       4. Host 엔티티 3개
+    -------------------------- */
         Host host1 = new Host(
-                "깨끗한 방을 좋아하는 호스트입니다.",  // introduction
-                true,                                 // termsAgreed
-                user                                  // user (연결된 User)
+                "홍대/합정 인근에서 조용한 생활을 돕는 호스트입니다.",
+                true,
+                hostUser1
         );
 
-        // Room 객체 생성
-        Room room = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "홍대입구 근처 원룸",             // title
-                55.5,                           // rentPrice
-                "서울특별시 마포구 서교동 12-3",    // address
-                "원룸",                          // type
-                37.557123,                      // latitude (위도)
-                126.923456,                     // longitude (경도)
-                2,                              // availabilityStatus (최대 인원)
-                "깔끔하고 교통 좋은 원룸입니다."      // description
+        Host host2 = new Host(
+                "강남 직장인을 위한 최적의 숙소를 제공합니다.",
+                true,
+                hostUser2
         );
 
+        Host host3 = new Host(
+                "잠실 야경과 편리한 교통을 자랑하는 호스트입니다.",
+                true,
+                hostUser3
+        );
+
+        hostRepository.save(host1);
+        hostRepository.save(host2);
+        hostRepository.save(host3);
+
+
+    /* -------------------------
+       5. Room 6개 (호스트별로 분배)
+          availabilityStatus:
+          0 = 모집중, 1 = 예약중, 2 = 마감
+    -------------------------- */
+
+        // host1 방 2개
+        Room room1 = new Room(
+                host1,
+                "홍대입구 근처 원룸",
+                55.5,
+                "서울특별시 마포구 서교동 12-3",
+                "원룸",
+                37.557123,
+                126.923456,
+                0, // 모집중
+                "깔끔하고 교통 좋은 원룸입니다."
+        );
 
         Room room2 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "강남역 도보 5분 원룸",            // title
-                80.0,                           // rentPrice
-                "서울특별시 강남구 역삼동 123-4",   // address
-                "원룸",                          // type
-                37.497942,                      // latitude (위도)
-                127.027621,                     // longitude (경도)
-                1,                              // availabilityStatus (최대 인원)
-                "강남역 인근 직장인에게 최적의 원룸입니다." // description
+                host1,
+                "합정역 루프탑 사용 가능 쉐어하우스",
+                45.0,
+                "서울특별시 마포구 합정동 321-8",
+                "쉐어하우스",
+                37.549911,
+                126.914905,
+                0, // 모집중
+                "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다."
         );
 
+        // host2 방 2개
         Room room3 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "신촌역 근처 투룸",               // title
-                65.0,                           // rentPrice
-                "서울특별시 서대문구 창천동 45-7", // address
-                "투룸",                          // type
-                37.559819,                      // latitude (위도)
-                126.942308,                     // longitude (경도)
-                3,                              // availabilityStatus (최대 인원)
-                "연세대/이대생에게 인기 많은 조용한 투룸입니다." // description
+                host2,
+                "강남역 도보 5분 원룸",
+                80.0,
+                "서울특별시 강남구 역삼동 123-4",
+                "원룸",
+                37.497942,
+                127.027621,
+                1, // 예약중
+                "강남역 인근 직장인에게 최적의 원룸입니다."
         );
 
         Room room4 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "건대입구역 풀옵션 원룸",          // title
-                58.5,                           // rentPrice
-                "서울특별시 광진구 화양동 22-10",   // address
-                "원룸",                          // type
-                37.540408,                      // latitude (위도)
-                127.069210,                     // longitude (경도)
-                1,                              // availabilityStatus (최대 인원)
-                "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다." // description
+                host2,
+                "건대입구역 풀옵션 원룸",
+                58.5,
+                "서울특별시 광진구 화양동 22-10",
+                "원룸",
+                37.540408,
+                127.069210,
+                1, // 예약중
+                "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다."
         );
 
+        // host3 방 2개
         Room room5 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "합정역 루프탑 사용 가능 쉐어하우스", // title
-                45.0,                           // rentPrice
-                "서울특별시 마포구 합정동 321-8",   // address
-                "쉐어하우스",                      // type
-                37.549911,                      // latitude (위도)
-                126.914905,                     // longitude (경도)
-                4,                              // availabilityStatus (최대 인원)
-                "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다." // description
+                host3,
+                "신촌역 근처 투룸",
+                65.0,
+                "서울특별시 서대문구 창천동 45-7",
+                "투룸",
+                37.559819,
+                126.942308,
+                2, // 마감
+                "연세대/이대생에게 인기 많은 조용한 투룸입니다."
         );
 
         Room room6 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "잠실새내역 오피스텔 원룸",        // title
-                75.0,                           // rentPrice
-                "서울특별시 송파구 잠실동 200-15",  // address
-                "오피스텔",                       // type
-                37.511822,                      // latitude (위도)
-                127.086554,                     // longitude (경도)
-                2,                              // availabilityStatus (최대 인원)
-                "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다." // description
+                host3,
+                "잠실새내역 오피스텔 원룸",
+                75.0,
+                "서울특별시 송파구 잠실동 200-15",
+                "오피스텔",
+                37.511822,
+                127.086554,
+                2, // 마감
+                "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다."
         );
 
-
-
-
-        hostRepository.save(host1);
-        roomRepository.save(room);
-
-        List<Room> rooms = Arrays.asList(room, room2, room3, room4, room5, room6);
+        List<Room> rooms = Arrays.asList(room1, room2, room3, room4, room5, room6);
         roomRepository.saveAll(rooms);
 
 
-        // Favorite 객체 생성
-        Favorite favorite = new Favorite();
-        favorite.setUser(user);
-        favorite.setRoom(room);
-        favoriteRepository.save(favorite);
+    /* -------------------------
+       6. Favorite 샘플
+    -------------------------- */
+        Favorite favorite1 = new Favorite();
+        favorite1.setUser(guest1);
+        favorite1.setRoom(room1);
 
+        Favorite favorite2 = new Favorite();
+        favorite2.setUser(guest2);
+        favorite2.setRoom(room3);
+
+        Favorite favorite3 = new Favorite();
+        favorite3.setUser(guest3);
+        favorite3.setRoom(room5);
+
+        favoriteRepository.save(favorite1);
+        favoriteRepository.save(favorite2);
+        favoriteRepository.save(favorite3);
     }
+
 }
