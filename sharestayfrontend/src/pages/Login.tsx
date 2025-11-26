@@ -14,9 +14,10 @@ import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../auth/useAuth";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useSearchParams } from "react-router-dom";
 
 // const GOOGLE_OAUTH2_URL = "http://localhost:8080/login/oauth2/code/sharestay/google";
 const GOOGLE_OAUTH2_URL ="http://localhost:8080/oauth2/authorization/google";
@@ -40,6 +41,18 @@ export default function Login() {
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
+
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const error = searchParams.get("error");
+    if (error === "banned_user") {
+      alert("정지된 계정입니다. 관리자에게 문의하세요.");
+      // URL에서 에러 파라미터를 제거하여, 페이지를 새로고침해도 알림이 다시 뜨지 않도록 할 수 있습니다.
+      // (선택 사항)
+      // window.history.replaceState({}, document.title, "/login");
+    }
+  }, [searchParams]);
 
   const onSubmit = async (values: FormValues) => {
     await login(values.username, values.password);

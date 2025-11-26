@@ -44,7 +44,8 @@ public class SharestayApplication implements CommandLineRunner {
                 "인천, 대한민국",
                 "010-1234-5678",
                 "ADMIN",
-                "금연 · 반려동물 없음 · 조용한 활동 선호"
+                "금연 · 반려동물 없음 · 조용한 활동 선호",
+                false // banned 상태 추가
         );
         userRepository.save(user);
 

@@ -98,7 +98,9 @@ export default function AdminBans() {
     try {
       await api.post(`/bans/users/${selectedUserId}`, {
         reason,
-        expireAt: endDate || null,
+        // endDate가 존재하면 ISO 8601 형식의 UTC 시간으로 변환하여 전송
+        // "2024-01-01T10:00" -> "2024-01-01T10:00:00.000Z"
+        expireAt: endDate ? new Date(endDate).toISOString() : null,
         memo,
       });
       void fetchBanRecords(selectedUserId);
@@ -226,6 +228,10 @@ export default function AdminBans() {
               value={endDate ?? ""}
               onChange={(e) => setEndDate(e.target.value)}
               fullWidth
+              // label이 날짜 형식과 겹치지 않도록 항상 작게 표시
+              InputLabelProps={{
+                shrink: true,
+              }}
             />
             <TextField
               label="메모 (선택)"

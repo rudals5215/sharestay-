@@ -2,6 +2,7 @@ package com.example.sharestay.security;
 
 import com.example.sharestay.entity.User;
 import com.example.sharestay.repository.UserRepository;
+//import com.example.sharestay.service.CustomUserDetailsService;
 import com.example.sharestay.service.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -46,25 +48,38 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
         // 1️⃣ 인증 객체에서 이메일 가져오기
         String email = authentication.getName();   // 구글 로그인 시 이메일 반환
 
-        userRepository.findByUsername(email)
+        User user = userRepository.findByUsername(email)
                 .orElseGet(() -> {
+                    log.info("New user from Google login: {}", email);
                     String encodedPassword = passwordEncoder.encode(UUID.randomUUID().toString());
                     return userRepository.save(User.createGoogleUser(email, encodedPassword));
                 });
 
-        // 3️⃣ JWT Access Token과 Refresh Token 생성
-        String accessToken = jwtService.generateAccessToken(email);
-        String refreshToken = jwtService.generateRefreshToken(email);
+        // 2️⃣ 사용자 상태(밴 여부) 확인
+        // User 엔티티에 isBanned()와 같은 상태 확인 메서드가 있다고 가정합니다.
+        if (user.isBanned()) {
+            log.warn("Banned user login attempt: {}", email);
+            // 밴 처리된 사용자는 에러 메시지와 함께 리다이렉트
+            String redirectUrlWithBanError = UriComponentsBuilder
+                    .fromHttpUrl(redirectUrl)
+                    .queryParam("error", "banned_user") // 프론트엔드에 에러 코드만 전달
+                    .build(true)
+                    .toUriString();
+            response.sendRedirect(redirectUrlWithBanError);
+            return; // 토큰 발급 없이 핸들러 종료
+        }
 
+        // 3️⃣ 정상 사용자인 경우, JWT Access Token과 Refresh Token 생성
+        String accessToken = jwtService.generateAccessToken(user.getUsername());
+        String refreshToken = jwtService.generateRefreshToken(user.getUsername());
         String redirectWithToken = UriComponentsBuilder
                 .fromHttpUrl(redirectUrl)
                 .queryParam("accessToken", accessToken)
                 .queryParam("refreshToken", refreshToken)
-                .queryParam("username", email)
+                .queryParam("username", user.getUsername())
                 .build(true)
                 .toUriString();
-
-        // 5️⃣ 프론트 페이지로 리다이렉트
+        // 4️⃣ 프론트 페이지로 리다이렉트
         response.sendRedirect(redirectWithToken);
     }
 }

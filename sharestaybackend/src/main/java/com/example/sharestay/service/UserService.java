@@ -37,7 +37,8 @@ public class UserService {
                 request.getAddress(),
                 request.getPhoneNumber(),
                 request.getRole(),
-                request.getLifeStyle()
+                request.getLifeStyle(),
+                false
         );
 
         User savedUser = userRepository.save(user);

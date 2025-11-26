@@ -46,6 +46,9 @@ public class User {
     @Column(name = "life_style")
     private String lifeStyle;
 
+    @Column(name = "is_banned", nullable = false)
+    private boolean banned = false;
+
     @PrePersist
     public void prePersist() {
         if (this.signupDate == null) {
@@ -60,7 +63,8 @@ public class User {
                 String address,
                 String phoneNumber,
                 String role,
-                String lifeStyle) {
+                String lifeStyle,
+                boolean banned) {
         this.username = username;
         this.password = password;
         this.loginType = loginType;
@@ -69,6 +73,7 @@ public class User {
         this.phoneNumber = phoneNumber;
         this.role = role;
         this.lifeStyle = lifeStyle;
+        this.banned = banned;
     }
 
     public static User createGoogleUser(String email) {
@@ -84,7 +89,12 @@ public class User {
                 null,
                 "000-0000-0000",
                 "GUEST",
-                null);
+                null,
+                false); // 새로 생성된 구글 유저는 밴 상태가 아님
         return user;
+    }
+
+    public boolean isBanned() {
+        return this.banned;
     }
 }
