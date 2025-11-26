@@ -42,9 +42,26 @@ export default function Login() {
   });
 
   const onSubmit = async (values: FormValues) => {
+  try {
+    console.log("[Login] 보내는 값:", values);
+
     await login(values.username, values.password);
+
+    // ✅ 로그인 성공 시 홈으로 이동
     window.location.href = "/";
-  };
+  } catch (err: any) {
+    console.error("[Login] 로그인 실패:", err);
+
+    // 백엔드에서 온 에러 메시지 있으면 찍어보기
+    if (err?.response) {
+      console.error("[Login] status:", err.response.status);
+      console.error("[Login] data:", err.response.data);
+      alert(`로그인 실패 (${err.response.status})`);
+    } else {
+      alert("로그인 중 오류가 발생했습니다. 콘솔을 확인해 주세요.");
+    }
+  }
+};
 
   const handleGoogleLogin = () => {
     window.location.href = GOOGLE_OAUTH2_URL;

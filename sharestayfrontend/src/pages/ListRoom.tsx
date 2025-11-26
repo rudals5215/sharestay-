@@ -1,4 +1,4 @@
-// src/pages/ListRoom.tsx
+// src/pages/ListRoom.tsx  방등록
 import {
   Alert,
   Box,
@@ -31,6 +31,9 @@ import type {
   RoomRequestPayload,
 } from "../types/room";
 
+// ------------------------------
+// Zod Schema
+// ------------------------------
 const roomSchema = z.object({
   title: z.string().min(1, "모집 제목을 입력해주세요."),
   rentPrice: z
@@ -65,6 +68,9 @@ const roomSchema = z.object({
 
 type FormValues = z.infer<typeof roomSchema>;
 
+// ------------------------------
+// Options
+// ------------------------------
 const roomTypes = [
   { value: "ONE_ROOM", label: "원룸" },
   { value: "TWO_ROOM", label: "투룸" },
@@ -218,28 +224,44 @@ export default function ListRoom() {
         .filter(Boolean)
         .join("\n\n");
 
-      const payload: RoomRequestPayload = {
-        hostId: hostId!,
-        title: values.title,
-        rentPrice,
-        address: values.address,
-        type: values.type,
-        latitude: latitudeValue ?? 0,
-        longitude: longitudeValue ?? 0,
-        availabilityStatus: availabilityCode,
-        description: composedDescription,
-      };
+        // ⭐ 변경 1: JSON payload 대신 FormData 생성
+    const formData = new FormData();
+    formData.append("hostId", String(hostId!));
+    formData.append("title", values.title);
+    formData.append("rentPrice", String(rentPrice));
+    formData.append("address", values.address);
+    formData.append("type", values.type);
+    formData.append("availabilityStatus", String(availabilityCode));
+    formData.append("description", composedDescription);
+    formData.append("latitude", String(latitudeValue ?? 0));
+    formData.append("longitude", String(longitudeValue ?? 0));
 
-      const { data } = await api.post<RoomApiResponse>("/rooms", payload);
-      const createdRoomId = data?.id ?? (data as { roomId?: number }).roomId;
+      // ⭐ 변경 2: 이미지 파일들을 files 필드로 함께 전송
+    images.forEach((file) => {
+      formData.append("files", file);
+    });
 
-      if (createdRoomId && images.length > 0) {
-        const formData = new FormData();
-        images.forEach((file) => formData.append("files", file));
-        await api.post(`/rooms/${createdRoomId}/images`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+    // ⭐ 변경 3: 엔드포인트 + multipart 전송으로 한 번에 요청
+    //   - api 인스턴스 baseURL이 `http://localhost:8080` 이라면 "/api/rooms"
+    //   - baseURL이 `http://localhost:8080/api` 라면 "/rooms"로 맞추기
+    const { data } = await api.post<RoomApiResponse>(
+      "/rooms", // 🔥 여기 엔드포인트가 핵심
+      formData,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
       }
+    );
+
+    const createdRoomId = data?.id ?? (data as { roomId?: number }).roomId;
+
+    // ⭐ 변경 4: 별도 /images 업로드 API는 더 이상 호출 X
+    // if (createdRoomId && images.length > 0) {
+    //   const formData = new FormData();
+    //   images.forEach((file) => formData.append("files", file));
+    //   await api.post(`/rooms/${createdRoomId}/images`, formData, {
+    //     headers: { "Content-Type": "multipart/form-data" },
+    //   });
+    // }
 
       alert("룸 정보가 등록되었습니다.");
       handleReset();
@@ -255,6 +277,7 @@ export default function ListRoom() {
       alert(message);
     }
   };
+
   return (
     <Box sx={{ bgcolor: "#f4f6fb", minHeight: "100vh" }}>
       <SiteHeader activePath="/list-room" />
@@ -289,6 +312,7 @@ export default function ListRoom() {
                 icon={<HomeWork color="primary" />}
                 title="기본 정보"
               />
+
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12 }}>
                   <FormTextField
@@ -298,6 +322,7 @@ export default function ListRoom() {
                     placeholder="예: 강남역 도보 5분 깔끔한 원룸 룸메이트 구해요"
                   />
                 </Grid>
+
                 <Grid size={{ xs: 12, md: 4 }}>
                   <FormTextField
                     name="rentPrice"
@@ -312,6 +337,7 @@ export default function ListRoom() {
                     }}
                   />
                 </Grid>
+
                 <Grid size={{ xs: 12, md: 4 }}>
                   <FormTextField
                     name="type"
@@ -330,6 +356,7 @@ export default function ListRoom() {
                     ))}
                   </FormTextField>
                 </Grid>
+
                 <Grid size={{ xs: 12, md: 4 }}>
                   <FormTextField
                     name="availabilityStatus"
@@ -350,6 +377,7 @@ export default function ListRoom() {
                 icon={<LocationOn color="primary" />}
                 title="주소 및 위치"
               />
+
               <Grid container spacing={3}>
                 <Grid size={{ xs: 12 }}>
                   <FormTextField
@@ -359,6 +387,7 @@ export default function ListRoom() {
                     placeholder="예: 서울특별시 강남구 역삼동 123-45"
                   />
                 </Grid>
+
                 <Grid size={{ xs: 12, md: 6 }}>
                   <FormTextField
                     name="latitude"
@@ -367,6 +396,7 @@ export default function ListRoom() {
                     placeholder="예: 37.4981"
                   />
                 </Grid>
+
                 <Grid size={{ xs: 12, md: 6 }}>
                   <FormTextField
                     name="longitude"
@@ -418,6 +448,7 @@ export default function ListRoom() {
                 <Button variant="outlined" onClick={handleImagePick}>
                   사진 추가 ({images.length}/6)
                 </Button>
+
                 {images.length > 0 && (
                   <Stack spacing={0.5}>
                     {images.map((file) => (
@@ -427,6 +458,7 @@ export default function ListRoom() {
                     ))}
                   </Stack>
                 )}
+
                 <Typography variant="caption" color="text.secondary">
                   최대 6장까지 업로드 가능합니다. (JPG, PNG 형식)
                 </Typography>
@@ -458,6 +490,9 @@ export default function ListRoom() {
   );
 }
 
+// ------------------------------
+// Components
+// ------------------------------
 function SectionTitle({
   icon,
   title,

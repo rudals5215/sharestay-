@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
-import { useAuth } from "../auth/useAuth";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import { api } from "../lib/api";
@@ -23,6 +22,7 @@ import type {
 } from "../types/room";
 import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
 import fallbackImageSrc from "../img/no_img.jpg";
+import ShareIcon from "@mui/icons-material/Share";
 
 const fallbackImage = fallbackImageSrc;
 
@@ -31,13 +31,8 @@ const formatCurrency = (amount?: number) => {
   return `${amount.toLocaleString()}원/월`;
 };
 
-const isHostOrAdmin = (role?: string) =>
-  role === "HOST" || role === "ADMIN";
-
 export default function RoomDetail() {
   const { roomId } = useParams<{ roomId: string }>();
-  const { user } = useAuth();
-  const canCreateShareLink = isHostOrAdmin(user?.role);
 
   const [room, setRoom] = useState<RoomSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +42,7 @@ export default function RoomDetail() {
   const [isShareGenerating, setIsShareGenerating] = useState(false);
 
   const shareButtonLabel = useMemo(
-    () => (shareLink ? "공유 링크 복사" : "공유 링크 만들기"),
+    () => (shareLink ? "공유" : "공유 복사"),
     [shareLink]
   );
 
@@ -121,42 +116,26 @@ export default function RoomDetail() {
     if (!roomId) return;
     setIsShareGenerating(true);
     try {
-      let link = shareLink ?? (await tryFetchShareLink());
+      const linkCandidate =
+        shareLink ?? room?.shareLinkUrl ?? (await tryFetchShareLink());
+      const link = linkCandidate ?? null;
 
       if (!link) {
-        if (!canCreateShareLink) {
-          alert("공유 링크가 아직 생성되지 않았습니다. 호스트 또는 관리자만 생성할 수 있습니다.");
-          return;
-        }
-        const { data } = await api.post<ShareLinkResponse>(
-          `/rooms/${roomId}/share`
-        );
-        link = data?.linkUrl ?? null;
-      }
-
-      if (!link) {
-        alert("공유 링크를 불러오지 못했습니다.");
+        alert("공유 링크를 불러올 수 없습니다. 관리자에게 문의해 주세요.");
         return;
       }
 
       setShareLink(link);
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link).catch(() => undefined);
-        alert("공유 링크를 클립보드에 복사했습니다.");
-      } else {
-        alert(link);
       }
+      alert(`공유 링크가 준비되었습니다.\n${link}`);
     } catch (err) {
-      const status = (err as AxiosError)?.response?.status;
-      if (status === 403) {
-        alert("공유 링크 생성은 호스트 또는 관리자만 가능합니다.");
-      } else {
-        const message =
-          err instanceof Error
-            ? err.message
-            : "공유 링크 처리 중 오류가 발생했습니다.";
-        alert(message);
-      }
+      const message =
+        err instanceof Error
+          ? err.message
+          : "공유 링크 처리 중 오류가 발생했습니다.";
+      alert(message);
     } finally {
       setIsShareGenerating(false);
     }
@@ -300,16 +279,17 @@ export default function RoomDetail() {
                   onClick={handleShareLink}
                   disabled={isShareGenerating}
                   sx={{ borderRadius: 999 }}
+                  startIcon={<ShareIcon />}
                 >
                   {shareButtonLabel}
                 </Button>
               </Stack>
 
-              {shareLink && (
+              {/* {shareLink && (
                 <Typography variant="body2" color="text.secondary">
                   {shareLink}
                 </Typography>
-              )}
+              )} */}
             </Stack>
           </Paper>
         ) : null}

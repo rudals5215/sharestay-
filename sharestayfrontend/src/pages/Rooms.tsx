@@ -1,5 +1,4 @@
-﻿// src/pages/Rooms.tsx
-import type { AxiosError } from "axios";
+﻿// src/pages/Rooms.tsx  방검색
 import {
   Box,
   Button,
@@ -10,7 +9,6 @@ import {
   CircularProgress,
   Container,
   Divider,
-  Grid,
   IconButton,
   MenuItem,
   Paper,
@@ -35,9 +33,11 @@ import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
 import { api } from "../lib/api";
 import { fetchFavoriteRooms, toggleFavoriteRoom } from "../lib/favorites";
-import type { RoomApiResponse, RoomSummary, ShareLinkResponse } from "../types/room";
+import type { RoomApiResponse, RoomSummary } from "../types/room";
 import { mapRoomFromApi } from "../types/room";
 import fallbackImageSrc from "../img/no_img.jpg";
+// ✅ 1) Grid는 따로 디폴트 import
+import Grid from "@mui/material/Grid";
 
 const filterFacilities = [
   "에어컨",
@@ -117,12 +117,11 @@ type RoomSearchOverrides = {
   district?: string;
   roomType?: string;
   priceRange?: number[];
+  useSearchEndpoint?: boolean;   // ⭐ 추가: /rooms vs /rooms/search 구분용
 };
 
 export default function Rooms() {
   const { user } = useAuth();
-  const canCreateShareLink =
-    user?.role === "HOST" || user?.role === "ADMIN";
   const [searchParams, setSearchParams] = useSearchParams();
   const highlightParam = searchParams.get("highlight");
   const highlightedRoomId = (() => {
@@ -147,22 +146,37 @@ export default function Rooms() {
     [priceRange]
   );
 
-  const fetchRooms = async (overrides?: RoomSearchOverrides) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const keywordValue = overrides?.keyword ?? keyword;
-      const districtValue = overrides?.district ?? district;
-      const roomTypeValue = overrides?.roomType ?? roomType;
-      const priceRangeValue = overrides?.priceRange ?? priceRange;
-      const [minPrice, maxPrice] = priceRangeValue;
-      const regionParam = districtValue || keywordValue || "";
-      const hasCustomPriceRange =
-        priceRangeValue[0] !== defaultPriceRange[0] ||
-        priceRangeValue[1] !== defaultPriceRange[1];
-      const { data } = await api.get<RoomApiResponse[]>("/rooms/search/filter", {
+  const fetchRooms = useCallback(async (overrides?: RoomSearchOverrides) => {
+  setIsLoading(true);
+  setError(null);
+  try {
+    const keywordValue = overrides?.keyword ?? keyword;
+    const districtValue = overrides?.district ?? district;
+    const roomTypeValue = overrides?.roomType ?? roomType;
+    const priceRangeValue = overrides?.priceRange ?? priceRange;
+    const [minPrice, maxPrice] = priceRangeValue;
+
+    const regionParam = districtValue || "";
+
+    const hasCustomPriceRange =
+      priceRangeValue[0] !== defaultPriceRange[0] ||
+      priceRangeValue[1] !== defaultPriceRange[1];
+
+    const hasAnyFilter =
+      (regionParam && regionParam.trim().length > 0) ||
+      (roomTypeValue && roomTypeValue.trim().length > 0) ||
+      (keywordValue && keywordValue.trim().length > 0) ||
+      hasCustomPriceRange;
+
+    let data: RoomApiResponse[] = [];
+
+    if (!hasAnyFilter) {
+      const res = await api.get<RoomApiResponse[]>("/rooms");
+      data = res.data;
+    } else {
+      const res = await api.get<RoomApiResponse[]>("/rooms/search", {
         params: {
-          region: regionParam,
+          region: regionParam || undefined,
           type: roomTypeValue || undefined,
           minPrice:
             hasCustomPriceRange && Number.isFinite(minPrice)
@@ -175,26 +189,30 @@ export default function Rooms() {
           option: keywordValue || undefined,
         },
       });
-      const list = Array.isArray(data) ? data.map(mapRoomFromApi) : [];
-      const normalized = list.map((room) => {
-        const roomId = getRoomId(room);
-        return {
-          ...room,
-          isFavorite: roomId ? favorites.has(roomId) : false,
-        };
-      });
-      setRooms(normalized);
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "방 정보를 불러오는 중 오류가 발생했습니다.";
-      setError(message);
-      setRooms([]);
-    } finally {
-      setIsLoading(false);
+      data = res.data;
     }
-  };
+
+    const list = Array.isArray(data) ? data.map(mapRoomFromApi) : [];
+    const normalized = list.map((room) => {
+      const roomId = getRoomId(room);
+      return {
+        ...room,
+        isFavorite: roomId ? favorites.has(roomId) : false,
+      };
+    });
+
+    setRooms(normalized);
+  } catch (err) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : "방 정보를 불러오는 중 오류가 발생했습니다.";
+    setError(message);
+    setRooms([]);
+  } finally {
+    setIsLoading(false);
+  }
+}, [keyword, district, roomType, priceRange, favorites]);
 
   useEffect(() => {
     const initialKeyword = searchParams.get("keyword") ?? "";
@@ -284,12 +302,15 @@ export default function Rooms() {
 
   const toggleFavorite = async (room: RoomSummary) => {
     const roomId = getRoomId(room);
-    if (!roomId) return;
+    // if (!roomId) return;
     if (!user?.id) {
       alert("로그인이 필요한 기능입니다.");
       return;
     }
-    const currentlyFavorite = favorites.has(roomId);
+    // const currentlyFavorite = favorites.has(roomId);
+    // 여기 두 줄이 추가된 부분임. 나중에 재수정할 수도 있음.
+    if (!roomId) return;
+    const currentlyFavorite = favorites.has(roomId); // user.id 체크 후 roomId 체크
     setFavorites((prev) => {
       const next = new Set(prev);
       if (currentlyFavorite) {
@@ -327,54 +348,26 @@ export default function Rooms() {
     }
   };
 
-  const fetchShareLink = async (roomId: number): Promise<string | null> => {
-    try {
-      const { data } = await api.get<ShareLinkResponse>(`/rooms/${roomId}/share`);
-      return data?.linkUrl ?? null;
-    } catch (err) {
-      const status = (err as AxiosError)?.response?.status;
-      if (status === 404) return null;
-      throw err;
+  const handleShareLink = async (room: RoomSummary) => {
+    const link = room.shareLinkUrl;
+
+    if (!link) {
+      alert("공유 링크가 준비되지 않았습니다. 관리자에게 문의해 주세요.");
+      return;
     }
-  };
 
-  const handleShareLink = async (roomId?: number | null) => {
-    if (!roomId) return;
     try {
-      let link = await fetchShareLink(roomId);
-      if (!link) {
-        if (!canCreateShareLink) {
-          alert("공유 링크가 아직 생성되지 않았습니다. 호스트 또는 관리자만 생성할 수 있습니다.");
-          return;
-        }
-        const { data } = await api.post<ShareLinkResponse>(`/rooms/${roomId}/share`);
-        link = data?.linkUrl ?? null;
-      }
-
-      if (!link) {
-        alert("공유 링크를 불러오지 못했습니다.");
-        return;
-      }
-
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(link).catch(() => undefined);
+        await navigator.clipboard.writeText(link);
+        alert(`공유 링크가 클립보드에 복사되었습니다.`);  // \n${link}
+      } else {
+        // 구형 브라우저 대비
+        window.prompt("이 링크를 복사해 주세요.", link);
       }
-      alert(`공유 링크가 준비되었습니다.\n${link}`);
-    } catch (err) {
-      const status = (err as AxiosError)?.response?.status;
-      if (status === 403) {
-        alert("공유 링크 생성은 호스트 또는 관리자만 가능합니다.");
-        return;
-      }
-      const message =
-        err instanceof Error
-          ? err.message
-          : "공유 링크를 처리하는 중 오류가 발생했습니다.";
-      alert(message);
+    } catch {
+      window.prompt("이 링크를 복사해 주세요.", link);
     }
   };
-
-
 
   return (
     <Box sx={{ bgcolor: "#f4f6fb", minHeight: "100vh" }}>
@@ -443,77 +436,78 @@ export default function Rooms() {
           <Grid container spacing={4}>
             <Grid size={{ xs: 12, md: 3 }}>
               <Paper
-                sx={{
-                  p: 3,
-                  borderRadius: 4,
-                  boxShadow: "0 18px 32px rgba(15, 40, 105, 0.08)",
-                }}
+              sx={{
+                p: 3,
+                borderRadius: 4,
+                boxShadow: "0 18px 32px rgba(15, 40, 105, 0.08)",
+              }}
               >
-                <Stack spacing={3}>
-                  <Typography variant="h6" fontWeight={700}>
-                    필터
-                  </Typography>
-                  <Divider />
+              <Stack spacing={3}>
+                <Typography variant="h6" fontWeight={700}>
+                필터
+                </Typography>
+                <Divider />
 
-                  <Stack spacing={1}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      방 종류
-                    </Typography>
-                    {["전체", "원룸", "투룸", "오피스텔", "아파트"].map(
-                      (type) => (
-                        <Button
-                          key={type}
-                          variant={type === "전체" ? "contained" : "text"}
-                          sx={{ justifyContent: "flex-start", borderRadius: 2 }}
-                        >
-                          {type}
-                        </Button>
-                      )
-                    )}
-                  </Stack>
-
-                  <Stack spacing={1}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      가격 범위
-                    </Typography>
-                    <Slider
-                      value={priceRange}
-                      min={200000}
-                      max={2000000}
-                      step={50000}
-                      valueLabelDisplay="auto"
-                      onChange={(_, value) =>
-                        setPriceRange(ensureArray(value as number[]))
-                      }
-                      onChangeCommitted={() => fetchRooms()}
-                    />
-                    <Typography variant="caption" color="text.secondary">
-                      {priceLabel}
-                    </Typography>
-                  </Stack>
-
-                      <RouterLink to="/RoomMap">지도로 찾기</RouterLink>
-                  <Stack spacing={1}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      편의시설
-                    </Typography>
-                    <Stack
-                      spacing={1}
-                      flexWrap="wrap"
-                      direction="row"
-                      useFlexGap
-                    >
-                      {filterFacilities.map((facility) => (
-                        <Chip
-                          key={facility}
-                          label={facility}
-                          variant="outlined"
-                          sx={{ borderRadius: 2 }}
-                        />
-                      ))}
-                    </Stack>
-                  </Stack>
+                <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  방 종류
+                </Typography>
+                {["전체", "원룸", "투룸", "오피스텔", "아파트"].map(
+                  (type) => (
+                  <Button
+                    key={type}
+                    variant={type === "전체" ? "contained" : "text"}
+                    sx={{ justifyContent: "flex-start", borderRadius: 2 }}
+                  >
+                    {type}
+                  </Button>
+                  )
+                )}
                 </Stack>
+
+                <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  가격 범위
+                </Typography>
+                <Slider
+                  value={priceRange}
+                  min={200000}
+                  max={2000000}
+                  step={50000}
+                  valueLabelDisplay="auto"
+                  onChange={(_, value) =>
+                  setPriceRange(ensureArray(value as number[]))
+                  }
+                  onChangeCommitted={() => fetchRooms()}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {priceLabel}
+                </Typography>
+                </Stack>
+
+                <RouterLink to="/RoomMap">지도로 찾기</RouterLink>
+
+                <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  편의시설
+                </Typography>
+                <Stack
+                  spacing={1}
+                  flexWrap="wrap"
+                  direction="row"
+                  useFlexGap
+                >
+                  {filterFacilities.map((facility) => (
+                  <Chip
+                    key={facility}
+                    label={facility}
+                    variant="outlined"
+                    sx={{ borderRadius: 2 }}
+                  />
+                  ))}
+                </Stack>
+                </Stack>
+              </Stack>
               </Paper>
             </Grid>
             <Grid size={{ xs: 12, md: 9 }}>
@@ -714,7 +708,7 @@ export default function Rooms() {
                                 variant="outlined"
                                 size="small"
                                 sx={{ borderRadius: 999 }}
-                                onClick={() => handleShareLink(roomId)}
+                                onClick={() => handleShareLink(room)}
                               >
                                 공유 링크
                               </Button>

@@ -1,6 +1,7 @@
 // npm install \
 // react react-dom react-router-dom \
-// @mui/material @mui/icons-material @emotion/react @emotion/styled \
+// @mui/material @mui/icons-material 
+// @emotion/react @emotion/styled \
 // axios \
 // react-hook-form @hookform/resolvers \
 // zod \
