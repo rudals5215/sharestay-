@@ -90,8 +90,8 @@ export interface RoomApiResponse {
   type: string;
   availabilityStatus: number;
   description: string;
-  images: RoomImageResponse[];       // List<RoomImageResponse>
-  shareLinkUrl: string | null;       // String (nullable)
+  images: RoomImageResponse[];
+  shareLinkUrl?: string;  
 }
 
 /**
@@ -146,6 +146,6 @@ export const mapRoomFromApi = (room: RoomApiResponse): RoomSummary => {
     availabilityStatus: room.availabilityStatus,
     description: room.description,
     images: normalizedImages,
-    shareLinkUrl: room.shareLinkUrl ?? undefined,
+    shareLinkUrl: room.shareLinkUrl,
   };
 };

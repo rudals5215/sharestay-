@@ -37,11 +37,14 @@ public class RoomService {
         Host host = hostRepository.findById(request.getHostId())
                 .orElseThrow(() -> new IllegalArgumentException("Host not found"));
 
+        // 방 엔티티 생성
         Room room = request.toEntity(host);
 
         // 여기서 ShareLink 엔티티를 직접 생성해서 Room과 연관 걸어주기
         ShareLink shareLink = new ShareLink();
         room.setShareLink(shareLink);   // 한 줄로 양쪽 세팅 + cascade 로 같이 저장
+
+
         roomRepository.save(room);
 
         // 이미지 업로드 및 RoomImage 엔티티 생성
