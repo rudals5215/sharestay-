@@ -368,7 +368,7 @@ export default function Profile() {
                 ) : (
                   <Grid container spacing={2}>
                     {favoriteRooms.map((item) => (
-                      <Grid key={item.roomId} item xs={12} sm={6}>
+                      <Grid key={item.roomId} size={{ xs: 12, sm: 6 }}>
                         <FavoriteRoomCard room={item} />
                       </Grid>
                     ))}

@@ -113,7 +113,7 @@ export default function LifestyleSetup() {
 
             <Grid container spacing={1.5}>
               {lifestyleOptions.map((option) => (
-                <Grid item xs={12} sm={6} md={3} key={option}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={option}>
                   <FormControlLabel
                     control={
                       <Checkbox
