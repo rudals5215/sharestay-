@@ -46,11 +46,21 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      clearTokens();
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
+    //기존
+    // if (error.response?.status === 401) {
+    // 401 오류가 발생하고, 현재 페이지가 로그인 페이지가 아닐 때만 처리
+    if (
+      error.response?.status === 401 &&
+      window.location.pathname !== "/login"
+    ) {
+      // clearTokens();
+      // 기존 if문
+      // if (window.location.pathname !== "/login") {
+      //   window.location.href = "/login";
+      // }
+      // 사용자를 로그인 페이지로 보내기 전에 alert를 띄워 무슨 일이 일어났는지 알려줌
+      // window.location.href = "/login";
+      console.error("401 Unauthorized: 로그인 페이지로 강제 이동하는 로직을 비활성화했습니다. 백엔드 응답을 확인하세요.", error);
     }
     throw error;
   }
