@@ -1,4 +1,4 @@
-﻿// src/pages/EditRoom.tsx
+﻿﻿// src/pages/EditRoom.tsx
 import {
   Alert,
   Box,
@@ -212,7 +212,7 @@ export default function EditRoom() {
       const message =
         err instanceof Error
           ? err.message
-          : "諛⑹쓣 ??젣?섎뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.";
+          : "방을 삭제하는 중 오류가 발생했습니다.";
       alert(message);
     }
   };
@@ -236,13 +236,13 @@ export default function EditRoom() {
           : undefined;
 
       if (Number.isNaN(rentPrice)) {
-        throw new Error("?붿꽭 媛믪씠 ?щ컮瑜댁? ?딆뒿?덈떎.");
+        throw new Error("월세 값이 올바르지 않습니다.");
       }
       if (latitudeValue !== undefined && Number.isNaN(latitudeValue)) {
-        throw new Error("?꾨룄 媛믪씠 ?щ컮瑜댁? ?딆뒿?덈떎.");
+        throw new Error("위도 값이 올바르지 않습니다.");
       }
       if (longitudeValue !== undefined && Number.isNaN(longitudeValue)) {
-        throw new Error("寃쎈룄 媛믪씠 ?щ컮瑜댁? ?딆뒿?덈떎.");
+        throw new Error("경도 값이 올바르지 않습니다.");
       }
 
       const availabilityCode =
@@ -278,7 +278,7 @@ export default function EditRoom() {
       const message =
         err instanceof Error
           ? err.message
-          : "諛??뺣낫瑜??섏젙?섎뒗 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.";
+          : "방 정보를 수정하는 중 오류가 발생했습니다.";
       alert(message);
     }
   };
@@ -290,7 +290,7 @@ export default function EditRoom() {
         <Container sx={{ py: 8 }}>
           <Stack alignItems="center" spacing={2}>
             <CircularProgress />
-            <Typography color="text.secondary">諛??뺣낫瑜?遺덈윭?ㅻ뒗 以묒엯?덈떎...</Typography>
+            <Typography color="text.secondary">방 정보를 불러오는 중입니다...</Typography>
           </Stack>
         </Container>
         <SiteFooter />
@@ -306,13 +306,13 @@ export default function EditRoom() {
           <Paper sx={{ p: 4, borderRadius: 4 }}>
             <Stack spacing={2} alignItems="center">
               <Typography variant="h6" color="error" fontWeight={700}>
-                諛??뺣낫瑜?媛?몄삤吏 紐삵뻽?듬땲??
+                방 정보를 가져오지 못했습니다
               </Typography>
               <Typography color="text.secondary" textAlign="center">
                 {error}
               </Typography>
               <Button variant="contained" onClick={() => navigate("/rooms")}>
-                諛?紐⑸줉?쇰줈 ?뚯븘媛湲?
+                방 목록으로 돌아가기
               </Button>
             </Stack>
           </Paper>
@@ -328,10 +328,10 @@ export default function EditRoom() {
         <SiteHeader activePath="/rooms" />
         <Container sx={{ py: 8 }} maxWidth="sm">
           <Alert severity="warning">
-            諛??섏젙 沅뚰븳???놁뒿?덈떎. ?몄뒪??蹂몄씤 ?먮뒗 愿由ъ옄留??섏젙?????덉뒿?덈떎.
+            방 수정 권한이 없습니다. 호스트 본인 또는 관리자만 수정할 수 있습니다.
           </Alert>
           <Button sx={{ mt: 2 }} variant="contained" onClick={() => navigate("/rooms")}>
-            諛?紐⑸줉?쇰줈 ?뚯븘媛湲?
+            방 목록으로 돌아가기
           </Button>
         </Container>
         <SiteFooter />
@@ -346,10 +346,10 @@ export default function EditRoom() {
         <Stack spacing={3}>
           <Stack spacing={1}>
             <Typography variant="h4" fontWeight={800}>
-              諛??뺣낫 ?섏젙
+              방 정보 수정
             </Typography>
             <Typography color="text.secondary">
-              諛??쒕ぉ, 媛寃? 二쇱냼 諛??곸꽭 ?ㅻ챸???섏젙?????덉뒿?덈떎.
+              방 제목, 가격, 주소 및 상세 설명을 수정할 수 있습니다.
             </Typography>
           </Stack>
 
@@ -362,25 +362,25 @@ export default function EditRoom() {
           >
             <Box component="form" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
-                <SectionTitle icon={<HomeWork color="primary" />} title="湲곕낯 ?뺣낫" />
+                <SectionTitle icon={<HomeWork color="primary" />} title="기본 정보" />
                 <Grid container spacing={3}>
                   <Grid item xs={12}>
                     <FormTextField
                       name="title"
                       control={control}
-                      label="諛??쒕ぉ"
-                      placeholder="?? ?띾??낃뎄???꾨낫 3遺??먮８"
+                      label="방 제목"
+                      placeholder="예: 홍대입구역 도보 3분 원룸"
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <FormTextField
                       name="rentPrice"
                       control={control}
-                      label="?붿꽭"
-                      placeholder="?? 550000"
+                      label="월세"
+                      placeholder="예: 550000"
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position="start">??/InputAdornment>
+                          <InputAdornment position="start">₩</InputAdornment>
                         ),
                       }}
                     />
@@ -389,7 +389,7 @@ export default function EditRoom() {
                     <FormTextField
                       name="type"
                       control={control}
-                      label="諛??좏삎"
+                      label="방 유형"
                       select
                     >
                       {roomTypes.map((item) => (
@@ -403,7 +403,7 @@ export default function EditRoom() {
                     <FormTextField
                       name="availabilityStatus"
                       control={control}
-                      label="紐⑥쭛 ?곹깭"
+                      label="모집 상태"
                       select
                     >
                       {availabilityOptions.map((item) => (
@@ -417,8 +417,8 @@ export default function EditRoom() {
                     <FormTextField
                       name="address"
                       control={control}
-                      label="二쇱냼"
-                      placeholder="?? ?쒖슱 留덊룷援??묓솕濡?45"
+                      label="주소"
+                      placeholder="예: 서울 마포구 양화로 45"
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">
@@ -432,7 +432,7 @@ export default function EditRoom() {
                     <FormTextField
                       name="latitude"
                       control={control}
-                      label="?꾨룄"
+                      label="위도"
                       placeholder="37.12345"
                     />
                   </Grid>
@@ -440,23 +440,23 @@ export default function EditRoom() {
                     <FormTextField
                       name="longitude"
                       control={control}
-                      label="寃쎈룄"
+                      label="경도"
                       placeholder="126.98765"
                     />
                   </Grid>
                 </Grid>
 
-                <SectionTitle title="?곸꽭 ?ㅻ챸" />
+                <SectionTitle title="상세 설명" />
                 <FormTextField
                   name="description"
                   control={control}
-                  label="?곸꽭 ?ㅻ챸"
-                  placeholder="諛?援ъ“, 二쇰? ?섍꼍, ?앺솢 洹쒖튃 ?깆쓣 ?먯꽭???묒꽦??二쇱꽭??"
+                  label="상세 설명"
+                  placeholder="방 구조, 주변 환경, 생활 규칙 등을 자세히 작성해주세요."
                   multiline
                   minRows={6}
                 />
 
-                <SectionTitle title="?대?吏 ?낅줈?? />
+                <SectionTitle title="이미지 업로드" />
                 <Stack spacing={2}>
                   <input
                     type="file"
@@ -467,7 +467,7 @@ export default function EditRoom() {
                     onChange={handleImagesChange}
                   />
                   <Button variant="outlined" onClick={handleImagePick}>
-                    ?대?吏 ?좏깮 ({images.length}/6)
+                    이미지 선택 ({images.length}/6)
                   </Button>
                   {images.length > 0 && (
                     <Stack spacing={0.5}>
@@ -479,7 +479,7 @@ export default function EditRoom() {
                     </Stack>
                   )}
                   <Typography variant="caption" color="text.secondary">
-                    理쒕? 6?κ퉴吏 ?낅줈?쒗븷 ???덉뒿?덈떎. (JPG, PNG)
+                    최대 6장까지 업로드할 수 있습니다. (JPG, PNG)
                   </Typography>
                 </Stack>
 
@@ -491,7 +491,7 @@ export default function EditRoom() {
                 >
                   <Button variant="text" onClick={handleReset}
                   >
-                    蹂寃?痍⑥냼
+                    변경 취소
                   </Button>
                   <Button
                     type="submit"
@@ -499,7 +499,7 @@ export default function EditRoom() {
                     sx={{ minWidth: 180 }}
                     disabled={isSubmitting || !canSubmit}
                   >
-                    {isSubmitting ? "?섏젙 以?.." : "諛??뺣낫 ???}
+                    {isSubmitting ? "수정 중..." : "방 정보 저장"}
                   </Button>
                   {canManageRoom && (
                     <Button
@@ -508,7 +508,7 @@ export default function EditRoom() {
                       onClick={handleDeleteRoom}
                       disabled={isSubmitting}
                     >
-                      ??젣
+                      삭제
                     </Button>
                   )}
                 </Stack>
@@ -538,4 +538,3 @@ function SectionTitle({
     </Stack>
   );
 }
-
