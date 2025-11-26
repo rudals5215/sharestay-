@@ -78,6 +78,7 @@ const RoomMap: React.FC = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null); // 선택된 방 ID 상태
   const [hoveredRoomId, setHoveredRoomId] = useState<number | null>(null); // 마우스 오버된 방 ID 상태
+  const [highlightCircle, setHighlightCircle] = useState<any>(null); // 강조 효과를 위한 원 오버레이
 
   const handleToggleFacility = (facility: string) => {
     setFacilities((prev) => {
@@ -337,17 +338,10 @@ const RoomMap: React.FC = () => {
           contentText = `${representativeRoom.rentPrice.toLocaleString()}원`;
         }
 
-        const backgroundColor = isSelected
-          ? "#ff5722"
-          : isHovered
-          ? "#ffc107"
-          : "#fff";
-        const color = isSelected ? "#fff" : "#000";
-        const content = `<div style="background-color:${
-          isSelected ? "#ff5722" : "#fff"
-        };color:${
-          isSelected ? "#fff" : "#000"
-        };border:1px solid #888;border-radius:4px;padding:4px 8px;font-size:12px;font-weight:bold;white-space:nowrap;cursor:pointer;transition:background-color 0.2s, color 0.2s;">${contentText}</div>`;
+        // 하이라이트 효과를 원으로 대체하므로, 마커 자체의 스타일은 선택 여부에 따라 최소한으로 변경하거나 고정합니다.
+        const color = isSelected ? "#ff5722" : "#000";
+        const fontWeight = isSelected ? "900" : "bold";
+        const content = `<div style="background-color:#fff;color:${color};border:1px solid ${color};border-radius:4px;padding:4px 8px;font-size:12px;font-weight:${fontWeight};white-space:nowrap;cursor:pointer;transition:all 0.2s;">${contentText}</div>`;
 
         const overlay = new window.kakao.maps.CustomOverlay({
           position,
@@ -362,7 +356,7 @@ const RoomMap: React.FC = () => {
         return overlay;
       })
       .filter((overlay): overlay is any => overlay !== null);
-  }, [rooms, selectedRoomId, hoveredRoomId]);
+  }, [rooms, selectedRoomId]); // hoveredRoomId는 원으로 처리하므로 의존성에서 제거
 
   // 생성된 오버레이들을 지도에 업데이트하는 useEffect
   useEffect(() => {
@@ -381,6 +375,71 @@ const RoomMap: React.FC = () => {
       map.customOverlays.push(overlay);
     });
   }, [markers]);
+
+  // Pulsing animation을 위한 keyframes를 style 태그로 주입
+  useEffect(() => {
+    const styleId = "pulsing-animation-style";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.innerHTML = `
+        @keyframes pulse {
+          0% { transform: scale(0.8); opacity: 0.5; }
+          50% { transform: scale(1.2); opacity: 0.2; }
+          100% { transform: scale(0.8); opacity: 0.5; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // 선택 또는 호버 변경 시 하이라이트 원을 업데이트하는 useEffect
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    // 이전 원이 있으면 지도에서 제거
+    if (highlightCircle) {
+      highlightCircle.setMap(null);
+    }
+
+    const highlightId = selectedRoomId ?? hoveredRoomId;
+    if (!highlightId) {
+      setHighlightCircle(null);
+      return;
+    }
+
+    // 하이라이트할 방 찾기
+    const roomToHighlight = rooms.find((room) => room.id === highlightId);
+
+    if (roomToHighlight?.latitude && roomToHighlight?.longitude) {
+      const isSelected = roomToHighlight.id === selectedRoomId;
+
+      const content = document.createElement("div");
+      content.style.width = "120px"; // 너비를 가격표와 유사하게 조정
+      content.style.height = "40px"; // 높이를 가격표와 유사하게 조정
+      content.style.borderRadius = "8px"; // 둥근 사각형
+      content.style.backgroundColor = isSelected
+        ? "rgba(255, 87, 34, 0.3)"
+        : "rgba(128, 128, 128, 0.4)";
+      content.style.animation = "pulse 2s infinite ease-in-out";
+
+      const newCircleOverlay = new window.kakao.maps.CustomOverlay({
+        position: new window.kakao.maps.LatLng(
+          roomToHighlight.latitude,
+          roomToHighlight.longitude
+        ),
+        content: content,
+        yAnchor: 1, // 마커와 동일한 yAnchor로 위치 보정
+        xAnchor: 0.5, // 수평 중앙 정렬
+      });
+
+      newCircleOverlay.setMap(mapInstanceRef.current);
+      setHighlightCircle(newCircleOverlay);
+    } else {
+      setHighlightCircle(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoomId, hoveredRoomId, rooms]); // rooms가 변경될 때도 원을 다시 그려야 할 수 있음
 
   // 지도 컨테이너의 크기 변경을 감지하고 relayout을 호출하는 useEffect
   useEffect(() => {
@@ -478,14 +537,7 @@ const RoomMap: React.FC = () => {
     if (selectedRoomId === representativeRoom.id) {
       setSelectedRoomId(null);
     } else {
-      // 1. 지도 이동
-      const position = new window.kakao.maps.LatLng(
-        representativeRoom.latitude,
-        representativeRoom.longitude
-      );
-      mapInstanceRef.current.panTo(position);
-
-      // 2. 클릭된 방(또는 클러스터의 대표 방)의 ID를 상태로 저장
+      // 클릭된 방(또는 클러스터의 대표 방)의 ID를 상태로 저장
       setSelectedRoomId(representativeRoom.id);
       // 클러스터를 클릭한 경우, 해당 클러스터의 모든 방을 보여주기 위해
       // displayedRooms 로직에서 selectedRoomId를 사용하므로, 여기서는 ID만 설정하면 됨
