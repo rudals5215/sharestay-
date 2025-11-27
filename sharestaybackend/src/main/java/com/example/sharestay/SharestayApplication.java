@@ -257,6 +257,21 @@ public class SharestayApplication implements CommandLineRunner {
                 "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다."
         );
 
+        room1.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2FIMG_2838.jpg?alt=media&token=24eb0567-6bd2-4e79-aa6e-1f936b1476cb");
+
+        room2.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F51edef840db1a.png?alt=media&token=720e627b-8d23-4e7e-8fa1-6bd748a83ad9");
+        room2.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fliving-room-2732939_1280.jpg?alt=media&token=e2bf5e11-398c-4b87-80a1-28b988045d5f");
+
+        room3.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fbedroom-416062_640.jpg?alt=media&token=e8d9aceb-72c4-4b22-93d6-885e51b7f5e9");
+
+        room4.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fintelieo-sigmul-iissneun-minimeollijeum-chimdae.jpg?alt=media&token=7ac951f1-b017-4084-8d91-1e8feb5699a6");
+        room4.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fkitchen-6916200_640.jpg?alt=media&token=5d616e87-bf0a-4ac8-8253-d8f3f40c7d5f");
+
+        room5.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Froom-boy-2132349_1280.jpg?alt=media&token=e9f7131f-4be7-4987-be4e-fe88a5d9b197");
+
+        room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fhome-820389_1280.jpg?alt=media&token=e2d18205-4b4c-4200-a4d5-abe38d720185");
+        room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fbedroom-1872196_1280.jpg?alt=media&token=78d11423-e245-4b8a-8bd0-54e31587c66c");
+
         List<Room> rooms = Arrays.asList(room1, room2, room3, room4, room5, room6);
         roomRepository.saveAll(rooms);
 

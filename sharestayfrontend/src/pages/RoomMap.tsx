@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Box, CircularProgress, Alert } from "@mui/material";
 import SiteHeader from "../components/SiteHeader";
-import SiteFooter from "../components/SiteFooter";
 import { api } from "../lib/api";
 import type { RoomSummary, RoomApiResponse } from "../types/room"; // ✅ 변경: RoomApiResponse 타입도 같이 import
 import { mapRoomFromApi } from "../types/room";
@@ -13,12 +12,28 @@ declare global {
   }
 }
 
+type KakaoLatLng = {
+  getLat: () => number;
+  getLng: () => number;
+};
+
+type KakaoMapInstance = {
+  getCenter: () => KakaoLatLng;
+  relayout: () => void;
+};
+
+type KakaoMarker = unknown;
+
+type KakaoMarkerClusterer = {
+  clear: () => void;
+  addMarkers: (markers: KakaoMarker[]) => void;
+};
+
 const RoomMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const clustererRef = useRef<any>(null);
+  const mapInstanceRef = useRef<KakaoMapInstance | null>(null);
+  const clustererRef = useRef<KakaoMarkerClusterer | null>(null);
   const location = useLocation();
-  const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,8 +58,6 @@ const RoomMap: React.FC = () => {
           ? data.map(mapRoomFromApi)
           : [];
 
-        setRooms(roomList);
-
         // 마커 생성
         const markers = roomList
           .map((room) => {
@@ -60,7 +73,7 @@ const RoomMap: React.FC = () => {
             }
             return null;
           })
-          .filter((marker): marker is any => marker !== null);
+          .filter((marker): marker is KakaoMarker => marker !== null);
 
         if (clustererRef.current) {
           clustererRef.current.clear();
@@ -75,7 +88,7 @@ const RoomMap: React.FC = () => {
     }
 
     // ✅ 변경 3: 이제 이 함수 안에서 fetchRoomsNearby를 안전하게 호출 가능
-    const fetchRoomsForCurrentLocation = (map: any) => {
+    const fetchRoomsForCurrentLocation = (map: KakaoMapInstance | null) => {
       if (!map) return;
       const center = map.getCenter();
       const lat = center.getLat();
@@ -106,13 +119,13 @@ const RoomMap: React.FC = () => {
               center: userPosition,
               level: 5,
             });
-            mapInstanceRef.current = map;
+            mapInstanceRef.current = map as unknown as KakaoMapInstance;
 
             clustererRef.current = new window.kakao.maps.MarkerClusterer({
               map,
               averageCenter: true,
               minLevel: 6,
-            });
+            }) as unknown as KakaoMarkerClusterer;
 
             new window.kakao.maps.Marker({
               map,
@@ -134,13 +147,13 @@ const RoomMap: React.FC = () => {
               center: defaultPosition,
               level: 5,
             });
-            mapInstanceRef.current = map;
+            mapInstanceRef.current = map as unknown as KakaoMapInstance;
 
             clustererRef.current = new window.kakao.maps.MarkerClusterer({
               map,
               averageCenter: true,
               minLevel: 6,
-            });
+            }) as unknown as KakaoMarkerClusterer;
 
             fetchRoomsNearby(37.5665, 126.978);
           }
