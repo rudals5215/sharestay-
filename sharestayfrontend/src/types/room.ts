@@ -132,6 +132,8 @@ export interface ShareLinkResponse {
 export const mapRoomFromApi = (
   room: RoomApiResponse | RoomDetailApiResponse,
 ): RoomSummary => {
+  const roomId = room.roomId ?? room.id;
+
   const normalizedImages: RoomImage[] =
     room.images?.map((image) => ({
       id: image.id,

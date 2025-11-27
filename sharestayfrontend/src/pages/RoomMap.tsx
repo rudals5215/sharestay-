@@ -29,11 +29,11 @@ import {
   Chip,
   Modal,
   IconButton,
+  Fab,
 } from "@mui/material";
 import SiteHeader from "../components/SiteHeader";
-import FilterModal from "../components/map/FilterModal"; // 경로 수정
-import { roomTypeOptions, filterFacilities } from "../constants/mapConstants"; // 경로 수정
-import { getDistanceInMeters, formatPriceLabel } from "../utils/mapUtils"; // 경로 수정
+import CloseIcon from "@mui/icons-material/Close";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { api, getAccessToken } from "../lib/api";
 import type { RoomSummary } from "../types/room";
 import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
@@ -44,7 +44,24 @@ declare global {
   }
 }
 
-const defaultPriceRange: [number, number] = [0, 5000000];
+const roomTypeOptions = [
+  { value: "", label: "전체" },
+  { value: "ONE_ROOM", label: "원룸" },
+  { value: "TWO_ROOM", label: "투룸" },
+  { value: "OFFICETEL", label: "오피스텔" },
+  { value: "APARTMENT", label: "아파트" },
+];
+
+const filterFacilities = [
+  "에어컨",
+  "냉장고",
+  "세탁기",
+  "인터넷",
+  "주차장",
+  "헬스장",
+  "반려동물 가능",
+  "발코니",
+];
 
 const RoomMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -54,6 +71,7 @@ const RoomMap: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [rooms, setRooms] = useState<RoomSummary[]>([]); // 지도에 표시될 방 목록 상태 추가
 
+  const defaultPriceRange: [number, number] = [0, 5000000];
   // 필터 상태
   const [roomType, setRoomType] = useState<string>("");
   const [priceRange, setPriceRange] = useState<number[]>(defaultPriceRange);
@@ -62,23 +80,20 @@ const RoomMap: React.FC = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null); // 선택된 방 ID 상태
   const [hoveredRoomId, setHoveredRoomId] = useState<number | null>(null); // 마우스 오버된 방 ID 상태
-  const [highlightCircle, setHighlightCircle] = useState<any>(null); // 강조 효과를 위한 원 오버레이
+  const highlightOverlayRef = useRef<any>(null); // 강조 효과 오버레이를 관리하기 위한 ref
 
-  const handleToggleFacility = useCallback((facility: string) => {
+  const handleToggleFacility = (facility: string) => {
     setFacilities((prev) => {
       const next = new Set(prev);
       if (next.has(facility)) next.delete(facility);
       else next.add(facility);
       return next;
     });
-  }, []);
+  };
 
-  const handlePriceChange = useCallback(
-    (event: Event, newValue: number | number[]) => {
-      setPriceRange(newValue as number[]);
-    },
-    []
-  );
+  const handlePriceChange = (event: Event, newValue: number | number[]) => {
+    setPriceRange(newValue as number[]);
+  };
 
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps) {
@@ -107,12 +122,6 @@ const RoomMap: React.FC = () => {
             });
             mapInstanceRef.current = map; // 생성된 지도 인스턴스를 ref에 저장
 
-            new window.kakao.maps.Marker({
-              map,
-              position: userPosition,
-              title: "현재 위치",
-            });
-
             // 4. 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
             window.kakao.maps.event.addListener(map, "idle", () => {
               if (mapInstanceRef.current) {
@@ -140,7 +149,7 @@ const RoomMap: React.FC = () => {
               center: defaultPosition,
               level: 5,
             });
-            mapInstanceRef.current = map; // 생성된 지도 인스턴스를 ref에 저장
+            mapInstanceRef.current = map;
 
             // 4. 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
             window.kakao.maps.event.addListener(map, "idle", () => {
@@ -168,11 +177,13 @@ const RoomMap: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // 현재 지도 화면의 경계를 가져옵니다.
+        // 1. 현재 지도 화면의 사각 경계를 가져옵니다.
         const bounds = mapInstanceRef.current.getBounds();
+        const sw = bounds.getSouthWest(); // 남서쪽 좌표
         const center = mapInstanceRef.current.getCenter();
         const ne = bounds.getNorthEast(); // 북동쪽 좌표
 
+        // 2. API 요청 파라미터를 사각 경계 기준으로 변경합니다.
         // Haversine 공식을 사용하여 지도 중심에서 모서리까지의 거리를 계산합니다.
         const R = 6371; // 지구의 반지름 (km)
         const lat1 = center.getLat() * (Math.PI / 180);
@@ -190,6 +201,10 @@ const RoomMap: React.FC = () => {
         const radiusKm = R * c; // 계산된 반경 (km)
 
         const params: Record<string, any> = {
+          swLat: sw.getLat(),
+          swLng: sw.getLng(),
+          neLat: ne.getLat(),
+          neLng: ne.getLng(),
           lat,
           lng,
           radiusKm: Math.min(radiusKm, 50), // 최대 반경 50km 제한은 유지
@@ -237,6 +252,48 @@ const RoomMap: React.FC = () => {
     [priceRange, roomType, facilities]
   );
 
+  const handleRoomItemClick = useCallback(
+    (clusterOrRoom: RoomSummary[] | RoomSummary) => {
+      const cluster = Array.isArray(clusterOrRoom)
+        ? clusterOrRoom
+        : [clusterOrRoom];
+      const representativeRoom = cluster[0];
+
+      if (!representativeRoom?.id) return;
+
+      // 이미 선택된 마커를 다시 클릭하면 선택 해제
+      if (selectedRoomId === representativeRoom.id) {
+        setSelectedRoomId(null);
+      } else {
+        // 새로운 마커를 클릭하면 선택
+        setSelectedRoomId(representativeRoom.id);
+      }
+    },
+    [selectedRoomId] // selectedRoomId가 변경될 때마다 함수를 새로 만들어 최신 상태를 참조하도록 합니다.
+  );
+
+  const handleGoToMyLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const myPosition = new window.kakao.maps.LatLng(latitude, longitude);
+          const map = mapInstanceRef.current;
+          if (map) {
+            map.panTo(myPosition);
+            // 지도 이동 후, 해당 위치의 방들을 즉시 검색합니다.
+            fetchRoomsNearby(latitude, longitude, map.getLevel());
+          }
+        },
+        () => {
+          alert("현재 위치를 가져올 수 없습니다.");
+        }
+      );
+    } else {
+      alert("이 브라우저에서는 위치 정보를 지원하지 않습니다.");
+    }
+  }, [fetchRoomsNearby]);
+
   // useMemo를 사용하여 마커 객체들을 메모이제이션합니다.
   // rooms 배열이 변경될 때만 마커를 다시 생성합니다.
   const markers = useMemo(() => {
@@ -246,6 +303,25 @@ const RoomMap: React.FC = () => {
     // 2. 수동 클러스터링 로직
     const clusters: RoomSummary[][] = [];
     const clusteredRoomIds = new Set<number>();
+
+    // 위도, 경도를 이용해 두 지점 간의 거리를 미터(m) 단위로 계산하는 함수
+    const getDistanceInMeters = (
+      lat1: number,
+      lon1: number,
+      lat2: number,
+      lon2: number
+    ) => {
+      const R = 6371e3; // metres
+      const φ1 = (lat1 * Math.PI) / 180;
+      const φ2 = (lat2 * Math.PI) / 180;
+      const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+      const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
 
     for (const room of rooms) {
       if (room.id && !clusteredRoomIds.has(room.id)) {
@@ -295,6 +371,7 @@ const RoomMap: React.FC = () => {
         );
         let contentText = "";
         const isSelected = cluster.some((room) => room.id === selectedRoomId);
+        const isHovered = cluster.some((room) => room.id === hoveredRoomId);
 
         if (cluster.length > 1) {
           const otherCount = cluster.length - 1;
@@ -321,7 +398,7 @@ const RoomMap: React.FC = () => {
         return overlay;
       })
       .filter((overlay): overlay is any => overlay !== null);
-  }, [rooms, selectedRoomId]);
+  }, [rooms, selectedRoomId, handleRoomItemClick]);
 
   // 생성된 오버레이들을 지도에 업데이트하는 useEffect
   useEffect(() => {
@@ -349,9 +426,9 @@ const RoomMap: React.FC = () => {
       style.id = styleId;
       style.innerHTML = `
         @keyframes pulse {
-          0% { transform: scale(0.8); opacity: 0.5; }
-          50% { transform: scale(1.2); opacity: 0.2; }
-          100% { transform: scale(0.8); opacity: 0.5; }
+          0% { transform: scale(0.95); opacity: 0.7; }
+          70% { transform: scale(1.4); opacity: 0; }
+          100% { transform: scale(0.95); opacity: 0; }
         }
       `;
       document.head.appendChild(style);
@@ -361,15 +438,14 @@ const RoomMap: React.FC = () => {
   // 선택 또는 호버 변경 시 하이라이트 원을 업데이트하는 useEffect
   useEffect(() => {
     if (!mapInstanceRef.current) return;
-
-    // 이전 원이 있으면 지도에서 제거
-    if (highlightCircle) {
-      highlightCircle.setMap(null);
+    
+    // 이전 하이라이트가 있으면 먼저 제거
+    if (highlightOverlayRef.current) {
+      highlightOverlayRef.current.setMap(null);
     }
 
     const highlightId = selectedRoomId ?? hoveredRoomId;
     if (!highlightId) {
-      setHighlightCircle(null);
       return;
     }
 
@@ -380,35 +456,32 @@ const RoomMap: React.FC = () => {
       const isSelected = roomToHighlight.id === selectedRoomId;
 
       const content = document.createElement("div");
-      content.style.width = "120px"; // 너비를 가격표와 유사하게 조정
-      content.style.height = "40px"; // 높이를 가격표와 유사하게 조정
+      content.style.width = "100px";
+      content.style.height = "30px";
       content.style.borderRadius = "8px"; // 둥근 사각형
       content.style.backgroundColor = isSelected
         ? "rgba(255, 87, 34, 0.3)"
         : "rgba(128, 128, 128, 0.4)";
-      content.style.animation = "pulse 2s infinite ease-in-out";
-
-      const newCircleOverlay = new window.kakao.maps.CustomOverlay({
+      content.style.animation = "pulse 1.5s infinite ease-out";
+      
+      const newHighlightOverlay = new window.kakao.maps.CustomOverlay({
         position: new window.kakao.maps.LatLng(
           roomToHighlight.latitude,
           roomToHighlight.longitude
         ),
         content: content,
         yAnchor: 1, // 마커와 동일한 yAnchor로 위치 보정
-        xAnchor: 0.5, // 수평 중앙 정렬
+        xAnchor: 0.5,
+        zIndex: -1, // 마커 뒤에 표시되도록 z-index 설정
       });
 
-      newCircleOverlay.setMap(mapInstanceRef.current);
-      setHighlightCircle(newCircleOverlay);
-    } else {
-      setHighlightCircle(null);
+      newHighlightOverlay.setMap(mapInstanceRef.current);
+      highlightOverlayRef.current = newHighlightOverlay;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoomId, hoveredRoomId, rooms]); // rooms가 변경될 때도 원을 다시 그려야 할 수 있음
 
   // 지도 컨테이너 resize 대응
   useEffect(() => {
-    // 지도 컨테이너의 크기 변경을 감지하고 relayout을 호출하는 useEffect
     const mapContainer = mapRef.current;
     if (!mapContainer) return;
 
@@ -422,25 +495,25 @@ const RoomMap: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  const handleApplyFilter = useCallback(() => {
+  const handleApplyFilter = () => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
     const center = map.getCenter();
     setSelectedRoomId(null); // 필터 적용 시 선택 해제
     fetchRoomsNearby(center.getLat(), center.getLng(), map.getLevel());
     setIsFilterModalOpen(false); // 필터 적용 후 모달을 닫습니다.
-  }, [fetchRoomsNearby]);
+  };
 
-  const handleResetFilter = useCallback(() => {
+  const handleResetFilter = () => {
     setRoomType("");
     setPriceRange(defaultPriceRange);
     setFacilities(new Set());
     setSelectedRoomId(null); // 필터 초기화 시 선택 해제
     // 상태 변경 후 useEffect가 데이터 fetching을 처리하므로 모달만 닫습니다.
     setIsFilterModalOpen(false);
-  }, []);
+  };
 
-  const handleSearch = useCallback(() => {
+  const handleSearch = () => {
     if (!searchQuery || !window.kakao) return;
 
     new window.kakao.maps.services.Places().keywordSearch(
@@ -458,16 +531,22 @@ const RoomMap: React.FC = () => {
         }
       }
     );
-  }, [fetchRoomsNearby, searchQuery]);
+  };
 
-  const handleKeyPress = useCallback(
-    (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === "Enter") {
-        handleSearch();
-      }
-    },
-    [handleSearch]
-  );
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  // 가격 포맷팅 함수
+  const formatPriceLabel = (value: number) => {
+    if (value >= 2000000) {
+      return "200만+";
+    }
+    if (value === 0) return "0원";
+    return `${value / 10000}만`;
+  };
 
   const getClusterRepresentativeId = (
     clusterOrRoom: RoomSummary[] | RoomSummary
@@ -478,32 +557,16 @@ const RoomMap: React.FC = () => {
     return cluster[0]?.id ?? null;
   };
 
-  const handleRoomItemClick = useCallback(
-    (clusterOrRoom: RoomSummary[] | RoomSummary) => {
-      const cluster = Array.isArray(clusterOrRoom)
-        ? clusterOrRoom
-        : [clusterOrRoom];
-      const representativeRoom = cluster[0];
-
-      if (
-        !mapInstanceRef.current ||
-        !representativeRoom.latitude ||
-        !representativeRoom.longitude ||
-        !representativeRoom.id
-      )
-        return;
-
-      // 이미 선택된 마커를 다시 클릭하면 선택 해제
-      if (selectedRoomId === representativeRoom.id) {
-        setSelectedRoomId(null);
-      } else {
-        setSelectedRoomId(representativeRoom.id);
-        // 클러스터를 클릭한 경우, 해당 클러스터의 모든 방을 보여주기 위해
-        // displayedRooms 로직에서 selectedRoomId를 사용하므로, 여기서는 ID만 설정하면 됨
-      }
-    },
-    [selectedRoomId]
-  );
+  const modalStyle = {
+    position: "absolute" as "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: 400,
+    bgcolor: "background.paper",
+    boxShadow: 24,
+    p: 4,
+  };
 
   // 목록에 표시할 방 목록을 결정합니다.
   const displayedRooms = useMemo(() => {
@@ -622,14 +685,16 @@ const RoomMap: React.FC = () => {
                     onMouseLeave={() => setHoveredRoomId(null)}
                     sx={{
                       backgroundColor:
-                        selectedRoomId === room.id
+                        selectedRoomId === room.id || hoveredRoomId === room.id
                           ? "action.hover"
                           : "transparent",
                       transition: "background-color 0.3s",
                     }}
                   >
                     <ListItemButton
-                      onClick={() => handleRoomItemClick(room)}
+                      onClick={() => {
+                        navigate(`/rooms/${room.id}`);
+                      }}
                       sx={{
                         borderLeft:
                           hoveredRoomId === room.id
@@ -662,7 +727,17 @@ const RoomMap: React.FC = () => {
           </Box>
         </Paper>
         {/* 오른쪽 지도 영역 */}
-        <Box ref={mapRef} sx={{ width: "100%", height: "100%" }} />
+        <Box sx={{ width: "100%", height: "100%", position: "relative" }}>
+          <Box ref={mapRef} sx={{ width: "100%", height: "100%" }} />
+          <Fab
+            color="primary"
+            aria-label="go to my location"
+            sx={{ position: "absolute", bottom: 24, right: 24 }}
+            onClick={handleGoToMyLocation}
+          >
+            <MyLocationIcon />
+          </Fab>
+        </Box>
         {(isLoading || error) && (
           <Box position="absolute" top={16} right={16} p={2} zIndex={1000}>
             {isLoading && <CircularProgress />}
@@ -674,18 +749,114 @@ const RoomMap: React.FC = () => {
           </Box>
         )}
         {/* 필터 모달 */}
-        <FilterModal
+        <Modal
           open={isFilterModalOpen}
           onClose={() => setIsFilterModalOpen(false)}
-          onApply={handleApplyFilter}
-          onReset={handleResetFilter}
-          roomType={roomType}
-          onRoomTypeChange={(e) => setRoomType(e.target.value)}
-          priceRange={priceRange}
-          onPriceChange={handlePriceChange}
-          facilities={facilities}
-          onToggleFacility={handleToggleFacility}
-        />
+          aria-labelledby="filter-modal-title"
+        >
+          <Box sx={modalStyle}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <Typography id="filter-modal-title" variant="h6" component="h2">
+                필터
+              </Typography>
+              <IconButton
+                onClick={() => setIsFilterModalOpen(false)}
+                sx={{ p: 0.5 }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+
+            <Stack spacing={3}>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  방 종류
+                </Typography>
+                <Select
+                  value={roomType}
+                  onChange={(e) => setRoomType(e.target.value)}
+                  fullWidth
+                  size="small"
+                  displayEmpty
+                >
+                  {roomTypeOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  가격 범위
+                </Typography>
+                <Slider
+                  value={priceRange}
+                  onChange={handlePriceChange}
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={formatPriceLabel} // 툴팁 포맷 적용
+                  min={0}
+                  max={2000000}
+                  step={10000}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {formatPriceLabel(priceRange[0])} ~{" "}
+                  {formatPriceLabel(priceRange[1])}
+                </Typography>
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  편의시설
+                </Typography>
+                <Stack spacing={1} flexWrap="wrap" direction="row" useFlexGap>
+                  {filterFacilities.map((facility) => (
+                    <Chip
+                      key={facility}
+                      label={facility}
+                      variant={facilities.has(facility) ? "filled" : "outlined"}
+                      color={facilities.has(facility) ? "primary" : "default"}
+                      onClick={() => handleToggleFacility(facility)}
+                      sx={{ borderRadius: 2 }}
+                    />
+                  ))}
+                </Stack>
+              </Stack>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 1,
+                  mt: 2,
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={handleResetFilter}
+                  fullWidth
+                >
+                  초기화
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleApplyFilter}
+                  fullWidth
+                >
+                  적용
+                </Button>
+              </Box>
+            </Stack>
+          </Box>
+        </Modal>
       </Box>
       {/* 필요하면 나중에 지도 아래에 리스트 붙일 수 있음 */}
       {/* <SiteFooter /> */}
