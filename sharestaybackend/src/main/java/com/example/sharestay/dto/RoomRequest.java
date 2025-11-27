@@ -24,6 +24,20 @@ public class RoomRequest {   // 방 등록, 수정 할 때 필요함
     private int availabilityStatus;
     private String description;
 
+    // 옵션: 0개 이상 선택 가능 → List<String> (nullable 허용)
+    private List<String> options;
+
+    // 편의 메서드 (null 방지용)
+    public List<String> safeOptions() {
+        return options == null ? List.of() : options;
+    }
+    /*
+        클라이언트가 옵션 안 보냈으면 options == null
+        빈 배열 보내면 options.isEmpty() == true
+        둘 다 “옵션 없음” 으로 처리하면 됨.
+     */
+
+
     private double latitude;
     private double longitude;
 

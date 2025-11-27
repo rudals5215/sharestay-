@@ -28,7 +28,6 @@ import { useAuth } from "../auth/useAuth";
 import type {
   RoomAvailabilityStatus,
   RoomApiResponse,
-  RoomRequestPayload,
 } from "../types/room";
 
 // ------------------------------
@@ -72,12 +71,13 @@ type FormValues = z.infer<typeof roomSchema>;
 // Options
 // ------------------------------
 const roomTypes = [
-  { value: "ONE_ROOM", label: "원룸" },
-  { value: "TWO_ROOM", label: "투룸" },
-  { value: "OFFICETEL", label: "오피스텔" },
-  { value: "APARTMENT", label: "아파트" },
-  { value: "ETC", label: "기타" },
+  { value: "", label: "전체 유형" },
+  { value: "원룸", label: "원룸" },
+  { value: "투룸", label: "투룸" },
+  { value: "오피스텔", label: "오피스텔" },
+  { value: "아파트", label: "아파트" },
 ];
+
 
 const availabilityOptions = [
   { value: "AVAILABLE", label: "모집중" },
@@ -107,20 +107,19 @@ const lifestyleOptions = [
 ];
 
 const facilityOptions = [
-  "주차",
-  "와이파이",
-  "세탁기",
   "에어컨",
   "냉장고",
-  "전자레인지",
-  "가스레인지",
+  "세탁기",
+  "인터넷",
+  "와이파이",
+  "엘리베이터",
   "TV",
   "침대",
   "책상",
-  "옷장",
-  "베란다",
-  "엘리베이터",
   "보안시설",
+  "주차장",
+  "헬스장",
+  "베란다",
   "반려동물 가능",
 ];
 

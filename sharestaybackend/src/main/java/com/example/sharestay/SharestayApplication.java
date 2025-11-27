@@ -194,6 +194,7 @@ public class SharestayApplication implements CommandLineRunner {
                 0, // 모집중
                 "깔끔하고 교통 좋은 원룸입니다."
         );
+        room1.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터");
 
         Room room2 = new Room(
                 host1,
@@ -206,6 +207,7 @@ public class SharestayApplication implements CommandLineRunner {
                 0, // 모집중
                 "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다."
         );
+        room2.setOptions("와이파이, TV, 주차장, 침대");
 
         // host2 방 2개
         Room room3 = new Room(
@@ -219,6 +221,7 @@ public class SharestayApplication implements CommandLineRunner {
                 1, // 예약중
                 "강남역 인근 직장인에게 최적의 원룸입니다."
         );
+        room3.setOptions("엘리베이터, 주차장, 와이파이, 전자렌지");
 
         Room room4 = new Room(
                 host2,
@@ -231,6 +234,8 @@ public class SharestayApplication implements CommandLineRunner {
                 1, // 예약중
                 "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다."
         );
+
+        room3.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터, TV");
 
         // host3 방 2개
         Room room5 = new Room(
@@ -257,7 +262,7 @@ public class SharestayApplication implements CommandLineRunner {
                 "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다."
         );
 
-        room1.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2FIMG_2838.jpg?alt=media&token=24eb0567-6bd2-4e79-aa6e-1f936b1476cb");
+        room1.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F3d-kwaejeoghan-dogseosil.jpg?alt=media&token=6aa1cc21-20e5-4bc6-b5b5-4552daecd01d");
 
         room2.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F51edef840db1a.png?alt=media&token=720e627b-8d23-4e7e-8fa1-6bd748a83ad9");
         room2.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fliving-room-2732939_1280.jpg?alt=media&token=e2bf5e11-398c-4b87-80a1-28b988045d5f");

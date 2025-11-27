@@ -73,6 +73,9 @@ public class RoomService {
             }
         }
 
+        // ✅ 옵션 매핑
+        room.setOptionsFromList(request.safeOptions());   // 이거 합칠 수 없나 알아보기
+
         Room savedRoom = roomRepository.save(room); // room을 저장하면 roomImages도 함께 저장됨
 
         return toResponse(savedRoom);
@@ -185,6 +188,7 @@ public class RoomService {
                 room.getType(),
                 room.getAvailabilityStatus(),
                 room.getDescription(),
+                room.getOptions(),
                 imageUrls,
                 room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null
         );

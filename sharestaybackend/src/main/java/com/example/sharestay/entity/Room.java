@@ -8,8 +8,10 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Data
 @Entity
@@ -48,6 +50,18 @@ public class Room {
 
     @Column(nullable = false)
     private String description;  // 상세 설명 같은 거..?
+
+    // 필터 검색 안 돼서 추가함
+    @Column(length = 500)
+    private String options;  // 예: "에어컨, 냉장고, 세탁기"
+    /*
+        Application 에서 room.setOption으로 넣으면 프론트에서 이미 쓰고 있는 extractTags 함수가
+        "에어컨, 냉장고, 세탁기"를 잘라서 [ "에어컨", "냉장고", "세탁기" ]로 만들어줌.
+     */
+
+    // 나중에 생활패턴도 추가하고 필터에 넣어 놔야 할 것 같음
+
+
 
     // Room 이 저장될 때 함께 저장, 삭제 될 때 함께 삭제
     @OneToOne(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -109,4 +123,31 @@ RoomImage와 ShareLink의 cascade 관계는 명확히 관리되지만, 순환참
         image.setRoom(this);               // 역방향 연관관계 세팅
         this.roomImages.add(image);        // 컬렉션에 추가
     }
+
+    // options 검색할 때 필요 문자열을 List 형태로 변환
+    // DTO → 엔티티 저장할 때 사용
+    public void setOptionsFromList(List<String> optionList) {
+        if (optionList == null || optionList.isEmpty()) {
+            this.options = null;    // 혹은 "" 로 통일해도 됨
+        } else {
+            this.options = optionList.stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .distinct()
+                    .collect(Collectors.joining(","));
+        }
+    }
+
+    // 엔티티 → DTO 보낼 때 사용 (문자열 → 리스트)
+    public List<String> getOptionsAsList() {
+        if (options == null || options.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(options.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+
 }
