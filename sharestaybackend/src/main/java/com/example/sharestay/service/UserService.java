@@ -1,17 +1,18 @@
 package com.example.sharestay.service;
 
+import com.example.sharestay.dto.*;
 import com.example.sharestay.entity.Host;
 import com.example.sharestay.repository.HostRepository;
 import com.example.sharestay.entity.User;
 import com.example.sharestay.repository.UserRepository;
-import com.example.sharestay.dto.AuthResponse;
-import com.example.sharestay.dto.SignupRequest;
-import com.example.sharestay.dto.UpdateUserRequest;
-import com.example.sharestay.dto.UserProfileResponse;
 import com.example.sharestay.security.SecurityUtils;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -143,5 +144,35 @@ public class UserService {
         if (!SecurityUtils.isAdmin()) {
             throw new AccessDeniedException("관리자 권한이 필요합니다.");
         }
+    }
+
+    @Transactional
+    public void banUser(String email, BanRequest request) {
+        User user = userRepository.findByUsername(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setBanned(true);
+        user.setBanReason(request.getReason());
+
+        if (request.getExpireAt() != null) {
+            user.setBanExpireAt(LocalDateTime.parse(request.getExpireAt()));
+        }
+
+        user.setBanMemo(request.getMemo());
+
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void unbanUser(String email) {
+        User user = userRepository.findByUsername(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setBanned(false);
+        user.setBanReason(null);
+        user.setBanExpireAt(null);
+        user.setBanMemo(null);
+
+        userRepository.save(user);
     }
 }

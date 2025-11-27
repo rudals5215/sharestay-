@@ -22,11 +22,10 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 
 interface BanRecord {
-  id: number;
   reason: string;
   bannedAt: string;
-  endDate?: string;
-  memo?: string;
+  endDate?: string | null;
+  memo?: string | null;
   isActive: boolean;
 }
 
@@ -34,42 +33,60 @@ interface User {
   id: number;
   username: string;
   nickname?: string;
+  banned: boolean;
 }
 
 export default function AdminBans() {
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedEmail, setSelectedEmail] = useState<string>("");
   const [banRecords, setBanRecords] = useState<BanRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const [endDate, setEndDate] = useState<string | undefined>(undefined);
+  const [endDate, setEndDate] = useState<string>("");
   const [memo, setMemo] = useState("");
 
+  // 사용자 목록 가져오기
   const fetchUsers = async () => {
-    const { data } = await api.get<User[]>("/users");
-    setUsers(data);
-  };
-
-  const fetchBanRecords = async (userId: number) => {
-    setLoading(true);
-    const { data } = await api.get<BanRecord[]>(`/bans/users/${userId}`);
-    setBanRecords(data);
-    setLoading(false);
-  };
-
-  // 날짜 및 시간 형식을 안전하게 변환하는 헬퍼 함수
-  const formatDateTime = (dateString?: string | null) => {
-    if (!dateString) return "-";
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) { // 유효하지 않은 날짜인 경우
-        return "-";
+      const { data } = await api.get<User[]>("/users");
+      setUsers(data);
+    } catch (err) {
+      alert("사용자 목록을 불러오는 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 선택한 사용자 ban 기록 가져오기 (기록이 없으면 서버에서 단순 상태 확인)
+  const fetchBanRecords = async (email: string) => {
+    setLoading(true);
+    setBanRecords([]); // 이전 기록을 초기화합니다.
+    try {
+      // 서버에서 기록 API가 없으면 프론트에서 마지막 등록만 보여주도록 초기화
+      const user = users.find((u) => u.username === email);
+      setBanRecords([
+        {
+          reason: reason || "-",
+          bannedAt: new Date().toISOString(),
+          endDate: endDate || null,
+          memo: memo || null,
+          isActive: user?.banned ?? false,
+        },
+      ]);
+    } catch {
+      alert("정지 기록을 불러오는 중 오류가 발생했습니다.");
+      if (!user || !user.banned) {
+        // 사용자가 존재하지 않거나 정지 상태가 아니면 아무것도 하지 않습니다.
+        return;
       }
-      return date.toLocaleString();
-    } catch (e) {
-      return "-"; // 변환 중 오류 발생 시
+      // 실제 서버 API 엔드포인트로 교체해야 합니다.
+      const { data } = await api.get<BanRecord[]>(`/users/${email}/bans`);
+      setBanRecords(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("정지 기록을 불러오는 중 오류가 발생했습니다.", err);
+      // 오류 발생 시 빈 배열로 설정하여 UI 일관성을 유지합니다.
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -78,10 +95,13 @@ export default function AdminBans() {
   }, []);
 
   useEffect(() => {
-    if (selectedUserId) {
-      void fetchBanRecords(selectedUserId);
+    if (selectedEmail) {
+      void fetchBanRecords(selectedEmail);
+    } else {
+      setBanRecords([]); // 선택된 사용자가 없으면 목록을 비웁니다.
     }
-  }, [selectedUserId]);
+  }, [selectedEmail]);
+  }, [selectedEmail, users]);
 
   const handleOpenDialog = () => {
     setReason("");
@@ -93,31 +113,40 @@ export default function AdminBans() {
   const handleCloseDialog = () => setDialogOpen(false);
 
   const handleBanSubmit = async () => {
-    if (!selectedUserId) return;
-
+    if (!selectedEmail) return;
     try {
-      await api.post(`/bans/users/${selectedUserId}`, {
+      await api.post(`/users/${selectedEmail}/ban`, {
         reason,
-        // endDate가 존재하면 ISO 8601 형식의 UTC 시간으로 변환하여 전송
-        // "2024-01-01T10:00" -> "2024-01-01T10:00:00.000Z"
-        expireAt: endDate ? new Date(endDate).toISOString() : null,
+        expireAt: endDate || null,
         memo,
       });
-      void fetchBanRecords(selectedUserId);
+      const user = users.find((u) => u.username === selectedEmail);
+      if (user) user.banned = true;
+      setUsers([...users]);
+      void fetchBanRecords(selectedEmail);
       handleCloseDialog();
-    } catch (err) {
+    } catch {
       alert("정지 등록 중 오류가 발생했습니다.");
     }
   };
 
-  const handleUnban = async (banId: number) => {
-    if (!selectedUserId) return;
+  const handleUnban = async () => {
+    if (!selectedEmail) return;
     try {
-      await api.delete(`/bans/${banId}`);
-      void fetchBanRecords(selectedUserId);
-    } catch (err) {
+      await api.post(`/users/${selectedEmail}/unban`);
+      const user = users.find((u) => u.username === selectedEmail);
+      if (user) user.banned = false;
+      setUsers([...users]);
+      void fetchBanRecords(selectedEmail);
+    } catch {
       alert("정지 해제 중 오류가 발생했습니다.");
     }
+  };
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString();
   };
 
   return (
@@ -139,7 +168,7 @@ export default function AdminBans() {
           </Box>
           <Button
             variant="contained"
-            disabled={!selectedUserId}
+            disabled={!selectedEmail}
             onClick={handleOpenDialog}
           >
             정지 등록
@@ -147,17 +176,20 @@ export default function AdminBans() {
         </Stack>
 
         <TextField
-            select
-            label="사용자 선택"
-            value={selectedUserId ?? ""}
-            onChange={(e) => setSelectedUserId(Number(e.target.value))}
-            sx={{ mb: 2, minWidth: 240 }}
-            size="small"
-          >
-          <MenuItem value=""><em>선택하세요</em></MenuItem>
+          select
+          label="사용자 선택"
+          value={selectedEmail}
+          onChange={(e) => setSelectedEmail(e.target.value)}
+          sx={{ mb: 2, minWidth: 240 }}
+          size="small"
+        >
+          <MenuItem value="">
+            <em>선택하세요</em>
+          </MenuItem>
           {users.map((user) => (
-            <MenuItem key={user.id} value={user.id}>
-              {user.nickname ?? user.username} ({user.username})
+            <MenuItem key={user.id} value={user.username}>
+              {user.nickname ?? user.username} ({user.username}){" "}
+              {user.banned ? "[정지]" : ""}
             </MenuItem>
           ))}
         </TextField>
@@ -180,8 +212,8 @@ export default function AdminBans() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {banRecords.map((ban) => (
-                  <TableRow key={ban.id}>
+                {banRecords.map((ban, idx) => (
+                  <TableRow key={idx}>
                     <TableCell>{ban.reason}</TableCell>
                     <TableCell>{formatDateTime(ban.bannedAt)}</TableCell>
                     <TableCell>{formatDateTime(ban.endDate)}</TableCell>
@@ -189,17 +221,19 @@ export default function AdminBans() {
                     <TableCell>
                       {ban.isActive ? (
                         <Chip label="활성" color="error" size="small" />
-                      ) : (<Chip label="해제" size="small" />)}
+                      ) : (
+                        <Chip label="해제" size="small" />
+                      )}
                     </TableCell>
                     <TableCell align="right">
                       {ban.isActive && (
                         <Button
                           variant="outlined"
-                          color="error"
+                          color="warning"
                           size="small"
-                          onClick={() => handleUnban(ban.id)}
+                          onClick={handleUnban}
                         >
-                          정지 해제
+                          해제
                         </Button>
                       )}
                     </TableCell>
@@ -211,7 +245,6 @@ export default function AdminBans() {
         </Box>
       </Paper>
 
-      {/* 정지 등록 다이얼로그 */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog}>
         <DialogTitle>사용자 정지 등록</DialogTitle>
         <DialogContent>
@@ -223,12 +256,11 @@ export default function AdminBans() {
               fullWidth
             />
             <TextField
-              label="종료일 (선택)"
+              label="종료일(선택)"
               type="datetime-local"
-              value={endDate ?? ""}
+              value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               fullWidth
-              // label이 날짜 형식과 겹치지 않도록 항상 작게 표시
               InputLabelProps={{
                 shrink: true,
               }}
@@ -245,7 +277,7 @@ export default function AdminBans() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>취소</Button>
-          <Button onClick={handleBanSubmit} variant="contained">
+          <Button onClick={handleBanSubmit} variant="contained" color="error">
             등록
           </Button>
         </DialogActions>

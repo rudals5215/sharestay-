@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Date;
-import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -30,7 +29,7 @@ public class User {
     private String loginType; // local or google
 
     @Column(nullable = false, unique = true)
-    String nickname = "google_" + UUID.randomUUID().toString().substring(0, 8);
+    private String nickname;
 
     @Column(name = "address")
     private String address;
@@ -47,9 +46,6 @@ public class User {
     @Column(name = "life_style")
     private String lifeStyle;
 
-    @Column(name = "is_banned", nullable = false)
-    private boolean banned = false;
-
     @PrePersist
     public void prePersist() {
         if (this.signupDate == null) {
@@ -64,8 +60,7 @@ public class User {
                 String address,
                 String phoneNumber,
                 String role,
-                String lifeStyle,
-                boolean banned) {
+                String lifeStyle) {
         this.username = username;
         this.password = password;
         this.loginType = loginType;
@@ -74,7 +69,6 @@ public class User {
         this.phoneNumber = phoneNumber;
         this.role = role;
         this.lifeStyle = lifeStyle;
-        this.banned = banned;
     }
 
     public static User createGoogleUser(String email) {
@@ -83,21 +77,14 @@ public class User {
 
     public static User createGoogleUser(String email, String encodedPassword) {
         String safePassword = encodedPassword != null ? encodedPassword : "";
-        User user = new User(
-                email, // username(email)
+        User user = new User(email,
                 safePassword,
                 "google",
-                "google_" + UUID.randomUUID().toString().substring(0, 6), // unique nickname
+                "GoogleUser",
                 null,
                 "000-0000-0000",
                 "GUEST",
-                null,
-                false
-        );
+                null);
         return user;
-    }
-
-    public boolean isBanned() {
-        return this.banned;
     }
 }

@@ -13,19 +13,17 @@ import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../auth/useAuth";
-import { Link as RouterLink, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import { Link as RouterLink } from "react-router-dom";
 
 const GOOGLE_OAUTH2_URL = "http://localhost:8080/oauth2/authorization/google";
 
 const schema = z.object({
   username: z
     .string()
-    .min(1, "아이디(이메일)를 입력하세요.")
-    .email("올바른 이메일 형식이어야 합니다."),
+    .min(1, "이메일을 입력해주세요.")
+    .email("올바른 이메일 형식을 입력해주세요."),
   password: z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다."),
 });
 
@@ -41,53 +39,20 @@ export default function Login() {
     resolver: zodResolver(schema),
   });
 
-  const [searchParams] = useSearchParams();
-
-  // 🔹 [1] 구글 로그인에서 banned 처리
-  useEffect(() => {
-    const error = searchParams.get("error");
-    if (error === "banned_user") {
-      alert("정지된 계정입니다. 관리자에게 문의하세요.");
-      return;
-    }
-  }, [searchParams]);
-
-  // 🔹 [2] 구글 로그인 성공 처리
-  useEffect(() => {
-    const accessToken = searchParams.get("accessToken");
-    const refreshToken = searchParams.get("refreshToken");
-    const username = searchParams.get("username");
-    const error = searchParams.get("error");
-
-    if (error) return; // banned 등 에러 상태면 로그인 금지
-
-    if (accessToken && refreshToken) {
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-      localStorage.setItem("username", username || "");
-      window.location.href = "/";
-    }
-  }, [searchParams]);
-
-  // 🔹 [3] 로컬 로그인 처리 + banned 처리 통일
   const onSubmit = async (values: FormValues) => {
     try {
       await login(values.username, values.password);
       window.location.href = "/";
-    } catch (error: any) {
-      // Axios 기반 에러 처리
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        const data = error.response?.data;
-        if (status === 403 && data?.error === "banned_user") {
-          alert("정지된 계정입니다. 관리자에게 문의하세요.");
-          return;
-        }
+    } catch (err: any) {
+      console.error("[Login] 로그인 실패:", err);
+
+      if (err?.response) {
+        console.error("[Login] status:", err.response.status);
+        console.error("[Login] data:", err.response.data);
+        alert(`로그인 실패 (${err.response.status})`);
+      } else {
+        alert("로그인 중 오류가 발생했습니다. 콘솔을 확인해 주세요.");
       }
-      // 일반 에러 처리
-      const message =
-        error instanceof Error ? error.message : "로그인에 실패했습니다.";
-      alert(message);
     }
   };
 
@@ -129,7 +94,6 @@ export default function Login() {
             </Typography>
           </Box>
 
-          {/* 이메일 입력 */}
           <Stack spacing={1}>
             <TextField
               label="이메일"
@@ -147,7 +111,6 @@ export default function Login() {
             />
           </Stack>
 
-          {/* 비밀번호 입력 */}
           <Stack spacing={1}>
             <TextField
               label="비밀번호"
@@ -165,8 +128,6 @@ export default function Login() {
               }}
             />
           </Stack>
-
-          {/* 회원가입 / 비밀번호 찾기 */}
           <Stack
             direction="row"
             justifyContent="space-between"
@@ -188,7 +149,6 @@ export default function Login() {
             </Link>
           </Stack>
 
-          {/* 로컬 로그인 버튼 */}
           <Button
             type="submit"
             variant="contained"
@@ -198,8 +158,6 @@ export default function Login() {
           >
             {isSubmitting ? "로그인 중..." : "로그인"}
           </Button>
-
-          {/* 구글 로그인 버튼 */}
           <Button
             variant="outlined"
             size="large"
