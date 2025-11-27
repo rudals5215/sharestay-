@@ -9,6 +9,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+} from "@mui/material";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useForm } from "react-hook-form";
@@ -27,8 +28,8 @@ const GOOGLE_OAUTH2_URL = "http://localhost:8080/oauth2/authorization/google";
 const schema = z.object({
   username: z
     .string()
-    .min(1, "아이디(이메일)를 입력하세요.")
-    .email("올바른 이메일 형식이어야 합니다."),
+    .min(1, "이메일을 입력해주세요.")
+    .email("올바른 이메일 형식을 입력해주세요."),
   password: z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다."),
 });
 
@@ -88,6 +89,7 @@ export default function Login() {
   //===== 구글 로그인 버튼 클릭
   const handleGoogleLogin = () => {
     window.location.href = GOOGLE_OAUTH2_URL;
+  };
   };
 
   return (
@@ -195,6 +197,7 @@ export default function Login() {
             onClick={handleGoogleLogin} // 구글 로그인 버튼 이벤트
             sx={{
               borderRadius: 2,
+              py: 1.4,
               py: 1.4,
               fontWeight: 700,
               borderColor: "#040505ff",

@@ -1,5 +1,8 @@
 package com.example.sharestay.security;
 
+import com.example.sharestay.entity.User;
+import com.example.sharestay.repository.UserRepository;
+import com.example.sharestay.service.BanService;
 import com.example.sharestay.service.JwtService;
 import com.example.sharestay.service.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
@@ -15,20 +18,24 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
+    private final BanService banService;
+    private final UserRepository userRepository;
 
     public JwtAuthenticationFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsService) {
         if (jwtService == null) throw new IllegalArgumentException("jwtService cannot be null");
         if (userDetailsService == null) throw new IllegalArgumentException("userDetailsService cannot be null");
+        if (banService == null) throw new IllegalArgumentException("banService cannot be null");
+        if (userRepository == null) throw new IllegalArgumentException("userRepository cannot be null");
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.banService = banService;
+        this.userRepository = userRepository;
     }
 
     @Override

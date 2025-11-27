@@ -6,6 +6,8 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -16,17 +18,19 @@ import {
   TextField,
   Typography,
   CircularProgress,
-  MenuItem,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import CancelScheduleSendOutlinedIcon from "@mui/icons-material/CancelScheduleSendOutlined";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../lib/api";
 
 interface BanRecord {
-  id: number;
+  banId: number;
+  userId: number;
   reason: string;
   bannedAt: string;
-  endDate?: string;
-  memo?: string;
+  endDate?: string | null;
+  memo?: string | null;
   isActive: boolean;
 }
 
@@ -36,16 +40,40 @@ interface User {
   nickname?: string;
 }
 
+type DurationPreset = "1d" | "7d" | "30d" | "permanent";
+
 export default function AdminBans() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [banRecords, setBanRecords] = useState<BanRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
   const [reason, setReason] = useState("");
-  const [endDate, setEndDate] = useState<string | undefined>(undefined);
+  const [endDate, setEndDate] = useState<string>("");
   const [memo, setMemo] = useState("");
+
+  const [unbanDialogOpen, setUnbanDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [targetBan, setTargetBan] = useState<BanRecord | null>(null);
+  const [editReason, setEditReason] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+  const [editMemo, setEditMemo] = useState("");
+
+  const userLabelMap = useMemo(
+    () =>
+      users.reduce<Record<number, string>>((map, user) => {
+        map[user.id] = `${user.nickname ?? user.username} (${user.username})`;
+        return map;
+      }, {}),
+    [users]
+  );
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+  };
 
   const fetchUsers = async () => {
     const { data } = await api.get<User[]>("/users");
@@ -54,65 +82,128 @@ export default function AdminBans() {
 
   const fetchBanRecords = async (userId: number) => {
     setLoading(true);
-    const { data } = await api.get<BanRecord[]>(`/bans/users/${userId}`);
-    setBanRecords(data);
-    setLoading(false);
+    try {
+      const { data } = await api.get<BanRecord[]>(`/bans/users/${userId}`);
+      setBanRecords(data);
+    } catch (err) {
+      alert("정지 기록을 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // 날짜 및 시간 형식을 안전하게 변환하는 헬퍼 함수
-  const formatDateTime = (dateString?: string | null) => {
-    if (!dateString) return "-";
+  const fetchAllBans = async () => {
+    setLoading(true);
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) { // 유효하지 않은 날짜인 경우
-        return "-";
-      }
-      return date.toLocaleString();
-    } catch (e) {
-      return "-"; // 변환 중 오류 발생 시
+      const { data } = await api.get<BanRecord[]>(`/bans`);
+      setBanRecords(data);
+    } catch (err) {
+      alert("전체 정지 기록을 불러오는 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     void fetchUsers();
+    void fetchAllBans();
   }, []);
 
   useEffect(() => {
-    if (selectedUserId) {
-      void fetchBanRecords(selectedUserId);
+    if (!selectedUserId) {
+      void fetchAllBans();
+      return;
     }
+    void fetchBanRecords(selectedUserId);
   }, [selectedUserId]);
 
-  const handleOpenDialog = () => {
+  const handleOpenRegisterDialog = () => {
     setReason("");
     setEndDate("");
     setMemo("");
-    setDialogOpen(true);
+    setRegisterDialogOpen(true);
   };
 
-  const handleCloseDialog = () => setDialogOpen(false);
-
   const handleBanSubmit = async () => {
-    if (!selectedUserId) return;
-
+    if (!selectedUserId) {
+      alert("먼저 사용자를 선택해주세요.");
+      return;
+    }
+    if (!reason.trim()) {
+      alert("정지 사유를 입력해주세요.");
+      return;
+    }
     try {
       await api.post(`/bans/users/${selectedUserId}`, {
         reason,
         expireAt: endDate || null,
         memo,
       });
-      void fetchBanRecords(selectedUserId);
-      handleCloseDialog();
+      if (selectedUserId) {
+        void fetchBanRecords(selectedUserId);
+      }
+      setRegisterDialogOpen(false);
     } catch (err) {
       alert("정지 등록 중 오류가 발생했습니다.");
     }
   };
 
-  const handleUnban = async (banId: number) => {
-    if (!selectedUserId) return;
+  const handleDurationPreset = (preset: DurationPreset, setter: (value: string) => void) => {
+    const now = new Date();
+    let date: Date | null = null;
+    switch (preset) {
+      case "1d":
+        date = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        break;
+      case "7d":
+        date = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        break;
+      case "30d":
+        date = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        break;
+      case "permanent":
+        date = null;
+        break;
+    }
+    setter(
+      date
+        ? new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16)
+        : ""
+    );
+  };
+
+  const openUnbanDialog = (ban: BanRecord) => {
+    setTargetBan(ban);
+    setUnbanDialogOpen(true);
+  };
+
+  const openEditDialog = (ban: BanRecord) => {
+    setTargetBan(ban);
+    setEditReason(ban.reason);
+    setEditEndDate(
+      ban.endDate
+        ? new Date(new Date(ban.endDate).getTime() - new Date().getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16)
+        : ""
+    );
+    setEditMemo(ban.memo ?? "");
+    setEditDialogOpen(true);
+  };
+
+  const handleUnbanConfirm = async () => {
+    if (!targetBan) return;
     try {
-      await api.delete(`/bans/${banId}`);
-      void fetchBanRecords(selectedUserId);
+      await api.delete(`/bans/${targetBan.banId}`);
+      if (selectedUserId) {
+        void fetchBanRecords(selectedUserId);
+      } else {
+        void fetchAllBans();
+      }
+      setUnbanDialogOpen(false);
+      setTargetBan(null);
     } catch (err) {
       alert("정지 해제 중 오류가 발생했습니다.");
     }
@@ -132,27 +223,33 @@ export default function AdminBans() {
               사용자 정지 관리
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              사용자를 선택하여 정지 기록을 보거나 정지시킬 수 있습니다.
+              사용자를 선택하여 정지 기록을 조회·등록·해제할 수 있습니다. 미선택 시 전체 기록을 보여줍니다.
             </Typography>
           </Box>
           <Button
             variant="contained"
             disabled={!selectedUserId}
-            onClick={handleOpenDialog}
+            onClick={handleOpenRegisterDialog}
+            startIcon={<CancelScheduleSendOutlinedIcon />}
           >
             정지 등록
           </Button>
         </Stack>
 
         <TextField
-            select
-            label="사용자 선택"
-            value={selectedUserId ?? ""}
-            onChange={(e) => setSelectedUserId(Number(e.target.value))}
-            sx={{ mb: 2, minWidth: 240 }}
-            size="small"
-          >
-          <MenuItem value=""><em>선택하세요</em></MenuItem>
+          select
+          label="사용자 선택"
+          value={selectedUserId ?? ""}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSelectedUserId(value === "" ? null : Number(value));
+          }}
+          sx={{ mb: 2, minWidth: 260 }}
+          size="small"
+        >
+          <MenuItem value="">
+            <em>전체 보기</em>
+          </MenuItem>
           {users.map((user) => (
             <MenuItem key={user.id} value={user.id}>
               {user.nickname ?? user.username} ({user.username})
@@ -169,6 +266,7 @@ export default function AdminBans() {
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell>사용자</TableCell>
                   <TableCell>사유</TableCell>
                   <TableCell>시작일</TableCell>
                   <TableCell>종료일</TableCell>
@@ -179,26 +277,37 @@ export default function AdminBans() {
               </TableHead>
               <TableBody>
                 {banRecords.map((ban) => (
-                  <TableRow key={ban.id}>
+                  <TableRow key={ban.banId}>
+                    <TableCell>{userLabelMap[ban.userId] ?? `#${ban.userId}`}</TableCell>
                     <TableCell>{ban.reason}</TableCell>
                     <TableCell>{formatDateTime(ban.bannedAt)}</TableCell>
                     <TableCell>{formatDateTime(ban.endDate)}</TableCell>
                     <TableCell>{ban.memo ?? "-"}</TableCell>
                     <TableCell>
                       {ban.isActive ? (
-                        <Chip label="활성" color="error" size="small" />
-                      ) : (<Chip label="해제" size="small" />)}
+                        <Chip label="정지" color="error" size="small" />
+                      ) : (
+                        <Chip label="해제" size="small" />
+                      )}
                     </TableCell>
                     <TableCell align="right">
                       {ban.isActive && (
-                        <Button
-                          variant="outlined"
-                          color="error"
-                          size="small"
-                          onClick={() => handleUnban(ban.id)}
-                        >
-                          정지 해제
-                        </Button>
+                        <>
+                          <IconButton
+                            aria-label="정지 수정"
+                            onClick={() => openEditDialog(ban)}
+                            size="small"
+                          >
+                            <EditOutlinedIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            aria-label="정지 해제"
+                            onClick={() => openUnbanDialog(ban)}
+                            size="small"
+                          >
+                            <CancelScheduleSendOutlinedIcon fontSize="small" />
+                          </IconButton>
+                        </>
                       )}
                     </TableCell>
                   </TableRow>
@@ -209,8 +318,7 @@ export default function AdminBans() {
         </Box>
       </Paper>
 
-      {/* 정지 등록 다이얼로그 */}
-      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
+      <Dialog open={registerDialogOpen} onClose={() => setRegisterDialogOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle>사용자 정지 등록</DialogTitle>
         <DialogContent>
           <Stack spacing={2} mt={1}>
@@ -219,14 +327,29 @@ export default function AdminBans() {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               fullWidth
+              required
             />
             <TextField
-              label="종료일 (선택)"
+              label="종료일(선택)"
               type="datetime-local"
-              value={endDate ?? ""}
+              value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               fullWidth
             />
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Button variant="outlined" size="small" onClick={() => handleDurationPreset("1d", setEndDate)}>
+                +1일
+              </Button>
+              <Button variant="outlined" size="small" onClick={() => handleDurationPreset("7d", setEndDate)}>
+                +7일
+              </Button>
+              <Button variant="outlined" size="small" onClick={() => handleDurationPreset("30d", setEndDate)}>
+                +30일
+              </Button>
+              <Button variant="text" size="small" onClick={() => handleDurationPreset("permanent", setEndDate)}>
+                영구
+              </Button>
+            </Stack>
             <TextField
               label="메모 (선택)"
               value={memo}
@@ -235,12 +358,117 @@ export default function AdminBans() {
               minRows={3}
               fullWidth
             />
+            <Typography variant="caption" color="text.secondary">
+              종료일을 비워두면 영구 정지로 처리됩니다.
+            </Typography>
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDialog}>취소</Button>
+          <Button onClick={() => setRegisterDialogOpen(false)}>취소</Button>
           <Button onClick={handleBanSubmit} variant="contained">
             등록
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={unbanDialogOpen} onClose={() => setUnbanDialogOpen(false)}>
+        <DialogTitle>정지 해제</DialogTitle>
+        <DialogContent>
+          <Stack spacing={1.5} mt={1}>
+            <Typography>
+              {targetBan
+                ? `${userLabelMap[targetBan.userId] ?? `#${targetBan.userId}`} 님의 정지를 해제하시겠습니까?`
+                : "정지를 해제하시겠습니까?"}
+            </Typography>
+            {targetBan && (
+              <>
+                <Typography variant="body2" color="text.secondary">
+                  사유: {targetBan.reason}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  종료일: {formatDateTime(targetBan.endDate)}
+                </Typography>
+              </>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setUnbanDialogOpen(false)}>취소</Button>
+          <Button onClick={handleUnbanConfirm} variant="contained" color="error">
+            해제
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>정지 내용 수정</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} mt={1}>
+            <TextField
+              label="정지 사유"
+              value={editReason}
+              onChange={(e) => setEditReason(e.target.value)}
+              fullWidth
+              required
+            />
+            <TextField
+              label="종료일(선택)"
+              type="datetime-local"
+              value={editEndDate}
+              onChange={(e) => setEditEndDate(e.target.value)}
+              fullWidth
+            />
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Button variant="outlined" size="small" onClick={() => handleDurationPreset("1d", setEditEndDate)}>
+                +1일
+              </Button>
+              <Button variant="outlined" size="small" onClick={() => handleDurationPreset("7d", setEditEndDate)}>
+                +7일
+              </Button>
+              <Button variant="outlined" size="small" onClick={() => handleDurationPreset("30d", setEditEndDate)}>
+                +30일
+              </Button>
+              <Button variant="text" size="small" onClick={() => handleDurationPreset("permanent", setEditEndDate)}>
+                영구
+              </Button>
+            </Stack>
+            <TextField
+              label="메모 (선택)"
+              value={editMemo}
+              onChange={(e) => setEditMemo(e.target.value)}
+              multiline
+              minRows={3}
+              fullWidth
+            />
+            <Typography variant="caption" color="text.secondary">
+              종료일을 비워두면 영구 정지로 처리됩니다.
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)}>취소</Button>
+          <Button
+            onClick={async () => {
+              if (!targetBan) return;
+              try {
+                await api.patch(`/bans/${targetBan.banId}`, {
+                  reason: editReason,
+                  expireAt: editEndDate || null,
+                  memo: editMemo,
+                });
+                if (selectedUserId) {
+                  void fetchBanRecords(selectedUserId);
+                } else {
+                  void fetchAllBans();
+                }
+                setEditDialogOpen(false);
+              } catch (err) {
+                alert("정지 수정 중 오류가 발생했습니다.");
+              }
+            }}
+            variant="contained"
+          >
+            저장
           </Button>
         </DialogActions>
       </Dialog>

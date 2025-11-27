@@ -18,7 +18,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(nullable = false, updatable = false, name = "user_id")
     private Long id;
-
+챙ㄷ
     @Column(unique = true)
     private String username;
 
@@ -87,4 +87,9 @@ public class User {
                 null);
         return user;
     }
+
+    public boolean isBanned() {
+        return isBanned();
+    }
+
 }
