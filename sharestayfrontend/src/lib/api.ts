@@ -4,18 +4,17 @@ import axios, { AxiosError } from "axios";
 const ACCESS_TOKEN_KEY = "jwt";
 const USERNAME_KEY = "auth_username";
 
-// 백엔드 API와 통신하기 위한 axios 인스턴스를 생성한다.
+// 백엔드 API와 통신하기 위한 axios 인스턴스를 생성합니다.
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE,
   headers: { "Content-Type": "application/json" },
 });
 
-// 세션 저장소에 담긴 액세스 토큰을 읽어온다.
+// 세션 스토리지에 저장된 토큰/아이디를 관리하는 함수들
 function getAccessToken() {
   return sessionStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-// 최근 로그인한 사용자의 아이디(username/email)를 저장한다.
 function getStoredUsername() {
   return sessionStorage.getItem(USERNAME_KEY);
 }
@@ -30,13 +29,12 @@ function setStoredUsername(username: string | null) {
   else sessionStorage.removeItem(USERNAME_KEY);
 }
 
-// 로그아웃 시 토큰과 사용자 정보를 함께 비운다.
 function clearTokens() {
   setAccessToken(null);
   setStoredUsername(null);
 }
 
-// 모든 요청에 액세스 토큰이 있으면 Authorization 헤더를 자동으로 붙인다.
+// 모든 요청에 Authorization 헤더를 자동으로 붙입니다.
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -46,21 +44,22 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    //기존
-    // if (error.response?.status === 401) {
-    // 401 오류가 발생하고, 현재 페이지가 로그인 페이지가 아닐 때만 처리
-    if (
-      error.response?.status === 401 &&
-      window.location.pathname !== "/login"
-    ) {
-      // clearTokens();
-      // 기존 if문
-      // if (window.location.pathname !== "/login") {
-      //   window.location.href = "/login";
-      // }
-      // 사용자를 로그인 페이지로 보내기 전에 alert를 띄워 무슨 일이 일어났는지 알려줌
-      // window.location.href = "/login";
-      console.error("401 Unauthorized: 로그인 페이지로 강제 이동하는 로직을 비활성화했습니다. 백엔드 응답을 확인하세요.", error);
+    if (error.response?.status === 401 && window.location.pathname !== "/login") {
+      console.error(
+        "401 Unauthorized: 로그인이 필요한 요청입니다. 백엔드 응답을 확인하세요.",
+        error
+      );
+    }
+
+    if (error.response?.status === 403) {
+      const message =
+        (error.response.data as { message?: string } | undefined)?.message ??
+        "정지된 계정입니다. 관리자에게 문의하세요.";
+      alert(message);
+      clearTokens();
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
     }
     throw error;
   }

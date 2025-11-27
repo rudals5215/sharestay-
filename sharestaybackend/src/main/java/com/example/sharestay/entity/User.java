@@ -87,4 +87,9 @@ public class User {
                 null);
         return user;
     }
+
+    public boolean isBanned() {
+        return isBanned();
+    }
+
 }
