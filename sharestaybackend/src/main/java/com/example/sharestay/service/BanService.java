@@ -22,54 +22,63 @@ import java.util.stream.Collectors;
 public class BanService {
 
     private final BanRepository banRepository;
-    private final UserRepository userRepository; // UserRepository가 필요합니다.
+    private final UserRepository userRepository;
 
     /**
      * 사용자를 정지 처리합니다.
-     *
-     * @param userId  정지시킬 사용자 ID
-     * @param request 정지 요청 정보
-     * @return 생성된 정지 정보
      */
     @Transactional
     public BanResponse banUser(Long userId, BanRequest request) {
-        // 1. 사용자가 존재하는지 확인
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 사용자를 찾을 수 없습니다. ID: " + userId));
 
-        // 2. 이미 활성 상태의 정지 기록이 있는지 확인
         getActiveBanByUserId(userId).ifPresent(ban -> {
             throw new IllegalStateException("이미 정지된 사용자입니다.");
         });
 
-        // 3. Ban 엔티티 생성
         Ban ban = Ban.createBan(user, request.getReason(), request.getExpireAt(), request.getMemo());
-
-        // 4. 저장 후 DTO로 변환하여 반환
         Ban savedBan = banRepository.save(ban);
         return BanResponse.from(savedBan);
     }
 
     /**
-     * 사용자의 정지를 해제합니다.
-     *
-     * @param userId 정지 해제할 사용자 ID
+     * 사용자 단위로 정지를 해제합니다.
      */
     @Transactional
     public void unbanUser(Long userId) {
-        // 1. 활성 상태의 정지 기록 조회
         Ban activeBan = getActiveBanByUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 사용자에 활성 정지 기록이 없습니다. ID: " + userId));
-
-        // 2. 정지 기록을 비활성화
         activeBan.deactivate();
     }
 
     /**
-     * 특정 사용자의 모든 정지 기록을 조회합니다.
-     *
-     * @param userId 사용자 ID
-     * @return 정지 기록 리스트
+     * 개별 정지 ID로 비활성화합니다.
+     */
+    @Transactional
+    public void unbanByBanId(Long banId) {
+        Ban ban = banRepository.findById(banId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 정지 ID를 찾을 수 없습니다. ID: " + banId));
+        if (ban.isActive()) {
+            ban.deactivate();
+        }
+    }
+
+    /**
+     * 활성 정지의 만료일/사유/메모를 수정합니다.
+     */
+    @Transactional
+    public BanResponse updateBan(Long banId, BanRequest request) {
+        Ban ban = banRepository.findById(banId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 정지 ID를 찾을 수 없습니다. ID: " + banId));
+        if (!ban.isActive()) {
+            throw new IllegalStateException("해제된 정지는 수정할 수 없습니다.");
+        }
+        ban.update(request.getReason(), request.getExpireAt(), request.getMemo());
+        return BanResponse.from(ban);
+    }
+
+    /**
+     * 특정 사용자의 정지 기록을 반환합니다.
      */
     public List<BanResponse> getBanHistory(Long userId) {
         if (!userRepository.existsById(userId)) {
@@ -81,8 +90,17 @@ public class BanService {
     }
 
     /**
+     * 모든 정지 기록을 반환합니다.
+     */
+    public List<BanResponse> getAllBans() {
+        return banRepository.findAll().stream()
+                .map(BanResponse::from)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * 만료되지 않은 활성 정지 기록을 조회합니다.
-     * 만료되었는데 isActive 가 true 면 자동으로 비활성화 후 빈 Optional을 반환합니다.
+     * 만료되었는데 isActive가 true이면 자동으로 비활성화 후 빈 Optional을 반환합니다.
      */
     @Transactional
     public Optional<Ban> getActiveBanByUserId(Long userId) {
