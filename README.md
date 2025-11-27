@@ -142,7 +142,7 @@ src/
 - `/login`, `/signup`
 - `/rooms`, `/guide`, `/list-room`, `/safety-map`
 - `/forgot-password`, `/terms`, `/privacy`
-- `/profile`, `/admin/users` (보호 라우트)
+- `/profile`, `/admin` (보호 라우트)
 
 `src/App.tsx`에서 전체 라우팅 구성을 확인할 수 있으며, 일부 페이지는 향후 백엔드 API 연동에 맞춰 확장됩니다.
 

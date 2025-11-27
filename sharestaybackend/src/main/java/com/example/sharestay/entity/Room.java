@@ -102,4 +102,11 @@ RoomImage와 ShareLink의 cascade 관계는 명확히 관리되지만, 순환참
     // update()로, 수정할 때 매번 필드를 하나하나 꺼내서 set 할 필요가 없음.
     // room.update(request) 하면 끝
 
+    // RoomImage 더미데이터 때문에 만들어 놓은 거
+    public void addRoomImage(String imageUrl) {
+        RoomImage image = new RoomImage();  // Lombok @Data / @NoArgsConstructor 있으니까 기본 생성자 사용
+        image.setImageUrl(imageUrl);
+        image.setRoom(this);               // 역방향 연관관계 세팅
+        this.roomImages.add(image);        // 컬렉션에 추가
+    }
 }

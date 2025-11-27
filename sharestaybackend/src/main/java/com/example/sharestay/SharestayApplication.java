@@ -9,6 +9,7 @@ import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.entity.*;
 
 
+import com.example.sharestay.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -25,6 +26,7 @@ public class SharestayApplication implements CommandLineRunner {
     private final HostRepository hostRepository;
     private final RoomRepository roomRepository;
     private final FavoriteRepository favoriteRepository;
+    private final RoomService roomService;
 
     public static void main(String[] args) {
         SpringApplication.run(SharestayApplication.class, args);
@@ -34,11 +36,15 @@ public class SharestayApplication implements CommandLineRunner {
     public void run(String... args) {
         PasswordEncoder encoder = new BCryptPasswordEncoder();
 
+        // 이미 초기 데이터 있으면 다시 안 넣기
         if (userRepository.existsByUsername("kim1@test.com")) {
             return;
         }
 
-        User user = new User(
+    /* -------------------------
+       1. ADMIN 계정 2개
+    -------------------------- */
+        User admin1 = new User(
                 "kim1@test.com",
                 encoder.encode("user1234"),
                 "LOCAL",
@@ -48,229 +54,249 @@ public class SharestayApplication implements CommandLineRunner {
                 "ADMIN",
                 "금연 · 반려동물 없음 · 조용한 활동 선호"
         );
-        userRepository.save(user);
+        userRepository.save(admin1);
+
+        User admin2 = new User(
+                "admin2@test.com",
+                encoder.encode("admin2345"),
+                "LOCAL",
+                "관리자2",
+                "서울, 대한민국",
+                "010-2222-9999",
+                "ADMIN",
+                "시스템 운영 및 모니터링 담당 관리자 계정"
+        );
+        userRepository.save(admin2);
 
 
+    /* -------------------------
+       2. HOST 계정 3개
+    -------------------------- */
+        User hostUser1 = new User(
+                "host1@test.com",
+                encoder.encode("host1234"),
+                "LOCAL",
+                "홍대 호스트",
+                "서울 마포구",
+                "010-1111-1111",
+                "HOST",
+                "깨끗한 방을 좋아하는 호스트입니다."
+        );
+        userRepository.save(hostUser1);
+
+        User hostUser2 = new User(
+                "host2@test.com",
+                encoder.encode("host2234"),
+                "LOCAL",
+                "강남 호스트",
+                "서울 강남구",
+                "010-2222-1111",
+                "HOST",
+                "직장인과 장기 거주자를 선호합니다."
+        );
+        userRepository.save(hostUser2);
+
+        User hostUser3 = new User(
+                "host3@test.com",
+                encoder.encode("host3234"),
+                "LOCAL",
+                "잠실 호스트",
+                "서울 송파구",
+                "010-3333-1111",
+                "HOST",
+                "교통과 치안을 중시하는 호스트입니다."
+        );
+        userRepository.save(hostUser3);
+
+
+    /* -------------------------
+       3. GUEST 계정 3개
+    -------------------------- */
+        User guest1 = new User(
+                "guest1@test.com",
+                encoder.encode("guest1234"),
+                "LOCAL",
+                "김게스트",
+                "부산 해운대",
+                "010-4444-4444",
+                "GUEST",
+                "조용한 환경과 청결한 방을 선호합니다."
+        );
+        userRepository.save(guest1);
+
+        User guest2 = new User(
+                "guest2@test.com",
+                encoder.encode("guest2234"),
+                "LOCAL",
+                "박여행",
+                "대구 수성구",
+                "010-5555-5555",
+                "GUEST",
+                "가성비 좋은 방을 선호합니다."
+        );
+        userRepository.save(guest2);
+
+        User guest3 = new User(
+                "guest3@test.com",
+                encoder.encode("guest3234"),
+                "LOCAL",
+                "최출장",
+                "서울 노원구",
+                "010-6666-5555",
+                "GUEST",
+                "주차 가능 숙소를 선호합니다."
+        );
+        userRepository.save(guest3);
+
+
+    /* -------------------------
+       4. Host 엔티티 3개
+    -------------------------- */
         Host host1 = new Host(
-                "깨끗한 방을 좋아하는 호스트입니다.",  // introduction
-                true,                                 // termsAgreed
-                user                                  // user (연결된 User)
+                "홍대/합정 인근에서 조용한 생활을 돕는 호스트입니다.",
+                true,
+                hostUser1
         );
 
-        // Room 객체 생성
-        Room room = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "홍대입구 근처 원룸",             // title
-                55.5,                           // rentPrice
-                "서울특별시 마포구 서교동 12-3",    // address
-                "원룸",                          // type
-                37.557123,                      // latitude (위도)
-                126.923456,                     // longitude (경도)
-                2,                              // availabilityStatus (최대 인원)
-                "깔끔하고 교통 좋은 원룸입니다."      // description
+        Host host2 = new Host(
+                "강남 직장인을 위한 최적의 숙소를 제공합니다.",
+                true,
+                hostUser2
         );
 
+        Host host3 = new Host(
+                "잠실 야경과 편리한 교통을 자랑하는 호스트입니다.",
+                true,
+                hostUser3
+        );
+
+        hostRepository.save(host1);
+        hostRepository.save(host2);
+        hostRepository.save(host3);
+
+
+    /* -------------------------
+       5. Room 6개 (호스트별로 분배)
+          availabilityStatus:
+          0 = 모집중, 1 = 예약중, 2 = 마감
+    -------------------------- */
+
+        // host1 방 2개
+        Room room1 = new Room(
+                host1,
+                "홍대입구 근처 원룸",
+                550000,
+                "서울특별시 마포구 서교동 12-3",
+                "원룸",
+                37.557123,
+                126.923456,
+                0, // 모집중
+                "깔끔하고 교통 좋은 원룸입니다."
+        );
 
         Room room2 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "강남역 도보 5분 원룸",            // title
-                80.0,                           // rentPrice
-                "서울특별시 강남구 역삼동 123-4",   // address
-                "원룸",                          // type
-                37.497942,                      // latitude (위도)
-                127.027621,                     // longitude (경도)
-                1,                              // availabilityStatus (최대 인원)
-                "강남역 인근 직장인에게 최적의 원룸입니다." // description
+                host1,
+                "합정역 루프탑 사용 가능 쉐어하우스",
+                450000,
+                "서울특별시 마포구 합정동 321-8",
+                "쉐어하우스",
+                37.549911,
+                126.914905,
+                0, // 모집중
+                "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다."
         );
 
+        // host2 방 2개
         Room room3 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "신촌역 근처 투룸",               // title
-                65.0,                           // rentPrice
-                "서울특별시 서대문구 창천동 45-7", // address
-                "투룸",                          // type
-                37.559819,                      // latitude (위도)
-                126.942308,                     // longitude (경도)
-                3,                              // availabilityStatus (최대 인원)
-                "연세대/이대생에게 인기 많은 조용한 투룸입니다." // description
+                host2,
+                "강남역 도보 5분 원룸",
+                300000,
+                "서울특별시 강남구 역삼동 123-4",
+                "원룸",
+                37.497942,
+                127.027621,
+                1, // 예약중
+                "강남역 인근 직장인에게 최적의 원룸입니다."
         );
 
         Room room4 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "건대입구역 풀옵션 원룸",          // title
-                58.5,                           // rentPrice
-                "서울특별시 광진구 화양동 22-10",   // address
-                "원룸",                          // type
-                37.540408,                      // latitude (위도)
-                127.069210,                     // longitude (경도)
-                1,                              // availabilityStatus (최대 인원)
-                "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다." // description
+                host2,
+                "건대입구역 풀옵션 원룸",
+                250000,
+                "서울특별시 광진구 화양동 22-10",
+                "원룸",
+                37.540408,
+                127.069210,
+                1, // 예약중
+                "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다."
         );
 
+        // host3 방 2개
         Room room5 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "합정역 루프탑 사용 가능 쉐어하우스", // title
-                45.0,                           // rentPrice
-                "서울특별시 마포구 합정동 321-8",   // address
-                "쉐어하우스",                      // type
-                37.549911,                      // latitude (위도)
-                126.914905,                     // longitude (경도)
-                4,                              // availabilityStatus (최대 인원)
-                "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다." // description
+                host3,
+                "신촌역 근처 투룸",
+                400000,
+                "서울특별시 서대문구 창천동 45-7",
+                "투룸",
+                37.559819,
+                126.942308,
+                2, // 마감
+                "연세대/이대생에게 인기 많은 조용한 투룸입니다."
         );
 
         Room room6 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "잠실새내역 오피스텔 원룸",        // title
-                75.0,                           // rentPrice
-                "서울특별시 송파구 잠실동 200-15",  // address
-                "오피스텔",                       // type
-                37.511822,                      // latitude (위도)
-                127.086554,                     // longitude (경도)
-                2,                              // availabilityStatus (최대 인원)
-                "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다." // description
+                host3,
+                "잠실새내역 오피스텔 원룸",
+                350000,
+                "서울특별시 송파구 잠실동 200-15",
+                "오피스텔",
+                37.511822,
+                127.086554,
+                2, // 마감
+                "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다."
         );
 
+        room1.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2FIMG_2838.jpg?alt=media&token=24eb0567-6bd2-4e79-aa6e-1f936b1476cb");
 
+        room2.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F51edef840db1a.png?alt=media&token=720e627b-8d23-4e7e-8fa1-6bd748a83ad9");
+        room2.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fliving-room-2732939_1280.jpg?alt=media&token=e2bf5e11-398c-4b87-80a1-28b988045d5f");
 
+        room3.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fbedroom-416062_640.jpg?alt=media&token=e8d9aceb-72c4-4b22-93d6-885e51b7f5e9");
 
+        room4.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fintelieo-sigmul-iissneun-minimeollijeum-chimdae.jpg?alt=media&token=7ac951f1-b017-4084-8d91-1e8feb5699a6");
+        room4.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fkitchen-6916200_640.jpg?alt=media&token=5d616e87-bf0a-4ac8-8253-d8f3f40c7d5f");
 
-        Room room7 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "강남역 도보 5분 원룸",            // title
-                80.0,                           // rentPrice
-                "서울특별시 강남구 역삼동 123-4",   // address
-                "원룸",                          // type
-                37.497942,                      // latitude (위도)
-                127.027621,                     // longitude (경도)
-                1,                              // availabilityStatus (최대 인원)
-                "강남역 인근 직장인에게 최적의 원룸입니다." // description
-        );
+        room5.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Froom-boy-2132349_1280.jpg?alt=media&token=e9f7131f-4be7-4987-be4e-fe88a5d9b197");
 
-        Room room8 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "신촌역 근처 투룸",               // title
-                65.0,                           // rentPrice
-                "서울특별시 서대문구 창천동 45-7", // address
-                "투룸",                          // type
-                37.559819,                      // latitude (위도)
-                126.942308,                     // longitude (경도)
-                3,                              // availabilityStatus (최대 인원)
-                "연세대/이대생에게 인기 많은 조용한 투룸입니다." // description
-        );
+        room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fhome-820389_1280.jpg?alt=media&token=e2d18205-4b4c-4200-a4d5-abe38d720185");
+        room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fbedroom-1872196_1280.jpg?alt=media&token=78d11423-e245-4b8a-8bd0-54e31587c66c");
 
-        Room room9 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "건대입구역 풀옵션 원룸",          // title
-                58.5,                           // rentPrice
-                "서울특별시 광진구 화양동 22-10",   // address
-                "원룸",                          // type
-                37.540408,                      // latitude (위도)
-                127.069210,                     // longitude (경도)
-                1,                              // availabilityStatus (최대 인원)
-                "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다." // description
-        );
-
-        Room room10 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "합정역 루프탑 사용 가능 쉐어하우스", // title
-                45.0,                           // rentPrice
-                "서울특별시 마포구 합정동 321-8",   // address
-                "쉐어하우스",                      // type
-                37.549911,                      // latitude (위도)
-                126.914905,                     // longitude (경도)
-                4,                              // availabilityStatus (최대 인원)
-                "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다." // description
-        );
-
-        Room room11 = new Room(
-                host1,                          // 어떤 호스트가 등록한 방인지
-                "잠실새내역 오피스텔 원룸",        // title
-                75.0,                           // rentPrice
-                "서울특별시 송파구 잠실동 200-15",  // address
-                "오피스텔",                       // type
-                37.511822,                      // latitude (위도)
-                127.086554,                     // longitude (경도)
-                2,                              // availabilityStatus (최대 인원)
-                "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다." // description
-        );
-
-
-
-
-
-        List<Room> roomList = new ArrayList<>();
-
-        // 부산 전역 구 + 동 + 랜덤 위도/경도 범위
-        Map<String, Object[]> REGION_DATA = new HashMap<>() {{
-            put("부산진구", new Object[]{"부전동,전포동,가야동,당감동".split(","), 35.149, 35.175, 129.040, 129.070});
-            put("해운대구", new Object[]{"우동,중동,좌동,송정동".split(","), 35.155, 35.230, 129.110, 129.190});
-            put("동래구", new Object[]{"명륜동,온천동,사직동".split(","), 35.185, 35.215, 129.060, 129.100});
-            put("남구", new Object[]{"대연동,용호동,문현동".split(","), 35.120, 35.150, 129.070, 129.105});
-            put("수영구", new Object[]{"민락동,광안동,남천동".split(","), 35.135, 35.170, 129.100, 129.130});
-            put("북구", new Object[]{"구포동,덕천동,화명동".split(","), 35.205, 35.265, 128.990, 129.030});
-            put("사상구", new Object[]{"감전동,덕포동,주례동".split(","), 35.140, 35.180, 128.980, 129.020});
-            put("사하구", new Object[]{"하단동,신평동,장림동".split(","), 35.070, 35.110, 128.960, 129.010});
-            put("강서구", new Object[]{"명지동,신호동,대저동".split(","), 35.085, 35.210, 128.810, 128.960});
-            put("연제구", new Object[]{"연산동".split(","), 35.170, 35.205, 129.060, 129.090});
-            put("동구", new Object[]{"초량동,수정동".split(","), 35.125, 35.150, 129.040, 129.065});
-            put("서구", new Object[]{"부민동,아미동".split(","), 35.085, 35.130, 129.010, 129.040});
-            put("영도구", new Object[]{"봉래동,영선동".split(","), 35.060, 35.100, 129.040, 129.080});
-            put("중구", new Object[]{"남포동,광복동".split(","), 35.095, 35.115, 129.025, 129.040});
-            put("금정구", new Object[]{"장전동,구서동".split(","), 35.230, 35.285, 129.055, 129.110});
-            put("기장군", new Object[]{"정관읍,일광읍,기장읍".split(","), 35.235, 35.330, 129.170, 129.260});
-        }};
-
-        String[] TYPES = {"ONE_ROOM", "TWO_ROOM", "OFFICETEL", "APARTMENT"};
-
-        for (int i = 1; i <= 200; i++) {
-            // 🔥 랜덤 구 선택
-            List<String> keys = new ArrayList<>(REGION_DATA.keySet());
-            String gu = keys.get((int) (Math.random() * keys.size()));
-
-            Object[] regionInfo = REGION_DATA.get(gu);
-
-            String[] dongs = (String[]) regionInfo[0];
-            double minLat = (double) regionInfo[1];
-            double maxLat = (double) regionInfo[2];
-            double minLng = (double) regionInfo[3];
-            double maxLng = (double) regionInfo[4];
-
-            String dong = dongs[(int) (Math.random() * dongs.length)];
-
-            double lat = minLat + Math.random() * (maxLat - minLat);
-            double lng = minLng + Math.random() * (maxLng - minLng);
-
-            String type = TYPES[(int) (Math.random() * TYPES.length)];
-
-            Room room1 = new Room(
-                    host1,
-                    gu + " " + dong + " 랜덤 방 " + i,
-                    300000 + (int)(Math.random() * 900000),
-                    "부산광역시 " + gu + " " + dong + " " + i + "-1",
-                    type,
-                    lat,
-                    lng,
-                    1 + (int)(Math.random() * 3),
-                    "부산 전역 랜덤 더미 데이터입니다."
-            );
-
-            roomList.add(room1);
-        }
-        hostRepository.save(host1);
-        roomRepository.save(room);
-
-        roomRepository.saveAll(roomList);
-
-        List<Room> rooms = Arrays.asList(room, room2, room3, room4, room5, room6);
+        List<Room> rooms = Arrays.asList(room1, room2, room3, room4, room5, room6);
         roomRepository.saveAll(rooms);
 
 
-        // Favorite 객체 생성
-        Favorite favorite = new Favorite();
-        favorite.setUser(user);
-        favorite.setRoom(room);
-        favoriteRepository.save(favorite);
+    /* -------------------------
+       6. Favorite 샘플
+    -------------------------- */
+        Favorite favorite1 = new Favorite();
+        favorite1.setUser(guest1);
+        favorite1.setRoom(room1);
 
+        Favorite favorite2 = new Favorite();
+        favorite2.setUser(guest2);
+        favorite2.setRoom(room3);
+
+        Favorite favorite3 = new Favorite();
+        favorite3.setUser(guest3);
+        favorite3.setRoom(room5);
+
+        favoriteRepository.save(favorite1);
+        favoriteRepository.save(favorite2);
+        favoriteRepository.save(favorite3);
+
+
+        // ⚠ 개발용: 더미 데이터에만 한 번 돌리고, 끝난 뒤에는 주석 처리해 두기
+        roomService.backfillShareLinks();
     }
+
 }

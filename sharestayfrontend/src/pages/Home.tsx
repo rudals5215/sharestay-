@@ -154,7 +154,7 @@ export default function Home() {
             variant="outlined"
             color="inherit"
             component={RouterLink}
-            to="/admin/users"
+            to="/admin"
           >
             Admin
           </Button>

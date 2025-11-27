@@ -5,6 +5,7 @@ import {
   Card,
   CardActions,
   CardContent,
+  CardActionArea,
   Chip,
   CircularProgress,
   Container,
@@ -598,98 +599,97 @@ export default function Rooms() {
                               height: "100%",
                               display: "flex",
                               flexDirection: "column",
-                              transition: "box-shadow 0.2s ease",
+                              transition: "box-shadow 0.2s ease, transform 0.2s ease",
+                              "&:hover": {
+                                boxShadow:
+                                  "0 0 0 2px #0c51ff, 0 30px 60px rgba(12, 81, 255, 0.25)",
+                                transform: "translateY(-4px)",       // ⭐ 살짝 떠오르는 효과
+                              },
                             }}
                           >
-                            <Box
-                              component="img"
-                              src={imageUrl}
-                              alt={room.title}
+                            {/* 🔹 카드 전체를 클릭하면 상세로 가게 하는 부분 */}
+                            <CardActionArea
+                              component={RouterLink}
+                              to={roomId ? `/rooms/${roomId}` : "/rooms"}
                               sx={{
-                                height: 200,
-                                width: "100%",
-                                objectFit: "cover",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "stretch",
+                                height: "100%",
                               }}
-                            />
-                            <CardContent
-                              sx={{ display: "grid", gap: 1.5, flexGrow: 1 }}
-                            >
+                            >   
+                            {/* ⭐️ 추가된 부분 */}
+                              <Box
+                                component="img"
+                                src={imageUrl}
+                                alt={room.title}
+                                sx={{
+                                  height: 200,
+                                  width: "100%",
+                                  objectFit: "cover",
+                                }}
+                              />
+
+                              {/* 🔹 원래 CardActionArea 밖에 있던 내용 전부 여기로 옮김 */}
+                            <CardContent sx={{ display: "grid", gap: 1.5, flexGrow: 1 }}>
                               <Stack direction="row" spacing={1}>
-                                {typeof room.safetyScore === "number" && (
-                                  <Chip
-                                    label={`안전도 ${Math.round(
-                                      room.safetyScore
-                                    )}`}
-                                    color="primary"
-                                    size="small"
-                                    sx={{ borderRadius: 999 }}
-                                  />
-                                )}
-                                {typeof room.trustScore === "number" && (
-                                  <Chip
-                                    label={`신뢰도 ${Math.round(
-                                      room.trustScore
-                                    )}`}
-                                    color="success"
-                                    size="small"
-                                    sx={{ borderRadius: 999 }}
-                                  />
-                                )}
+                              {typeof room.safetyScore === "number" && (
                                 <Chip
-                                  label={availabilityLabel(
-                                    room.availabilityStatus
-                                  )}
+                                  label={`안전도 ${Math.round(room.safetyScore)}`}
+                                  color="primary"
                                   size="small"
                                   sx={{ borderRadius: 999 }}
                                 />
-                              </Stack>
-                              <Typography variant="h6" fontWeight={700}>
-                                {room.title}
-                              </Typography>
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                              >
-                                <LocationOn fontSize="small" color="action" />
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {room.address}
-                                </Typography>
-                              </Stack>
-                              <Typography
-                                variant="body1"
-                                fontWeight={700}
-                                color="primary"
-                              >
-                                {formatCurrency(room.rentPrice)}
-                              </Typography>
-                              {room.description && (
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {room.description}
-                                </Typography>
                               )}
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                flexWrap="wrap"
-                                useFlexGap
-                              >
-                                {tags.slice(0, 4).map((tag) => (
-                                  <Chip
-                                    key={tag}
-                                    label={tag}
-                                    size="small"
-                                    sx={{ borderRadius: 999 }}
-                                  />
-                                ))}
-                              </Stack>
+                              {typeof room.trustScore === "number" && (
+                                <Chip
+                                  label={`신뢰도 ${Math.round(room.trustScore)}`}
+                                  color="success"
+                                  size="small"
+                                  sx={{ borderRadius: 999 }}
+                                />
+                              )}
+                              <Chip
+                                label={availabilityLabel(room.availabilityStatus)}
+                                size="small"
+                                sx={{ borderRadius: 999 }}
+                              />
+                            </Stack>
+
+                            <Typography variant="h6" fontWeight={700}>
+                              {room.title}
+                            </Typography>
+
+                            <Stack direction="row" spacing={1} alignItems="center">
+                            <LocationOn fontSize="small" color="action" />
+                            <Typography variant="body2" color="text.secondary">
+                              {room.address}
+                            </Typography>
+                          </Stack>
+
+                          <Typography variant="body1" fontWeight={700} color="primary">
+                            {formatCurrency(room.rentPrice)}
+                          </Typography>
+
+                          {room.description && (
+                            <Typography variant="body2" color="text.secondary">
+                              {room.description}
+                            </Typography>
+                          )}
+
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            {tags.slice(0, 4).map((tag) => (
+                              <Chip
+                                key={tag}
+                                label={tag}
+                                size="small"
+                                sx={{ borderRadius: 999 }}
+                              />
+                            ))}
+                          </Stack>
                             </CardContent>
+                            </CardActionArea>
+                            {/* 🔹 액션 영역은 그대로 Card 밖에 둠 (즐겨찾기 클릭 시 이동 막기 유지) */}
                             <CardActions
                               sx={{
                                 px: 3,
@@ -716,7 +716,10 @@ export default function Rooms() {
                                 공유 링크
                               </Button>
                               <IconButton
-                                onClick={() => toggleFavorite(room)}
+                                onClick={(event) => {
+                                  event.stopPropagation(); // 카드 클릭으로 인한 네비게이션 막기
+                                  toggleFavorite(room);
+                                }}
                                 color={isFavorite ? "error" : "default"}
                                 aria-label="즐겨찾기"
                               >
