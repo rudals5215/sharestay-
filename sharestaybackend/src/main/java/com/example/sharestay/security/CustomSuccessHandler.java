@@ -3,6 +3,7 @@ package com.example.sharestay.security;
 import com.example.sharestay.entity.User;
 import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.service.JwtService;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -51,20 +52,38 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
                     String encodedPassword = passwordEncoder.encode(UUID.randomUUID().toString());
                     return userRepository.save(User.createGoogleUser(email, encodedPassword));
                 });
-
-        // 3️⃣ JWT Access Token과 Refresh Token 생성
+        // jwt 토큰 생성
         String accessToken = jwtService.generateAccessToken(email);
         String refreshToken = jwtService.generateRefreshToken(email);
 
-        String redirectWithToken = UriComponentsBuilder
-                .fromHttpUrl(redirectUrl)
-                .queryParam("accessToken", accessToken)
-                .queryParam("refreshToken", refreshToken)
-                .queryParam("username", email)
-                .build(true)
-                .toUriString();
+        // jwt를 HttpOnly 쿠키로 저장
+        Cookie accessCookie = createCookie("accessToken", accessToken, 60 * 60); // 쿠키 유효시간 한시간
+        Cookie refreshCookie = createCookie("refreshToken", refreshToken, 7 * 24 * 60 * 60); // 7일
 
-        // 5️⃣ 프론트 페이지로 리다이렉트
-        response.sendRedirect(redirectWithToken);
+        response.addCookie(accessCookie);
+        response.addCookie(refreshCookie);
+
+        // 프론트로 리다이렉트 (토큰 전달 x)
+        response.sendRedirect(redirectUrl);
     }
+
+    private Cookie createCookie(String name, String value, int maxAge) {
+        Cookie cookie = new Cookie(name, value);
+        // 개발용 (HTTP)
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false);
+        cookie.setPath("/");
+        cookie.setMaxAge(maxAge);
+        cookie.setAttribute("SameSite", "Lax");
+
+        // 배포용 (HTTPS)
+//        cookie.setHttpOnly(true);
+//        cookie.setSecure(true);
+//        cookie.setPath("/");
+//        cookie.setMaxAge(maxAge);
+//        cookie.setAttribute("SameSite", "None");
+
+       return cookie;
+    }
+
 }

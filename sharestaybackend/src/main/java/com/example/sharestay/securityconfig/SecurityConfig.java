@@ -315,8 +315,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // JWT 필터와 OAuth2 설정을 여기에만 포함합니다.
+                // JWT 필터와 적용 (쿠키에서 토큰 읽는 버전).
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // oauth2 로그인 성공하면 cookie 기반 access/refresh 내려줌
                 .oauth2Login(oauth -> oauth
                         .userInfoEndpoint(userInfo ->
                                 userInfo.userService(customUserService)
