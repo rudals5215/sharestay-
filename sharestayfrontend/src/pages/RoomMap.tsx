@@ -118,11 +118,11 @@ const RoomMap: React.FC = () => {
 
             const map = new window.kakao.maps.Map(mapContainer, {
               center: userPosition,
-              level: 5,
+              level: 4,
             });
             mapInstanceRef.current = map; // 생성된 지도 인스턴스를 ref에 저장
 
-            // 4. 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
+            // 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
             window.kakao.maps.event.addListener(map, "idle", () => {
               if (mapInstanceRef.current) {
                 const map = mapInstanceRef.current;
@@ -131,7 +131,7 @@ const RoomMap: React.FC = () => {
                 fetchRoomsNearby(center.getLat(), center.getLng(), level);
               }
             });
-            // 3. 현재 위치 기반으로 주변 방 데이터 요청
+            // 현재 위치 기반으로 주변 방 데이터 요청
             fetchRoomsNearby(latitude, longitude, map.getLevel());
           },
           () => {
@@ -147,21 +147,9 @@ const RoomMap: React.FC = () => {
             );
             const map = new window.kakao.maps.Map(mapContainer, {
               center: defaultPosition,
-              level: 5,
+              level: 4,
             });
             mapInstanceRef.current = map;
-
-            // 4. 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
-            window.kakao.maps.event.addListener(map, "idle", () => {
-              if (mapInstanceRef.current) {
-                const map = mapInstanceRef.current;
-                const center = map.getCenter();
-                const level = map.getLevel();
-                fetchRoomsNearby(center.getLat(), center.getLng(), level);
-              }
-            });
-            // 기본 위치 주변 방 데이터 요청
-            fetchRoomsNearby(defaultLat, defaultLng, map.getLevel());
           }
         );
       } else {
@@ -177,13 +165,12 @@ const RoomMap: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // 1. 현재 지도 화면의 사각 경계를 가져옵니다.
+        // 현재 지도 화면의 사각 경계를 가져옵니다.
         const bounds = mapInstanceRef.current.getBounds();
         const sw = bounds.getSouthWest(); // 남서쪽 좌표
         const center = mapInstanceRef.current.getCenter();
         const ne = bounds.getNorthEast(); // 북동쪽 좌표
 
-        // 2. API 요청 파라미터를 사각 경계 기준으로 변경합니다.
         // Haversine 공식을 사용하여 지도 중심에서 모서리까지의 거리를 계산합니다.
         const R = 6371; // 지구의 반지름 (km)
         const lat1 = center.getLat() * (Math.PI / 180);
@@ -294,7 +281,6 @@ const RoomMap: React.FC = () => {
     }
   }, [fetchRoomsNearby]);
 
-  // useMemo를 사용하여 마커 객체들을 메모이제이션합니다.
   // rooms 배열이 변경될 때만 마커를 다시 생성합니다.
   const markers = useMemo(() => {
     // 1. 그룹화 기준 거리를 30m로 고정
