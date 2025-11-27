@@ -274,6 +274,68 @@ public class SharestayApplication implements CommandLineRunner {
         List<Room> rooms = Arrays.asList(room1, room2, room3, room4, room5, room6);
         roomRepository.saveAll(rooms);
 
+        List<Room> roomList = new ArrayList<>();
+
+        // 부산 전역 구 + 동 + 랜덤 위도/경도 범위
+        Map<String, Object[]> REGION_DATA = new HashMap<>() {{
+            put("부산진구", new Object[]{"부전동,전포동,가야동,당감동".split(","), 35.149, 35.175, 129.040, 129.070});
+            put("해운대구", new Object[]{"우동,중동,좌동,송정동".split(","), 35.155, 35.230, 129.110, 129.190});
+            put("동래구", new Object[]{"명륜동,온천동,사직동".split(","), 35.185, 35.215, 129.060, 129.100});
+            put("남구", new Object[]{"대연동,용호동,문현동".split(","), 35.120, 35.150, 129.070, 129.105});
+            put("수영구", new Object[]{"민락동,광안동,남천동".split(","), 35.135, 35.170, 129.100, 129.130});
+            put("북구", new Object[]{"구포동,덕천동,화명동".split(","), 35.205, 35.265, 128.990, 129.030});
+            put("사상구", new Object[]{"감전동,덕포동,주례동".split(","), 35.140, 35.180, 128.980, 129.020});
+            put("사하구", new Object[]{"하단동,신평동,장림동".split(","), 35.070, 35.110, 128.960, 129.010});
+            put("강서구", new Object[]{"명지동,신호동,대저동".split(","), 35.085, 35.210, 128.810, 128.960});
+            put("연제구", new Object[]{"연산동".split(","), 35.170, 35.205, 129.060, 129.090});
+            put("동구", new Object[]{"초량동,수정동".split(","), 35.125, 35.150, 129.040, 129.065});
+            put("서구", new Object[]{"부민동,아미동".split(","), 35.085, 35.130, 129.010, 129.040});
+            put("영도구", new Object[]{"봉래동,영선동".split(","), 35.060, 35.100, 129.040, 129.080});
+            put("중구", new Object[]{"남포동,광복동".split(","), 35.095, 35.115, 129.025, 129.040});
+            put("금정구", new Object[]{"장전동,구서동".split(","), 35.230, 35.285, 129.055, 129.110});
+            put("기장군", new Object[]{"정관읍,일광읍,기장읍".split(","), 35.235, 35.330, 129.170, 129.260});
+        }};
+
+        String[] TYPES = {"ONE_ROOM", "TWO_ROOM", "OFFICETEL", "APARTMENT"};
+
+        for (int i = 1; i <= 200; i++) {
+            // 🔥 랜덤 구 선택
+            List<String> keys = new ArrayList<>(REGION_DATA.keySet());
+            String gu = keys.get((int) (Math.random() * keys.size()));
+
+            Object[] regionInfo = REGION_DATA.get(gu);
+
+            String[] dongs = (String[]) regionInfo[0];
+            double minLat = (double) regionInfo[1];
+            double maxLat = (double) regionInfo[2];
+            double minLng = (double) regionInfo[3];
+            double maxLng = (double) regionInfo[4];
+
+            String dong = dongs[(int) (Math.random() * dongs.length)];
+
+            double lat = minLat + Math.random() * (maxLat - minLat);
+            double lng = minLng + Math.random() * (maxLng - minLng);
+
+            String type = TYPES[(int) (Math.random() * TYPES.length)];
+
+            Room room19 = new Room(
+                    host1,
+                    gu + " " + dong + " 랜덤 방 " + i,
+                    300000 + (int)(Math.random() * 900000),
+                    "부산광역시 " + gu + " " + dong + " " + i + "-1",
+                    type,
+                    lat,
+                    lng,
+                    1 + (int)(Math.random() * 3),
+                    "부산 전역 랜덤 더미 데이터입니다."
+            );
+
+            roomList.add(room19);
+        }
+
+        roomRepository.saveAll(roomList);
+
+
 
     /* -------------------------
        6. Favorite 샘플
