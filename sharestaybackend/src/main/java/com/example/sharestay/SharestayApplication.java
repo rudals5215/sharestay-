@@ -9,6 +9,7 @@ import com.example.sharestay.repository.UserRepository;
 import com.example.sharestay.entity.*;
 
 
+import com.example.sharestay.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -26,6 +27,7 @@ public class SharestayApplication implements CommandLineRunner {
     private final HostRepository hostRepository;
     private final RoomRepository roomRepository;
     private final FavoriteRepository favoriteRepository;
+    private final RoomService roomService;
 
     public static void main(String[] args) {
         SpringApplication.run(SharestayApplication.class, args);
@@ -184,7 +186,7 @@ public class SharestayApplication implements CommandLineRunner {
         Room room1 = new Room(
                 host1,
                 "홍대입구 근처 원룸",
-                55.5,
+                550000,
                 "서울특별시 마포구 서교동 12-3",
                 "원룸",
                 37.557123,
@@ -192,11 +194,12 @@ public class SharestayApplication implements CommandLineRunner {
                 0, // 모집중
                 "깔끔하고 교통 좋은 원룸입니다."
         );
+        room1.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터");
 
         Room room2 = new Room(
                 host1,
                 "합정역 루프탑 사용 가능 쉐어하우스",
-                45.0,
+                450000,
                 "서울특별시 마포구 합정동 321-8",
                 "쉐어하우스",
                 37.549911,
@@ -204,12 +207,13 @@ public class SharestayApplication implements CommandLineRunner {
                 0, // 모집중
                 "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다."
         );
+        room2.setOptions("와이파이, TV, 주차장, 침대");
 
         // host2 방 2개
         Room room3 = new Room(
                 host2,
                 "강남역 도보 5분 원룸",
-                80.0,
+                300000,
                 "서울특별시 강남구 역삼동 123-4",
                 "원룸",
                 37.497942,
@@ -217,11 +221,12 @@ public class SharestayApplication implements CommandLineRunner {
                 1, // 예약중
                 "강남역 인근 직장인에게 최적의 원룸입니다."
         );
+        room3.setOptions("엘리베이터, 주차장, 와이파이, 전자렌지");
 
         Room room4 = new Room(
                 host2,
                 "건대입구역 풀옵션 원룸",
-                58.5,
+                250000,
                 "서울특별시 광진구 화양동 22-10",
                 "원룸",
                 37.540408,
@@ -230,11 +235,13 @@ public class SharestayApplication implements CommandLineRunner {
                 "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다."
         );
 
+        room3.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터, TV");
+
         // host3 방 2개
         Room room5 = new Room(
                 host3,
                 "신촌역 근처 투룸",
-                65.0,
+                400000,
                 "서울특별시 서대문구 창천동 45-7",
                 "투룸",
                 37.559819,
@@ -246,7 +253,7 @@ public class SharestayApplication implements CommandLineRunner {
         Room room6 = new Room(
                 host3,
                 "잠실새내역 오피스텔 원룸",
-                75.0,
+                350000,
                 "서울특별시 송파구 잠실동 200-15",
                 "오피스텔",
                 37.511822,
@@ -254,6 +261,21 @@ public class SharestayApplication implements CommandLineRunner {
                 2, // 마감
                 "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다."
         );
+
+        room1.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F3d-kwaejeoghan-dogseosil.jpg?alt=media&token=6aa1cc21-20e5-4bc6-b5b5-4552daecd01d");
+
+        room2.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F51edef840db1a.png?alt=media&token=720e627b-8d23-4e7e-8fa1-6bd748a83ad9");
+        room2.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fliving-room-2732939_1280.jpg?alt=media&token=e2bf5e11-398c-4b87-80a1-28b988045d5f");
+
+        room3.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fbedroom-416062_640.jpg?alt=media&token=e8d9aceb-72c4-4b22-93d6-885e51b7f5e9");
+
+        room4.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fintelieo-sigmul-iissneun-minimeollijeum-chimdae.jpg?alt=media&token=7ac951f1-b017-4084-8d91-1e8feb5699a6");
+        room4.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fkitchen-6916200_640.jpg?alt=media&token=5d616e87-bf0a-4ac8-8253-d8f3f40c7d5f");
+
+        room5.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Froom-boy-2132349_1280.jpg?alt=media&token=e9f7131f-4be7-4987-be4e-fe88a5d9b197");
+
+        room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fhome-820389_1280.jpg?alt=media&token=e2d18205-4b4c-4200-a4d5-abe38d720185");
+        room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fbedroom-1872196_1280.jpg?alt=media&token=78d11423-e245-4b8a-8bd0-54e31587c66c");
 
         List<Room> rooms = Arrays.asList(room1, room2, room3, room4, room5, room6);
         roomRepository.saveAll(rooms);
@@ -277,6 +299,10 @@ public class SharestayApplication implements CommandLineRunner {
         favoriteRepository.save(favorite1);
         favoriteRepository.save(favorite2);
         favoriteRepository.save(favorite3);
+
+
+        // ⚠ 개발용: 더미 데이터에만 한 번 돌리고, 끝난 뒤에는 주석 처리해 두기
+        roomService.backfillShareLinks();
     }
 
 }

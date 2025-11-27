@@ -86,6 +86,28 @@ export default function AdminBans() {
     isActive: ban.isActive ?? (ban as any).active ?? false,
   });
 
+  const [unbanDialogOpen, setUnbanDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [targetBan, setTargetBan] = useState<BanRecord | null>(null);
+  const [editReason, setEditReason] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+  const [editMemo, setEditMemo] = useState("");
+
+  const userLabelMap = useMemo(
+    () =>
+      users.reduce<Record<number, string>>((map, user) => {
+        map[user.id] = `${user.nickname ?? user.username} (${user.username})`;
+        return map;
+      }, {}),
+    [users]
+  );
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return "-";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+  };
+
   const fetchUsers = async () => {
     const { data } = await api.get<User[]>("/users");
     setUsers(data);

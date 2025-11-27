@@ -5,6 +5,7 @@ import {
   Card,
   CardActions,
   CardContent,
+  CardActionArea,
   Chip,
   CircularProgress,
   Container,
@@ -44,10 +45,16 @@ const filterFacilities = [
   "냉장고",
   "세탁기",
   "인터넷",
+  "와이파이",
+  "엘리베이터",
+  "TV",
+  "침대",
+  "책상",
+  "보안시설",
   "주차장",
   "헬스장",
+  "베란다",
   "반려동물 가능",
-  "발코니",
 ];
 
 const districts = [
@@ -61,10 +68,10 @@ const districts = [
 
 const roomTypes = [
   { value: "", label: "전체 유형" },
-  { value: "ONE_ROOM", label: "원룸" },
-  { value: "TWO_ROOM", label: "투룸" },
-  { value: "OFFICETEL", label: "오피스텔" },
-  { value: "APARTMENT", label: "아파트" },
+  { value: "원룸", label: "원룸" },
+  { value: "투룸", label: "투룸" },
+  { value: "오피스텔", label: "오피스텔" },
+  { value: "아파트", label: "아파트" },
 ];
 
 const fallbackImage = fallbackImageSrc;
@@ -119,6 +126,7 @@ type RoomSearchOverrides = {
   roomType?: string;
   priceRange?: number[];
   useSearchEndpoint?: boolean;   // ⭐ 추가: /rooms vs /rooms/search 구분용
+  facility?: string;        // ⭐ 추가
 };
 
 export default function Rooms() {
@@ -140,6 +148,8 @@ export default function Rooms() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  // ⭐ 추가: 현재 선택된 편의시설 (없으면 빈 문자열)
+  const [selectedFacility, setSelectedFacility] = useState<string>("");
 
   const priceLabel = useMemo(
     () =>
@@ -156,18 +166,29 @@ export default function Rooms() {
     const roomTypeValue = overrides?.roomType ?? roomType;
     const priceRangeValue = overrides?.priceRange ?? priceRange;
     const [minPrice, maxPrice] = priceRangeValue;
-
     const regionParam = districtValue || "";
+    // ⭐ 추가: override로 들어온 facility가 있으면 그걸 우선 사용
+    const facilityValue = overrides?.facility ?? selectedFacility;
 
     const hasCustomPriceRange =
       priceRangeValue[0] !== defaultPriceRange[0] ||
       priceRangeValue[1] !== defaultPriceRange[1];
 
+    const optionParam =
+      (facilityValue && facilityValue.trim().length > 0
+        ? facilityValue
+        : undefined) ||
+      (keywordValue && keywordValue.trim().length > 0
+        ? keywordValue
+        : undefined);
+
     const hasAnyFilter =
       (regionParam && regionParam.trim().length > 0) ||
       (roomTypeValue && roomTypeValue.trim().length > 0) ||
       (keywordValue && keywordValue.trim().length > 0) ||
+      (facilityValue && facilityValue.trim().length > 0) ||  // ⭐ 추가
       hasCustomPriceRange;
+      
 
     let data: RoomApiResponse[] = [];
 
@@ -187,7 +208,7 @@ export default function Rooms() {
             hasCustomPriceRange && Number.isFinite(maxPrice)
               ? maxPrice
               : undefined,
-          option: keywordValue || undefined,
+          option: optionParam,
         },
       });
       data = res.data;
@@ -213,7 +234,7 @@ export default function Rooms() {
   } finally {
     setIsLoading(false);
   }
-}, [keyword, district, roomType, priceRange, favorites]);
+}, [keyword, district, roomType, priceRange,selectedFacility, favorites]);
 
   useEffect(() => {
     const initialKeyword = searchParams.get("keyword") ?? "";
@@ -269,6 +290,37 @@ export default function Rooms() {
     else setSearchParams({}, { replace: true });
     await fetchRooms();
   };
+
+    // 왼쪽 필터바 "방 종류" 버튼 클릭 핸들러
+  const handleFilterTypeClick = async (clickedType: string) => {
+    // "전체" 버튼이면 필터 해제 -> 빈 문자열
+    const nextType = clickedType === "전체" ? "" : clickedType;
+
+    // 상태 업데이트
+    setRoomType(nextType);
+
+    // URL 쿼리스트링도 같이 맞춰주기 (위 검색창이랑 동일 로직)
+    const params = new URLSearchParams();
+    if (keyword.trim()) params.set("keyword", keyword.trim());
+    if (district) params.set("district", district);
+    if (nextType) params.set("type", nextType);
+    if (
+      priceRange[0] !== defaultPriceRange[0] ||
+      priceRange[1] !== defaultPriceRange[1]
+    ) {
+      params.set("minPrice", String(priceRange[0]));
+      params.set("maxPrice", String(priceRange[1]));
+    }
+
+    if (params.toString()) setSearchParams(params, { replace: true });
+    else setSearchParams({}, { replace: true });
+
+    // 실제 방 목록 다시 가져오기
+    await fetchRooms({
+      roomType: nextType,
+    });
+  };
+
   const loadFavorites = useCallback(async () => {
     if (!user?.id) {
       setFavorites(new Set());
@@ -450,21 +502,27 @@ export default function Rooms() {
                 <Divider />
 
                 <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  방 종류
-                </Typography>
-                {["전체", "원룸", "투룸", "오피스텔", "아파트"].map(
-                  (type) => (
-                  <Button
-                    key={type}
-                    variant={type === "전체" ? "contained" : "text"}
-                    sx={{ justifyContent: "flex-start", borderRadius: 2 }}
-                  >
-                    {type}
-                  </Button>
-                  )
-                )}
+                  <Typography variant="subtitle2" color="text.secondary">
+                    방 종류
+                  </Typography>
+                  {["전체", "원룸", "투룸", "오피스텔", "아파트"].map((typeLabel) => {
+                    // "전체"는 roomType === "" 일 때 선택된 상태
+                    const isSelected =
+                      (typeLabel === "전체" && !roomType) || roomType === typeLabel;
+
+                    return (
+                      <Button
+                        key={typeLabel}
+                        variant={isSelected ? "contained" : "text"}
+                        sx={{ justifyContent: "flex-start", borderRadius: 2 }}
+                        onClick={() => handleFilterTypeClick(typeLabel)}
+                      >
+                        {typeLabel}
+                      </Button>
+                    );
+                  })}
                 </Stack>
+
 
                 <Stack spacing={1}>
                 <Typography variant="subtitle2" color="text.secondary">
@@ -596,98 +654,97 @@ export default function Rooms() {
                               height: "100%",
                               display: "flex",
                               flexDirection: "column",
-                              transition: "box-shadow 0.2s ease",
+                              transition: "box-shadow 0.2s ease, transform 0.2s ease",
+                              "&:hover": {
+                                boxShadow:
+                                  "0 0 0 2px #0c51ff, 0 30px 60px rgba(12, 81, 255, 0.25)",
+                                transform: "translateY(-4px)",       // ⭐ 살짝 떠오르는 효과
+                              },
                             }}
                           >
-                            <Box
-                              component="img"
-                              src={imageUrl}
-                              alt={room.title}
+                            {/* 🔹 카드 전체를 클릭하면 상세로 가게 하는 부분 */}
+                            <CardActionArea
+                              component={RouterLink}
+                              to={roomId ? `/rooms/${roomId}` : "/rooms"}
                               sx={{
-                                height: 200,
-                                width: "100%",
-                                objectFit: "cover",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "stretch",
+                                height: "100%",
                               }}
-                            />
-                            <CardContent
-                              sx={{ display: "grid", gap: 1.5, flexGrow: 1 }}
-                            >
+                            >   
+                            {/* ⭐️ 추가된 부분 */}
+                              <Box
+                                component="img"
+                                src={imageUrl}
+                                alt={room.title}
+                                sx={{
+                                  height: 200,
+                                  width: "100%",
+                                  objectFit: "cover",
+                                }}
+                              />
+
+                              {/* 🔹 원래 CardActionArea 밖에 있던 내용 전부 여기로 옮김 */}
+                            <CardContent sx={{ display: "grid", gap: 1.5, flexGrow: 1 }}>
                               <Stack direction="row" spacing={1}>
-                                {typeof room.safetyScore === "number" && (
-                                  <Chip
-                                    label={`안전도 ${Math.round(
-                                      room.safetyScore
-                                    )}`}
-                                    color="primary"
-                                    size="small"
-                                    sx={{ borderRadius: 999 }}
-                                  />
-                                )}
-                                {typeof room.trustScore === "number" && (
-                                  <Chip
-                                    label={`신뢰도 ${Math.round(
-                                      room.trustScore
-                                    )}`}
-                                    color="success"
-                                    size="small"
-                                    sx={{ borderRadius: 999 }}
-                                  />
-                                )}
+                              {typeof room.safetyScore === "number" && (
                                 <Chip
-                                  label={availabilityLabel(
-                                    room.availabilityStatus
-                                  )}
+                                  label={`안전도 ${Math.round(room.safetyScore)}`}
+                                  color="primary"
                                   size="small"
                                   sx={{ borderRadius: 999 }}
                                 />
-                              </Stack>
-                              <Typography variant="h6" fontWeight={700}>
-                                {room.title}
-                              </Typography>
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                              >
-                                <LocationOn fontSize="small" color="action" />
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {room.address}
-                                </Typography>
-                              </Stack>
-                              <Typography
-                                variant="body1"
-                                fontWeight={700}
-                                color="primary"
-                              >
-                                {formatCurrency(room.rentPrice)}
-                              </Typography>
-                              {room.description && (
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {room.description}
-                                </Typography>
                               )}
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                flexWrap="wrap"
-                                useFlexGap
-                              >
-                                {tags.slice(0, 4).map((tag) => (
-                                  <Chip
-                                    key={tag}
-                                    label={tag}
-                                    size="small"
-                                    sx={{ borderRadius: 999 }}
-                                  />
-                                ))}
-                              </Stack>
+                              {typeof room.trustScore === "number" && (
+                                <Chip
+                                  label={`신뢰도 ${Math.round(room.trustScore)}`}
+                                  color="success"
+                                  size="small"
+                                  sx={{ borderRadius: 999 }}
+                                />
+                              )}
+                              <Chip
+                                label={availabilityLabel(room.availabilityStatus)}
+                                size="small"
+                                sx={{ borderRadius: 999 }}
+                              />
+                            </Stack>
+
+                            <Typography variant="h6" fontWeight={700}>
+                              {room.title}
+                            </Typography>
+
+                            <Stack direction="row" spacing={1} alignItems="center">
+                            <LocationOn fontSize="small" color="action" />
+                            <Typography variant="body2" color="text.secondary">
+                              {room.address}
+                            </Typography>
+                          </Stack>
+
+                          <Typography variant="body1" fontWeight={700} color="primary">
+                            {formatCurrency(room.rentPrice)}
+                          </Typography>
+
+                          {room.description && (
+                            <Typography variant="body2" color="text.secondary">
+                              {room.description}
+                            </Typography>
+                          )}
+
+                          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            {tags.slice(0, 4).map((tag) => (
+                              <Chip
+                                key={tag}
+                                label={tag}
+                                size="small"
+                                sx={{ borderRadius: 999 }}
+                              />
+                            ))}
+                          </Stack>
                             </CardContent>
+                            </CardActionArea>
+                            {/* 🔹 액션 영역은 그대로 Card 밖에 둠 (즐겨찾기 클릭 시 이동 막기 유지) */}
                             <CardActions
                               sx={{
                                 px: 3,
@@ -714,7 +771,10 @@ export default function Rooms() {
                                 공유 링크
                               </Button>
                               <IconButton
-                                onClick={() => toggleFavorite(room)}
+                                onClick={(event) => {
+                                  event.stopPropagation(); // 카드 클릭으로 인한 네비게이션 막기
+                                  toggleFavorite(room);
+                                }}
                                 color={isFavorite ? "error" : "default"}
                                 aria-label="즐겨찾기"
                               >

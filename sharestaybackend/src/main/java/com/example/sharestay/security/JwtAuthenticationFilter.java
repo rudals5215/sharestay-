@@ -7,6 +7,7 @@ import com.example.sharestay.service.JwtService;
 import com.example.sharestay.service.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
@@ -38,6 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (userDetailsService == null) throw new IllegalArgumentException("userDetailsService cannot be null");
         if (banService == null) throw new IllegalArgumentException("banService cannot be null");
         if (userRepository == null) throw new IllegalArgumentException("userRepository cannot be null");
+
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.banService = banService;
@@ -45,9 +47,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(
-            HttpServletRequest request, HttpServletResponse response, FilterChain filterChain
-    ) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
@@ -91,10 +94,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         userDetails, null, userDetails.getAuthorities()
                 );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                context.setAuthentication(authToken);
-                SecurityContextHolder.setContext(context);
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+
         filterChain.doFilter(request, response);
+    }
+
+    //  쿠키에서 accessToken 꺼내기
+    private String extractTokenFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+        for (Cookie cookie : request.getCookies()) {
+            if ("accessToken".equals(cookie.getName())) {
+                return cookie.getValue();
+            }
+        }
+        return null;
     }
 }

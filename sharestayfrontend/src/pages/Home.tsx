@@ -32,7 +32,7 @@ import { mapRoomFromApi } from "../types/room";
 import type { DistrictSafety } from "../types/statistic";
 
 const heroBackground =
-  "https://plus.unsplash.com/premium_photo-1661885493074-e18964497278?fm=jpg&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8c2VvdWwlMjBuaWdodHxlbnwwfHwwfHx8MA%3D%3D&ixlib=rb-4.1.0&q=80&w=1920";
+  "https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fnew-york-7577186_1280.jpg?alt=media&token=e16af7f6-5c8c-4045-bad7-681e46617c8c";
 
 const navLinks = [
   { label: "방 찾기", href: "/rooms" },
@@ -375,7 +375,6 @@ export default function Home() {
                     "#안심방",
                     "#서울대입구",
                     "#강남역",
-                    "#서재영",
                   ].map((tag) => (
                     <Chip
                       key={tag}
@@ -408,7 +407,7 @@ export default function Home() {
                   <TextField
                     fullWidth
                     label="지역명 또는 역명을 입력해주세요"
-                    placeholder="예: 서재영, 홍대입구"
+                    placeholder="예: 홍대입구"
                     variant="outlined"
                     value={heroKeyword}
                     onChange={(event) => setHeroKeyword(event.target.value)}
@@ -428,7 +427,6 @@ export default function Home() {
                     <MenuItem value="광진구">광진구</MenuItem>
                     <MenuItem value="송파구">송파구</MenuItem>
                     <MenuItem value="용산구">용산구</MenuItem>
-                    <MenuItem value="서재영">서재영</MenuItem>
                   </TextField>
                   <Button
                     type="submit"

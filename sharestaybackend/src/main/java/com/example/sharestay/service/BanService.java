@@ -70,6 +70,9 @@ public class BanService {
         logHistory(activeBan, activeBan.getUser(), "UNBAN", activeBan.getReason(), activeBan.getEndDate(), activeBan.getMemo());
     }
 
+    /**
+     * 개별 정지 ID로 비활성화합니다.
+     */
     @Transactional
     public void unbanByBanId(Long banId) {
         Ban ban = banRepository.findById(banId)

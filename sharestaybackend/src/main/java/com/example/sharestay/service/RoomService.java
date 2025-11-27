@@ -31,6 +31,22 @@ public class RoomService {
     private final FirebaseService firebaseService;  // Firebase 업로드용
     private final FavoriteRepository favoriteRepository;
 
+    @Transactional    // 더미데이터로 넣은 거 공유링크 생성 안 되던 거 이걸로 생성
+    public void backfillShareLinks() {
+        List<Room> rooms = roomRepository.findAll()
+                .stream()
+                .filter(r -> r.getShareLink() == null)
+                .toList();
+
+        for (Room room : rooms) {
+            ShareLink shareLink = new ShareLink();
+            room.setShareLink(shareLink);
+            roomRepository.save(room);
+        }
+    }
+
+
+
     // 방 등록
     @Transactional  // DB 트랜잭션 제어 (내부에서 여러 DB 작업 실행 -> 예외 없이 정상 종료 → commit()) 예외를 안에서 잡는 건 x, service 로직에서만 사용하는 것을 추천
     public RoomResponse createRoom(RoomRequest request, List<MultipartFile> files) {
@@ -56,6 +72,9 @@ public class RoomService {
                 room.getRoomImages().add(image); // room의 이미지 목록에 추가
             }
         }
+
+        // ✅ 옵션 매핑
+        room.setOptionsFromList(request.safeOptions());   // 이거 합칠 수 없나 알아보기
 
         Room savedRoom = roomRepository.save(room); // room을 저장하면 roomImages도 함께 저장됨
 
@@ -169,6 +188,7 @@ public class RoomService {
                 room.getType(),
                 room.getAvailabilityStatus(),
                 room.getDescription(),
+                room.getOptions(),
                 imageUrls,
                 room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null
         );

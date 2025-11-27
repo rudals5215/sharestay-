@@ -20,6 +20,7 @@ public class RoomResponse {
     private String type;
     private int availabilityStatus;
     private String description;
+    private String options;
     private List<RoomImageResponse> images;
     private String shareLinkUrl;
 }

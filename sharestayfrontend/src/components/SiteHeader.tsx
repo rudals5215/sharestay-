@@ -1,4 +1,4 @@
-﻿// src/components/SiteHeader.tsx
+﻿﻿// src/components/SiteHeader.tsx
 import { AppBar, Box, Button, Stack, Toolbar, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
@@ -84,6 +84,11 @@ export default function SiteHeader(_: Props) {
                 <Button onClick={logout} color="inherit">
                   로그아웃
                 </Button>
+                {roles.includes("ADMIN") && (
+                  <Button component={RouterLink} to="/admin" color="primary" variant="outlined">
+                    관리자
+                  </Button>
+                )}
               </Stack>
             ) : (
               <Stack direction="row" spacing={1}>
