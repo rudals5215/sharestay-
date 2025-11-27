@@ -284,11 +284,15 @@ export default function AdminBans() {
             <Paper variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
               <Stack direction="row" spacing={2} alignItems="center">
                 <Typography variant="h6">현재 상태</Typography>
-                <Chip
-                  label={currentBan?.isActive ? "정지" : "해제"}
-                  color={currentBan?.isActive ? "error" : "default"}
-                  size="small"
-                />
+                {currentBan?.isActive ? (
+                  currentBan.endDate ? (
+                    <Chip label="정지" color="warning" size="small" />
+                  ) : (
+                    <Chip label="영구정지" color="error" size="small" />
+                  )
+                ) : (
+                  <Chip label="해제" size="small" />
+                )}
                 {currentBan && (
                   <Typography variant="body2" color="text.secondary">
                     ban_id: {currentBan.banId}
