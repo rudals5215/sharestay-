@@ -1,4 +1,3 @@
-import type { AxiosError } from "axios";
 import {
   Box,
   Button,
@@ -18,7 +17,6 @@ import type {
   RoomDetailApiResponse,
   RoomImage,
   RoomSummary,
-  ShareLinkResponse,
 } from "../types/room";
 import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
 import fallbackImageSrc from "../img/no_img.jpg";
@@ -77,69 +75,66 @@ export default function RoomDetail() {
           [];
 
         const mapped: RoomSummary = {
-          ...mapRoomFromApi(data),
+          ...mapRoomFromApi(data),  // <- 여기서 shareLinkUrl 포함
           images,
         };
         setRoom(mapped);
         setActiveImage(images[0]?.imageUrl ?? fallbackImage);
-        setShareLink(data.shareLinkUrl ?? null);
-      } catch (err) {
-        const message =
-          err instanceof Error
-            ? err.message
-            : "방 정보를 불러오는 중 오류가 발생했습니다.";
-        setError(message);
-        setRoom(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+
+
+        // 🔴 공유 링크 state에도 저장
+      // 1순위: DTO에 있는 shareLinkUrl
+      // 2순위: 혹시 shareLink 객체 안에 linkUrl 로 왔을 경우 대비
+      // 🔥 이 줄만 이렇게 고쳐 두기
+      setShareLink(data.shareLinkUrl ?? null);
+    } catch (err) {
+    const message =
+        err instanceof Error
+          ? err.message
+          : "방 정보를 불러오는 중 오류가 발생했습니다.";
+      setError(message);
+      setRoom(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
     fetchRoom();
   }, [roomId]);
 
-  const tryFetchShareLink = async (): Promise<string | null> => {
-    if (!roomId) return null;
-    try {
-      const { data } = await api.get<ShareLinkResponse>(
-        `/rooms/${roomId}/share`
-      );
-      return data?.linkUrl ?? null;
-    } catch (err) {
-      const status = (err as AxiosError)?.response?.status;
-      if (status === 404) return null;
-      throw err;
+  // ✅ 수정본
+const handleShareLink = async () => {
+  // roomId 없어도 사실 복사엔 상관 없지만, 안전하게 체크
+  if (!roomId) return;
+
+  // 디버깅용 (브라우저 콘솔에서 확인)
+  console.log(">>> shareLink state:", shareLink);
+  console.log(">>> room.shareLinkUrl:", room?.shareLinkUrl);
+
+  // 1순위: state 에 저장된 shareLink
+  // 2순위: roomSummary 안에 있는 shareLinkUrl
+  const link = shareLink ?? room?.shareLinkUrl ?? null;
+
+  if (!link) {
+    alert("공유 링크를 불러올 수 없습니다. 관리자에게 문의해 주세요.");
+    return;
+  }
+
+  setIsShareGenerating(true);
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(link);
+      alert("공유 링크가 클립보드에 복사되었습니다.");
+    } else {
+      window.prompt("이 링크를 복사해 주세요.", link);
     }
-  };
+  } catch {
+    window.prompt("이 링크를 복사해 주세요.", link);
+  } finally {
+    setIsShareGenerating(false);
+  }
+};
 
-  const handleShareLink = async () => {
-    if (!roomId) return;
-    setIsShareGenerating(true);
-    try {
-      const linkCandidate =
-        shareLink ?? room?.shareLinkUrl ?? (await tryFetchShareLink());
-      const link = linkCandidate ?? null;
-
-      if (!link) {
-        alert("공유 링크를 불러올 수 없습니다. 관리자에게 문의해 주세요.");
-        return;
-      }
-
-      setShareLink(link);
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(link).catch(() => undefined);
-      }
-      alert(`공유 링크가 준비되었습니다.\n${link}`);
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "공유 링크 처리 중 오류가 발생했습니다.";
-      alert(message);
-    } finally {
-      setIsShareGenerating(false);
-    }
-  };
 
   return (
     <Box sx={{ bgcolor: "#f4f6fb", minHeight: "100vh" }}>
