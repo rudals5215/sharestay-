@@ -27,11 +27,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final BanService banService;
     private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsService, BanService banService,
+                                   UserRepository userRepository) {
         if (jwtService == null) throw new IllegalArgumentException("jwtService cannot be null");
         if (userDetailsService == null) throw new IllegalArgumentException("userDetailsService cannot be null");
         if (banService == null) throw new IllegalArgumentException("banService cannot be null");
         if (userRepository == null) throw new IllegalArgumentException("userRepository cannot be null");
+
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.banService = banService;
