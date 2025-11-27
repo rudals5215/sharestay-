@@ -1,5 +1,6 @@
 package com.example.sharestay.controller;
 
+import com.example.sharestay.dto.BanHistoryResponse;
 import com.example.sharestay.dto.BanRequest;
 import com.example.sharestay.dto.BanResponse;
 import com.example.sharestay.service.BanService;
@@ -58,6 +59,14 @@ public class BanController {
     public ResponseEntity<List<BanResponse>> getBanHistory(@PathVariable Long userId) {
         List<BanResponse> history = banService.getBanHistory(userId);
         return ResponseEntity.ok(history);
+    }
+
+    /**
+     * 특정 사용자의 정지 이력(변경/해제/재정지) 조회
+     */
+    @GetMapping("/users/{userId}/history")
+    public ResponseEntity<List<BanHistoryResponse>> getBanHistoryLog(@PathVariable Long userId) {
+        return ResponseEntity.ok(banService.getBanHistoryLog(userId));
     }
 
     /**

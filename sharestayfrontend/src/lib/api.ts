@@ -45,10 +45,7 @@ api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401 && window.location.pathname !== "/login") {
-      console.error(
-        "401 Unauthorized: 로그인이 필요한 요청입니다. 백엔드 응답을 확인하세요.",
-        error
-      );
+      alert("인증이 만료되었거나 권한이 없습니다. 다시 시도하거나 로그인해 주세요.");
     }
 
     if (error.response?.status === 403) {
@@ -56,10 +53,6 @@ api.interceptors.response.use(
         (error.response.data as { message?: string } | undefined)?.message ??
         "정지된 계정입니다. 관리자에게 문의하세요.";
       alert(message);
-      clearTokens();
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
     }
     throw error;
   }

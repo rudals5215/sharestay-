@@ -57,6 +57,14 @@ public class Ban {
         this.isActive = false;
     }
 
+    public void activate(String reason, LocalDateTime endDate, String memo) {
+        this.isActive = true;
+        this.reason = reason;
+        this.endDate = endDate;
+        this.memo = memo;
+        this.bannedAt = LocalDateTime.now();
+    }
+
     public void update(String reason, LocalDateTime endDate, String memo) {
         if (reason != null && !reason.isBlank()) {
             this.reason = reason;
