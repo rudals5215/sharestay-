@@ -381,7 +381,11 @@ export default function Rooms() {
     try {
       await toggleFavoriteRoom(user.id, roomId);
       await loadFavorites();
-    } catch (error) {
+    } catch (error: any) {
+      const status = error?.response?.status;
+      const message =
+        error?.response?.data?.message ||
+        (status ? `요청 실패 (status: ${status})` : "찜하기 요청에 실패했습니다.");
       console.error("Failed to toggle favorite", error);
       setFavorites((prev) => {
         const next = new Set(prev);
@@ -397,7 +401,7 @@ export default function Rooms() {
           getRoomId(item) === roomId ? { ...item, isFavorite: currentlyFavorite } : item
         )
       );
-      alert("즐겨찾기 처리에 실패했습니다. 다시 시도해 주세요.");
+      alert(message);
     }
   };
 

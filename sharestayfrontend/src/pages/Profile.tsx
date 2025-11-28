@@ -139,7 +139,13 @@ export default function Profile() {
     [user]
   );
   const isHost = roles.includes("HOST");
-  const roleLabel = isHost ? "호스트" : "게스트";
+  const isAdmin = roles.includes("ADMIN");
+  const [adminView, setAdminView] = useState<"guest" | "host">(isHost ? "host" : "guest");
+  const isHostView = isAdmin ? adminView === "host" : isHost;
+  useEffect(() => {
+    setAdminView(isHost ? "host" : "guest");
+  }, [isHost]);
+  const roleLabel = isHostView ? "호스트" : "게스트";
 
   type EditableTextField =
     | "nickname"
@@ -196,7 +202,7 @@ export default function Profile() {
     });
   };
 
-  const sidebarMenu = isHost
+  const sidebarMenu = isHostView
     ? [
         { key: "profile" as const, label: "프로필 관리", icon: <PersonOutline /> },
         { key: "rooms" as const, label: "내 방 관리", icon: <HomeWork /> },
@@ -344,11 +350,29 @@ export default function Profile() {
                 >
                   <Box>
                     <Typography variant="h5" fontWeight={800}>
-                      {isHost ? "호스트 프로필 관리" : "게스트 프로필 관리"}
+                      {isHostView ? "호스트 프로필 관리" : "게스트 프로필 관리"}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      정보를 최신으로 유지하면 더 안전한 매칭이 가능해요.
+                      정보를 최신으로 업데이트하면 더 좋은 매칭을 도와줍니다.
                     </Typography>
+                    {isAdmin && (
+                      <Stack direction="row" spacing={1} mt={1}>
+                        <Button
+                          size="small"
+                          variant={adminView === "guest" ? "contained" : "outlined"}
+                          onClick={() => setAdminView("guest")}
+                        >
+                          게스트 보기
+                        </Button>
+                        <Button
+                          size="small"
+                          variant={adminView === "host" ? "contained" : "outlined"}
+                          onClick={() => setAdminView("host")}
+                        >
+                          호스트 보기
+                        </Button>
+                      </Stack>
+                    )}
                   </Box>
                   <Stack direction="row" spacing={1}>
                     {isEditing ? (
@@ -414,7 +438,7 @@ export default function Profile() {
                         disabled={!isEditing}
                       />
                     </Grid>
-                    {!isHost && (
+                    {!isHostView && (
                       <Grid xs={12}>
                         <Typography variant="subtitle1" fontWeight={700} gutterBottom>
                           선호 생활 스타일
@@ -444,18 +468,18 @@ export default function Profile() {
                     )}
                     <Grid xs={12}>
                       <TextField
-                        label={isHost ? "호스트 소개" : "자기소개"}
+                        label={isHostView ? "호스트 소개" : "자기소개"}
                         fullWidth
                         multiline
-                        minRows={isHost ? 3 : 4}
-                        value={isHost ? form.hostIntroduction : form.lifeStyle}
-                        onChange={isHost ? handleChange("hostIntroduction") : handleChange("lifeStyle")}
+                        minRows={isHostView ? 3 : 4}
+                        value={isHostView ? form.hostIntroduction : form.lifeStyle}
+                        onChange={isHostView ? handleChange("hostIntroduction") : handleChange("lifeStyle")}
                         disabled={!isEditing}
                       />
                     </Grid>
                   </Grid>
 
-                  {isHost && (
+                  {isHostView && (
                     <Box
                       sx={{
                         bgcolor: "#f5f8ff",
@@ -530,13 +554,13 @@ export default function Profile() {
                 description="비밀번호 변경, 로그인 알림 등 보안을 강화하는 영역입니다. 디자인 가이드를 반영해 곧 제공될 예정이에요."
               />
             )}
-            {activeSection === "reservations" && !isHost && (
+            {activeSection === "reservations" && !isHostView && (
               <SectionPlaceholder
                 title="예약 내역"
                 description="예약 내역이 이곳에 표시됩니다. 현재는 준비 중입니다."
               />
             )}
-            {activeSection === "rooms" && isHost && (
+            {activeSection === "rooms" && isHostView && (
               <SectionPlaceholder
                 title="내 방 관리"
                 description="등록한 방을 관리하는 공간입니다. 디자인과 동일한 형태로 확장 준비 중입니다."
@@ -544,7 +568,7 @@ export default function Profile() {
                 actionHref="/list-room"
               />
             )}
-            {activeSection === "roommate" && isHost && (
+            {activeSection === "roommate" && isHostView && (
               <SectionPlaceholder
                 title="룸메이트 신청"
                 description="호스트가 받은 룸메이트 신청을 관리하는 공간입니다. 곧 만나보실 수 있어요."

@@ -52,6 +52,19 @@ interface User {
 
 type DurationPreset = "1d" | "7d" | "30d" | "permanent";
 
+const normalizeBan = (ban: BanRecord): BanRecord => ({
+  ...ban,
+  // API에서 active/isActive 혼용 대응
+  isActive:
+    typeof ban.isActive === "boolean"
+      ? ban.isActive
+      : typeof ban.active === "boolean"
+      ? ban.active
+      : false,
+  endDate: ban.endDate ?? null,
+  memo: ban.memo ?? null,
+});
+
 export default function AdminBans() {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
