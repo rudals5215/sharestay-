@@ -7,6 +7,8 @@
 // zod \
 // @fontsource/roboto \
 // @react-oauth/google
+// npm install firebase
+// npm install --save firebase
 
 // src/App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";

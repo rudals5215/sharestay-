@@ -1,4 +1,5 @@
 ﻿// src/pages/Profile.tsx
+import Grid from "@mui/material/Unstable_Grid2";
 import {
   Avatar,
   Box,
@@ -10,7 +11,6 @@ import {
   CircularProgress,
   Container,
   Divider,
-  Grid,
   List,
   ListItemButton,
   ListItemIcon,
@@ -227,7 +227,7 @@ export default function Profile() {
       <SiteHeader />
       <Container maxWidth="lg" sx={{ flex: 1, py: { xs: 4, md: 8 } }}>
         <Grid container spacing={3} alignItems="stretch">
-          <Grid size={{ xs: 12, md: 3 }}>
+          <Grid xs={12} md={3}>
             <Paper
               elevation={3}
               sx={{
@@ -322,7 +322,7 @@ export default function Profile() {
             </Paper>
           </Grid>
 
-          <Grid size={{ xs: 12, md: 9 }}>
+          <Grid xs={12} md={9}>
             {activeSection === "profile" && (
               <Card
                 sx={{
@@ -375,10 +375,10 @@ export default function Profile() {
 
                 <CardContent sx={{ p: { xs: 3, md: 4 }, display: "grid", gap: 3 }}>
                   <Grid container spacing={2.5}>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid xs={12} sm={6}>
                       <TextField label="아이디" fullWidth value={user.username} InputProps={{ readOnly: true }} />
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid xs={12} sm={6}>
                       <TextField
                         label="닉네임"
                         fullWidth
@@ -387,7 +387,7 @@ export default function Profile() {
                         disabled={!isEditing}
                       />
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid xs={12} sm={6}>
                       <TextField
                         label="이메일"
                         fullWidth
@@ -396,7 +396,7 @@ export default function Profile() {
                         InputProps={{ readOnly: true }}
                       />
                     </Grid>
-                    <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid xs={12} sm={6}>
                       <TextField
                         label="전화번호"
                         fullWidth
@@ -405,7 +405,7 @@ export default function Profile() {
                         disabled={!isEditing}
                       />
                     </Grid>
-                    <Grid size={{ xs: 12 }}>
+                    <Grid xs={12}>
                       <TextField
                         label="주소"
                         fullWidth
@@ -415,7 +415,7 @@ export default function Profile() {
                       />
                     </Grid>
                     {!isHost && (
-                      <Grid size={{ xs: 12 }}>
+                      <Grid xs={12}>
                         <Typography variant="subtitle1" fontWeight={700} gutterBottom>
                           선호 생활 스타일
                         </Typography>
@@ -442,7 +442,7 @@ export default function Profile() {
                         </Stack>
                       </Grid>
                     )}
-                    <Grid size={{ xs: 12 }}>
+                    <Grid xs={12}>
                       <TextField
                         label={isHost ? "호스트 소개" : "자기소개"}
                         fullWidth

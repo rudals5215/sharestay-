@@ -89,7 +89,7 @@ public class User {
     }
 
     public boolean isBanned() {
-        return isBanned();
+        return false;
     }
 
 }
