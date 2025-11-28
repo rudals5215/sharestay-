@@ -95,7 +95,7 @@ public class UserService {
     }
 
     private void handleHostUpdate(User user, UpdateUserRequest request) {
-        if (request.getHostIntroduction() == null) {
+        if (request.getHostIntroduction() == null || request.getHostIntroduction().isBlank()) {
             return;
         }
         if (!"HOST".equalsIgnoreCase(user.getRole()) && !SecurityUtils.isAdmin()) {

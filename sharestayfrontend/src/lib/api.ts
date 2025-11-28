@@ -8,6 +8,7 @@ const USERNAME_KEY = "auth_username";
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE,
   headers: { "Content-Type": "application/json" },
+  withCredentials: true, // ensure session cookies (e.g., OAuth/guest) are sent
 });
 
 // 세션 스토리지에 저장된 토큰/아이디를 관리하는 함수들

@@ -223,6 +223,10 @@ public class SecurityConfig {
                         // 🔹 preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // 🔹 프로필 조회/수정: 로그인 사용자 모두(GUEST/HOST/ADMIN)
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasAnyRole("GUEST","HOST","ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAnyRole("GUEST","HOST","ADMIN")
+
                         // 🔹 Ban API: 관리자만
                         .requestMatchers("/api/bans/**").hasRole("ADMIN")
 
