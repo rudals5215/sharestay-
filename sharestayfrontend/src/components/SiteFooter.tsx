@@ -1,11 +1,12 @@
-import { Box, Container, Divider, Grid, Stack, Typography } from "@mui/material";
+import Grid from "@mui/material/Unstable_Grid2";
+import { Box, Container, Divider, Stack, Typography } from "@mui/material";
 
 export default function SiteFooter() {
   return (
     <Box sx={{ bgcolor: "#030b24", color: "rgba(255,255,255,0.75)", py: 6 }}>
       <Container maxWidth="lg">
         <Grid container spacing={4}>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid xs={12} md={4}>
             <Stack spacing={2}>
               <Typography variant="h6" color="common.white" fontWeight={700}>
                 ShareStay+
@@ -35,9 +36,9 @@ export default function SiteFooter() {
               </Stack>
             </Stack>
           </Grid>
-          <Grid size={{ xs: 12, md: 8 }}>
+          <Grid xs={12} md={8}>
             <Grid container spacing={3}>
-              <Grid size={{ xs: 12, sm: 4 }}>
+              <Grid xs={12} sm={4}>
                 <Typography
                   variant="subtitle2"
                   color="common.white"
@@ -61,7 +62,7 @@ export default function SiteFooter() {
                   </Box>
                 </Stack>
               </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
+              <Grid xs={12} sm={4}>
                 <Typography
                   variant="subtitle2"
                   color="common.white"
@@ -85,7 +86,7 @@ export default function SiteFooter() {
                   </Box>
                 </Stack>
               </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
+              <Grid xs={12} sm={4}>
                 <Typography
                   variant="subtitle2"
                   color="common.white"

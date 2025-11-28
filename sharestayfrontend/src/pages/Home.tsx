@@ -1,4 +1,5 @@
 ﻿// src/pages/Home.tsx
+import Grid from "@mui/material/Unstable_Grid2";
 import {
   Avatar,
   Box,
@@ -9,7 +10,6 @@ import {
   CircularProgress,
   Container,
   Divider,
-  Grid,
   MenuItem,
   Stack,
   TextField,
@@ -354,7 +354,7 @@ export default function Home() {
           </Box>
 
           <Grid container spacing={4} alignItems="center">
-            <Grid size={{ xs: 12, md: 7 }}>
+            <Grid xs={12} md={7}>
               <Stack spacing={3}>
                 <Typography
                   variant="h3"
@@ -388,7 +388,7 @@ export default function Home() {
                 </Stack>
               </Stack>
             </Grid>
-            <Grid size={{ xs: 12, md: 5 }}>
+            <Grid xs={12} md={5}>
               <Box
                 component="form"
                 onSubmit={handleHeroSearch}
@@ -474,7 +474,7 @@ export default function Home() {
 
           <Grid container spacing={3}>
             {featureHighlights.map((feature) => (
-              <Grid size={{ xs: 12, md: 4 }} key={feature.title}>
+              <Grid xs={12} md={4} key={feature.title}>
                 <Card
                   sx={{
                     height: "100%",
@@ -555,7 +555,7 @@ export default function Home() {
                   const imageUrl = room.images?.[0]?.imageUrl ?? null;
                   const tags = extractTags(room);
                   return (
-                    <Grid size={{ xs: 12, md: 4 }} key={room.roomId}>
+                    <Grid xs={12} md={4} key={room.roomId}>
                       <Card
                         sx={{
                           height: "100%",
@@ -720,7 +720,7 @@ export default function Home() {
                       ? Math.round(district.activityScore)
                       : district.activityScore;
                   return (
-                    <Grid size={{ xs: 12, md: 4 }} key={district.district}>
+                    <Grid xs={12} md={4} key={district.district}>
                       <Card
                         sx={{
                           borderRadius: 3,
@@ -884,7 +884,7 @@ export default function Home() {
       <Box sx={{ bgcolor: "#030b24", color: "rgba(255,255,255,0.75)", py: 6 }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid xs={12} md={4}>
               <Stack spacing={2}>
                 <Typography variant="h6" color="common.white" fontWeight={700}>
                   ShareStay+
@@ -908,9 +908,9 @@ export default function Home() {
                 </Stack>
               </Stack>
             </Grid>
-            <Grid size={{ xs: 12, md: 8 }}>
+            <Grid xs={12} md={8}>
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 4 }}>
+                <Grid xs={12} sm={4}>
                   <Typography
                     variant="subtitle2"
                     color="common.white"
@@ -934,7 +934,7 @@ export default function Home() {
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
+                <Grid xs={12} sm={4}>
                   <Typography
                     variant="subtitle2"
                     color="common.white"
@@ -958,7 +958,7 @@ export default function Home() {
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
+                <Grid xs={12} sm={4}>
                   <Typography
                     variant="subtitle2"
                     color="common.white"
