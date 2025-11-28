@@ -145,7 +145,8 @@ export default function ListRoom() {
 
   const navigate = useNavigate();
   const { user } = useAuth();
-  const hostId = user?.id ?? null;
+  // 호스트 식별자는 hostId를 우선 사용하고, 없을 때만 userId로 폴백
+  const hostId = user?.hostId ?? user?.id ?? null;
   const roleList = user?.roles ?? (user?.role ? [user.role] : []);
   const isHostUser =
     roleList.includes("HOST") || roleList.includes("ADMIN");
