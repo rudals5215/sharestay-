@@ -323,6 +323,38 @@ export default function Rooms() {
     });
   };
 
+// ⭐ 추가: 왼쪽 필터바 "편의시설" 칩 클릭 핸들러
+  const handleFacilityClick = async (facility: string) => {
+    // 같은 칩을 한 번 더 누르면 해제
+    const nextFacility = selectedFacility === facility ? "" : facility;
+
+    setSelectedFacility(nextFacility);
+
+    const params = new URLSearchParams();
+    if (keyword.trim()) params.set("keyword", keyword.trim());
+    if (district) params.set("district", district);
+    if (roomType) params.set("type", roomType);
+    if (
+      priceRange[0] !== defaultPriceRange[0] ||
+      priceRange[1] !== defaultPriceRange[1]
+    ) {
+      params.set("minPrice", String(priceRange[0]));
+      params.set("maxPrice", String(priceRange[1]));
+    }
+    if (nextFacility) {
+      params.set("option", nextFacility); // URL에도 남겨두고 싶으면
+    }
+
+    if (params.toString()) setSearchParams(params, { replace: true });
+    else setSearchParams({}, { replace: true });
+
+    // 실제 목록 다시 조회 (facility override만 넘기면 나머지는 현재 state 사용)
+    await fetchRooms({
+      facility: nextFacility,
+    });
+  };
+
+
   const loadFavorites = useCallback(async () => {
     if (!user?.id) {
       setFavorites(new Set());
@@ -552,25 +584,31 @@ export default function Rooms() {
 
                 <RouterLink to="/RoomMap">지도로 찾기</RouterLink>
 
-                <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  편의시설
-                </Typography>
-                <Stack
-                  spacing={1}
-                  flexWrap="wrap"
-                  direction="row"
-                  useFlexGap
-                >
-                  {filterFacilities.map((facility) => (
-                  <Chip
-                    key={facility}
-                    label={facility}
-                    variant="outlined"
-                    sx={{ borderRadius: 2 }}
-                  />
-                  ))}
-                </Stack>
+                                <Stack spacing={1}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    편의시설
+                  </Typography>
+                  <Stack
+                    spacing={1}
+                    flexWrap="wrap"
+                    direction="row"
+                    useFlexGap
+                  >
+                    {filterFacilities.map((facility) => {
+                      const isSelected = selectedFacility === facility;
+                      return (
+                        <Chip
+                          key={facility}
+                          label={facility}
+                          clickable
+                          onClick={() => handleFacilityClick(facility)}
+                          variant={isSelected ? "filled" : "outlined"}
+                          color={isSelected ? "primary" : "default"}
+                          sx={{ borderRadius: 2 }}
+                        />
+                      );
+                    })}
+                  </Stack>
                 </Stack>
               </Stack>
               </Paper>
