@@ -39,6 +39,7 @@ import { mapRoomFromApi } from "../types/room";
 import fallbackImageSrc from "../img/no_img.jpg";
 // ✅ 1) Grid는 따로 디폴트 import
 import Grid from "@mui/material/Unstable_Grid2";
+// 칩 심는 거 해야함
 
 const filterFacilities = [
   "에어컨",
@@ -66,6 +67,7 @@ const districts = [
   { value: "용산구", label: "용산구" },
 ];
 
+// 일단 무조건 한글로 맞추기
 const roomTypes = [
   { value: "", label: "전체 유형" },
   { value: "원룸", label: "원룸" },
