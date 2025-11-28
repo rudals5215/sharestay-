@@ -38,7 +38,7 @@ import type { RoomApiResponse, RoomSummary } from "../types/room";
 import { mapRoomFromApi } from "../types/room";
 import fallbackImageSrc from "../img/no_img.jpg";
 // ✅ 1) Grid는 따로 디폴트 import
-import Grid from "@mui/material/Grid";
+import Grid from "@mui/material/Unstable_Grid2";
 
 const filterFacilities = [
   "에어컨",
@@ -487,7 +487,7 @@ export default function Rooms() {
           </Paper>
 
           <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid xs={12} md={3}>
               <Paper
               sx={{
                 p: 3,
@@ -569,7 +569,7 @@ export default function Rooms() {
               </Stack>
               </Paper>
             </Grid>
-            <Grid size={{ xs: 12, md: 9 }}>
+            <Grid xs={12} md={9}>
               <Stack spacing={3}>
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
@@ -638,7 +638,8 @@ export default function Rooms() {
                         room.images?.[0]?.imageUrl ?? fallbackImage;
                       return (
                         <Grid
-                          size={{ xs: 12, sm: 6 }}
+                          xs={12}
+                          sm={6}
                           key={roomId ?? `${room.title}-${room.address}`}
                           ref={
                             isHighlighted ? highlightedCardRef : undefined
