@@ -77,15 +77,15 @@ const availabilityOptions = [
 ];
 
 const availabilityStatusMap: Record<RoomAvailabilityStatus, number> = {
-  AVAILABLE: 1,
-  PENDING: 0,
-  UNAVAILABLE: -1,
+  AVAILABLE: 0,
+  PENDING: 1,
+  UNAVAILABLE: 2,
 };
 
 const reverseAvailabilityStatusMap: Record<number, RoomAvailabilityStatus> = {
-  1: "AVAILABLE",
-  0: "PENDING",
-  [-1]: "UNAVAILABLE",
+  0: "AVAILABLE",
+  1: "PENDING",
+  2: "UNAVAILABLE",
 };
 
 export default function EditRoom() {

@@ -18,6 +18,7 @@ import {
   Paper,
   Stack,
   TextField,
+  Chip,
   Typography,
   useTheme,
 } from "@mui/material";
@@ -34,9 +35,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/useAuth";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
+import { api } from "../lib/api";
 import { fetchFavoriteRooms } from "../lib/favorites";
 import type { FavoriteRoom } from "../types/favorite";
 import { extractFavoriteImageUrl } from "../types/favorite";
+import { mapRoomFromApi } from "../types/room";
+import type { RoomSummary } from "../types/room";
 
 const HERO_IMAGE =
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80";
@@ -71,6 +75,9 @@ export default function Profile() {
   const [activeSection, setActiveSection] = useState<
     "profile" | "favorites" | "reservations" | "security" | "rooms" | "roommate"
   >("profile");
+  const [hostRooms, setHostRooms] = useState<RoomSummary[]>([]);
+  const [hostRoomsLoading, setHostRoomsLoading] = useState(false);
+  const [hostRoomsError, setHostRoomsError] = useState<string | null>(null);
   const [form, setForm] = useState<ProfileForm>({
     nickname: "",
     address: "",
@@ -140,12 +147,57 @@ export default function Profile() {
   );
   const isHost = roles.includes("HOST");
   const isAdmin = roles.includes("ADMIN");
-  const [adminView, setAdminView] = useState<"guest" | "host">(isHost ? "host" : "guest");
+  const hostId = user?.hostId ?? null;
+  const canManageRooms = isHost || isAdmin;
+  const [adminView, setAdminView] = useState<"guest" | "host">(
+    isHost ? "host" : "guest"
+  );
   const isHostView = isAdmin ? adminView === "host" : isHost;
   useEffect(() => {
     setAdminView(isHost ? "host" : "guest");
   }, [isHost]);
   const roleLabel = isHostView ? "호스트" : "게스트";
+
+  useEffect(() => {
+    if (!canManageRooms) {
+      setHostRooms([]);
+      setHostRoomsError(null);
+      return;
+    }
+    if (activeSection !== "rooms") return;
+    if (!hostId) {
+      setHostRooms([]);
+      setHostRoomsError("호스트 정보가 없습니다.");
+      return;
+    }
+    let ignore = false;
+    setHostRoomsLoading(true);
+    setHostRoomsError(null);
+    api
+      .get(`/rooms/host/${hostId}`)
+      .then(({ data }) => {
+        if (ignore) return;
+        const list = Array.isArray(data) ? data.map(mapRoomFromApi) : [];
+        setHostRooms(list);
+      })
+      .catch((error) => {
+        if (ignore) return;
+        const message =
+          error instanceof Error
+            ? error.message
+            : "내 방 목록을 불러오지 못했습니다.";
+        setHostRoomsError(message);
+        setHostRooms([]);
+      })
+      .finally(() => {
+        if (!ignore) {
+          setHostRoomsLoading(false);
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [activeSection, canManageRooms, hostId, user?.id]);
 
   type EditableTextField =
     | "nickname"
@@ -206,7 +258,7 @@ export default function Profile() {
     ? [
         { key: "profile" as const, label: "프로필 관리", icon: <PersonOutline /> },
         { key: "rooms" as const, label: "내 방 관리", icon: <HomeWork /> },
-        { key: "roommate" as const, label: "룸메이트 신청", icon: <Group />, badge: 2 },
+        { key: "roommate" as const, label: "룸메이트 신청", icon: <Group /> },
         { key: "security" as const, label: "보안 설정", icon: <SecurityOutlined /> },
       ]
     : [
@@ -229,7 +281,12 @@ export default function Profile() {
   }
 
   return (
-    <Box minHeight="100vh" display="flex" flexDirection="column" sx={{ bgcolor: "#f4f6fb" }}>
+    <Box
+      minHeight="100vh"
+      display="flex"
+      flexDirection="column"
+      sx={{ bgcolor: "#f4f6fb" }}
+    >
       <SiteHeader />
       <Container maxWidth="lg" sx={{ flex: 1, py: { xs: 4, md: 8 } }}>
         <Grid container spacing={3} alignItems="stretch">
@@ -257,7 +314,11 @@ export default function Profile() {
                   borderRadius: 3,
                 }}
               />
-              <Stack spacing={1.5} alignItems="center" sx={{ position: "relative" }}>
+              <Stack
+                spacing={1.5}
+                alignItems="center"
+                sx={{ position: "relative" }}
+              >
                 <Avatar
                   sx={{
                     width: 84,
@@ -267,7 +328,8 @@ export default function Profile() {
                     fontSize: 32,
                   }}
                 >
-                  {user.nickname?.slice(0, 1)?.toUpperCase() ?? user.username.slice(0, 1).toUpperCase()}
+                  {user.nickname?.slice(0, 1)?.toUpperCase() ??
+                    user.username.slice(0, 1).toUpperCase()}
                 </Avatar>
                 <Stack spacing={0.5} alignItems="center">
                   <Typography variant="h6" fontWeight={700}>
@@ -359,14 +421,18 @@ export default function Profile() {
                       <Stack direction="row" spacing={1} mt={1}>
                         <Button
                           size="small"
-                          variant={adminView === "guest" ? "contained" : "outlined"}
+                          variant={
+                            adminView === "guest" ? "contained" : "outlined"
+                          }
                           onClick={() => setAdminView("guest")}
                         >
                           게스트 보기
                         </Button>
                         <Button
                           size="small"
-                          variant={adminView === "host" ? "contained" : "outlined"}
+                          variant={
+                            adminView === "host" ? "contained" : "outlined"
+                          }
                           onClick={() => setAdminView("host")}
                         >
                           호스트 보기
@@ -377,16 +443,27 @@ export default function Profile() {
                   <Stack direction="row" spacing={1}>
                     {isEditing ? (
                       <>
-                        <Button variant="outlined" onClick={handleCancel} disabled={isSaving}>
+                        <Button
+                          variant="outlined"
+                          onClick={handleCancel}
+                          disabled={isSaving}
+                        >
                           취소
                         </Button>
-                        <Button variant="contained" onClick={handleSave} disabled={isSaving}>
+                        <Button
+                          variant="contained"
+                          onClick={handleSave}
+                          disabled={isSaving}
+                        >
                           {isSaving ? "저장 중..." : "저장"}
                         </Button>
                       </>
                     ) : (
                       <>
-                        <Button variant="outlined" onClick={() => setIsEditing(true)}>
+                        <Button
+                          variant="outlined"
+                          onClick={() => setIsEditing(true)}
+                        >
                           수정하기
                         </Button>
                         <Button variant="text" color="inherit" onClick={logout}>
@@ -397,10 +474,17 @@ export default function Profile() {
                   </Stack>
                 </Box>
 
-                <CardContent sx={{ p: { xs: 3, md: 4 }, display: "grid", gap: 3 }}>
+                <CardContent
+                  sx={{ p: { xs: 3, md: 4 }, display: "grid", gap: 3 }}
+                >
                   <Grid container spacing={2.5}>
                     <Grid xs={12} sm={6}>
-                      <TextField label="아이디" fullWidth value={user.username} InputProps={{ readOnly: true }} />
+                      <TextField
+                        label="아이디"
+                        fullWidth
+                        value={user.username}
+                        InputProps={{ readOnly: true }}
+                      />
                     </Grid>
                     <Grid xs={12} sm={6}>
                       <TextField
@@ -440,12 +524,17 @@ export default function Profile() {
                     </Grid>
                     {!isHostView && (
                       <Grid xs={12}>
-                        <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+                        <Typography
+                          variant="subtitle1"
+                          fontWeight={700}
+                          gutterBottom
+                        >
                           선호 생활 스타일
                         </Typography>
                         <Stack direction="row" gap={1} flexWrap="wrap">
                           {lifestyleOptions.map((option) => {
-                            const selected = lifeStyleSelections.includes(option);
+                            const selected =
+                              lifeStyleSelections.includes(option);
                             return (
                               <Button
                                 key={option}
@@ -472,8 +561,14 @@ export default function Profile() {
                         fullWidth
                         multiline
                         minRows={isHostView ? 3 : 4}
-                        value={isHostView ? form.hostIntroduction : form.lifeStyle}
-                        onChange={isHostView ? handleChange("hostIntroduction") : handleChange("lifeStyle")}
+                        value={
+                          isHostView ? form.hostIntroduction : form.lifeStyle
+                        }
+                        onChange={
+                          isHostView
+                            ? handleChange("hostIntroduction")
+                            : handleChange("lifeStyle")
+                        }
                         disabled={!isEditing}
                       />
                     </Grid>
@@ -486,20 +581,35 @@ export default function Profile() {
                         borderRadius: 2,
                         p: 2,
                         display: "grid",
-                        gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+                        gridTemplateColumns: {
+                          xs: "1fr",
+                          sm: "repeat(3, 1fr)",
+                        },
                         gap: 2,
                       }}
                     >
                       {[
                         { label: "평점", value: "—", helper: "리뷰 집계 예정" },
-                        { label: "응답률", value: "—", helper: "문의 기록 수집 중" },
-                        { label: "응답시간", value: "—", helper: "데이터 준비 중" },
+                        {
+                          label: "응답률",
+                          value: "—",
+                          helper: "문의 기록 수집 중",
+                        },
+                        {
+                          label: "응답시간",
+                          value: "—",
+                          helper: "데이터 준비 중",
+                        },
                       ].map((stat) => (
                         <Stack key={stat.label} spacing={0.5}>
                           <Typography variant="overline" color="text.secondary">
                             {stat.label}
                           </Typography>
-                          <Typography variant="h5" fontWeight={800} color="primary">
+                          <Typography
+                            variant="h5"
+                            fontWeight={800}
+                            color="primary"
+                          >
                             {stat.value}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -536,7 +646,9 @@ export default function Profile() {
                   ) : favoriteError ? (
                     <Typography color="error">{favoriteError}</Typography>
                   ) : favoriteRooms.length === 0 ? (
-                    <Typography color="text.secondary">아직 찜한 방이 없습니다.</Typography>
+                    <Typography color="text.secondary">
+                      아직 찜한 방이 없습니다.
+                    </Typography>
                   ) : (
                     <Stack spacing={2.5}>
                       {favoriteRooms.map((item) => (
@@ -561,11 +673,11 @@ export default function Profile() {
               />
             )}
             {activeSection === "rooms" && isHostView && (
-              <SectionPlaceholder
-                title="내 방 관리"
-                description="등록한 방을 관리하는 공간입니다. 디자인과 동일한 형태로 확장 준비 중입니다."
-                actionLabel="방 등록하러 가기"
-                actionHref="/list-room"
+              <HostRoomsSection
+                rooms={hostRooms}
+                loading={hostRoomsLoading}
+                error={hostRoomsError}
+                canRegister={Boolean(canManageRooms && hostId)}
               />
             )}
             {activeSection === "roommate" && isHostView && (
@@ -579,6 +691,160 @@ export default function Profile() {
       </Container>
       <SiteFooter />
     </Box>
+  );
+}
+
+
+type HostRoomsSectionProps = {
+  rooms: RoomSummary[];
+  loading: boolean;
+  error: string | null;
+  canRegister: boolean;
+};
+
+function HostRoomsSection({ rooms, loading, error, canRegister }: HostRoomsSectionProps) {
+  const statusLabel = (value: number | string) => {
+    const numeric = typeof value === 'number' ? value : Number(value);
+    if (numeric === 0) return { label: '모집중', color: 'success' as const };
+    if (numeric === 1) return { label: '대기중', color: 'warning' as const };
+    return { label: '마감', color: 'default' as const };
+  };
+
+  const formatCurrency = (amount?: number) => {
+    if (typeof amount !== 'number' || Number.isNaN(amount)) return '-';
+    return `${amount.toLocaleString()}원/월`;
+  };
+
+  return (
+    <Card
+        sx={{
+          borderRadius: 3,
+          boxShadow: '0 12px 28px rgba(12,31,89,0.12)',
+          overflow: 'hidden',
+        }}
+    >
+      <Box
+        sx={{
+          bgcolor: '#f7f9ff',
+          px: { xs: 2.5, md: 3.5 },
+          py: 2.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2,
+        }}
+        >
+          <Typography variant="h5" fontWeight={800}>
+          내 방 관리
+          </Typography>
+          {canRegister && (
+            <Button
+              variant="contained"
+              size="small"
+              component={RouterLink}
+              to="/list-room"
+              sx={{ borderRadius: 2 }}
+            >
+            방 등록하기
+            </Button>
+          )}
+        </Box>
+        <CardContent sx={{ p: { xs: 3, md: 4 }, display: 'grid', gap: 2.5 }}>
+          {loading ? (
+            <Stack alignItems="center" py={3} spacing={1}>
+              <CircularProgress />
+              <Typography color="text.secondary">내 방 목록을 불러오는 중입니다.</Typography>
+            </Stack>
+          ) : error ? (
+            <Typography color="error">{error}</Typography>
+          ) : rooms.length === 0 ? (
+            <Typography color="text.secondary">등록한 방이 없습니다.</Typography>
+          ) : (
+          <Stack spacing={2}>
+            {rooms.map((room) => {
+              const imageUrl = room.images?.[0]?.imageUrl;
+              const status = statusLabel(room.availabilityStatus as number);
+              return (
+                <Card
+                  key={room.id ?? room.roomId}
+                  variant="outlined"
+                  sx={{ borderRadius: 2, p: 2, boxShadow: '0 8px 16px rgba(12,31,89,0.08)' }}
+                >
+                  <Stack direction={{ xs: 'column', sm: 'row' }} gap={2}>
+                    <Box
+                      sx={{
+                        width: { xs: '100%', sm: 140 },
+                        height: 100,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        bgcolor: '#f3f4f6',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {imageUrl ? (
+                        <Box
+                          component="img"
+                          src={imageUrl}
+                          alt={room.title}
+                          sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <Box
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'grid',
+                            placeItems: 'center',
+                            color: 'text.secondary',
+                            fontSize: 12,
+                          }}
+                        >
+                          NO IMAGE
+                        </Box>
+                      )}
+                    </Box>
+                    <Stack spacing={1} flex={1}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="center">
+                        <Typography variant="h6" fontWeight={800}>
+                          {room.title}
+                        </Typography>
+                        <Chip label={status.label} color={status.color} size="small" />
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary">
+                        {room.address}
+                      </Typography>
+                      <Typography variant="subtitle1" fontWeight={700} color="primary">
+                        {formatCurrency(room.rentPrice)}
+                      </Typography>
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          component={RouterLink}
+                          to={`/rooms/${room.id ?? room.roomId}`}
+                          sx={{ borderRadius: 999 }}
+                        >
+                          상세보기
+                        </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          component={RouterLink}
+                          to={`/edit-room/${room.id ?? room.roomId}`}
+                          sx={{ borderRadius: 999 }}
+                        >
+                          수정하기
+                        </Button>
+                      </Stack>
+                    </Stack>
+                  </Stack>
+                </Card>
+              );
+            })}
+          </Stack>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -689,3 +955,5 @@ function SectionPlaceholder({ title, description, actionLabel, actionHref }: Sec
     </Card>
   );
 }
+
+

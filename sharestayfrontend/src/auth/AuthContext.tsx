@@ -22,6 +22,7 @@ type BackendUser = {
   nickname?: string;
   role?: string;
   roles?: string[];
+  hostId?: number;
   address?: string;
   phoneNumber?: string;
   lifeStyle?: string;
@@ -80,6 +81,7 @@ function mapUser(dto: BackendUser): UserInfo {
     email: dto.username,
     role: normalizedRoles[0],
     roles: normalizedRoles,
+    hostId: dto.hostId ?? null,
     address: dto.address,
     phoneNumber: dto.phoneNumber,
     lifeStyle: dto.lifeStyle,

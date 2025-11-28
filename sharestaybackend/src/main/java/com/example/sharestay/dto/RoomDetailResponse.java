@@ -1,8 +1,8 @@
 package com.example.sharestay.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import java.util.List;
 
 @Getter
@@ -18,10 +18,8 @@ public class RoomDetailResponse {
     private String description;
     private double latitude;
     private double longitude;
-
-    // 이미지 URL 리스트
     private List<String> imageUrls;
-
-    // 공유 링크 URL
     private String shareLinkUrl;
+    private Long hostId;
+    private Long hostUserId;
 }

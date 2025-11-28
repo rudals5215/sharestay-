@@ -123,6 +123,7 @@ public class UserService {
                 user.getLifeStyle(),
                 user.getRole(),
                 user.getSignupDate(),
+                host != null ? host.getId() : null,
                 host != null ? host.getIntroduction() : null,
                 host != null ? host.isTermsAgreed() : false
         );
