@@ -34,9 +34,19 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             throw new DisabledException("User is banned.");
         }
 
-        UserBuilder builder = org.springframework.security.core.userdetails.User.withUsername(username);
+        // username은 DB에 저장된 값(이메일) 그대로 사용하여 JWT의 sub와 일치시키고,
+        // roles는 ROLE_ 접두어가 중복되지 않도록 정규화하며, 비어있을 경우 기본 GUEST로 지정한다.
+        String normalizedRole = currentUser.getRole();
+        if (normalizedRole != null && normalizedRole.startsWith("ROLE_")) {
+            normalizedRole = normalizedRole.substring("ROLE_".length());
+        }
+        if (normalizedRole == null || normalizedRole.isBlank()) {
+            normalizedRole = "GUEST";
+        }
+
+        UserBuilder builder = org.springframework.security.core.userdetails.User.withUsername(currentUser.getUsername());
         builder.password(currentUser.getPassword());
-        builder.roles(currentUser.getRole());
+        builder.roles(normalizedRole);
 
         return builder.build();
     }
