@@ -8,24 +8,26 @@ import {
   Stack,
   TextField,
   Typography,
-} 
-from "@mui/material";
+} from "@mui/material";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../auth/useAuth";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+//======= 구글 관련 추가 import =======
+import axios from "axios"; 
+import { setStoredUsername } from "../lib/api"; 
+import { useEffect } from "react"; 
 
-// const GOOGLE_OAUTH2_URL = "http://localhost:8080/login/oauth2/code/sharestay/google";
-const GOOGLE_OAUTH2_URL ="http://localhost:8080/oauth2/authorization/google";
+const GOOGLE_OAUTH2_URL = "http://localhost:8080/oauth2/authorization/google";
 
 const schema = z.object({
   username: z
     .string()
-    .min(1, "아이디(이메일)를 입력하세요.")
-    .email("올바른 이메일 형식이어야 합니다."),
+    .min(1, "이메일을 입력해주세요.")
+    .email("올바른 이메일 형식을 입력해주세요."),
   password: z.string().min(6, "비밀번호는 최소 6자 이상이어야 합니다."),
 });
 
@@ -33,6 +35,8 @@ type FormValues = z.infer<typeof schema>;
 
 export default function Login() {
   const { login } = useAuth();
+  const navigate = useNavigate();
+
   const {
     handleSubmit,
     register,
@@ -42,30 +46,51 @@ export default function Login() {
   });
 
   const onSubmit = async (values: FormValues) => {
-  try {
-    console.log("[Login] 보내는 값:", values);
+    try {
+      await login(values.username, values.password);
+      window.location.href = "/";
+    } catch (err: any) {
+      console.error("[Login] 로그인 실패:", err);
 
-    await login(values.username, values.password);
+      if (err?.response?.status === 403) {
+        const message = err.response.data?.message ?? "정지된 계정입니다.";
+        alert(message);
+        window.location.href = "/login";
+        return;
+      }
 
-    // ✅ 로그인 성공 시 홈으로 이동
-    window.location.href = "/";
-  } catch (err: any) {
-    console.error("[Login] 로그인 실패:", err);
-
-    // 백엔드에서 온 에러 메시지 있으면 찍어보기
-    if (err?.response) {
-      console.error("[Login] status:", err.response.status);
-      console.error("[Login] data:", err.response.data);
-      alert(`로그인 실패 (${err.response.status})`);
-    } else {
-      alert("로그인 중 오류가 발생했습니다. 콘솔을 확인해 주세요.");
+      if (err?.response) {
+        console.error("[Login] status:", err.response.status);
+        console.error("[Login] data:", err.response.data);
+        alert(`로그인 실패 (${err.response.status})`);
+      } else {
+        alert("로그인 중 오류가 발생했습니다. 콘솔을 확인해 주세요.");
+      }
     }
-  }
-};
+  };
 
+  //===== 구글 로그인 redirect 처리
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code"); // 백엔드에서 보내는 code
+
+    if (code) {
+      // 백엔드가 쿠키에 access/refresh 넣어주므로 프론트에서 토큰 직접 처리 불필요
+      axios
+        .get("/api/me", { withCredentials: true }) // 쿠키 포함 요청
+        .then((res) => {
+          setStoredUsername(res.data.username); // 사용자 정보 저장
+        })
+        .finally(() => {
+          navigate("/", { replace: true }); // 홈으로 이동
+        });
+    }
+  }, [navigate]);
+
+  //===== 구글 로그인 버튼 클릭
   const handleGoogleLogin = () => {
     window.location.href = GOOGLE_OAUTH2_URL;
-  }
+  };
 
   return (
     <Box
@@ -165,13 +190,14 @@ export default function Login() {
           >
             {isSubmitting ? "로그인 중..." : "로그인"}
           </Button>
+
           <Button
             variant="outlined"
             size="large"
-            onClick={handleGoogleLogin}
+            onClick={handleGoogleLogin} // 구글 로그인 버튼 이벤트
             sx={{
               borderRadius: 2,
-              py: 1.4, 
+              py: 1.4,
               fontWeight: 700,
               borderColor: "#040505ff",
               color: "#4285F4",

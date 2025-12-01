@@ -1,4 +1,5 @@
 ﻿// src/pages/Home.tsx
+import Grid from "@mui/material/Unstable_Grid2";
 import {
   Avatar,
   Box,
@@ -9,7 +10,6 @@ import {
   CircularProgress,
   Container,
   Divider,
-  Grid,
   MenuItem,
   Stack,
   TextField,
@@ -32,7 +32,7 @@ import { mapRoomFromApi } from "../types/room";
 import type { DistrictSafety } from "../types/statistic";
 
 const heroBackground =
-  "https://plus.unsplash.com/premium_photo-1661885493074-e18964497278?fm=jpg&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8c2VvdWwlMjBuaWdodHxlbnwwfHwwfHx8MA%3D%3D&ixlib=rb-4.1.0&q=80&w=1920";
+  "https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fnew-york-7577186_1280.jpg?alt=media&token=e16af7f6-5c8c-4045-bad7-681e46617c8c";
 
 const navLinks = [
   { label: "방 찾기", href: "/rooms" },
@@ -354,7 +354,7 @@ export default function Home() {
           </Box>
 
           <Grid container spacing={4} alignItems="center">
-            <Grid size={{ xs: 12, md: 7 }}>
+            <Grid xs={12} md={7}>
               <Stack spacing={3}>
                 <Typography
                   variant="h3"
@@ -375,7 +375,6 @@ export default function Home() {
                     "#안심방",
                     "#서울대입구",
                     "#강남역",
-                    "#서재영",
                   ].map((tag) => (
                     <Chip
                       key={tag}
@@ -389,7 +388,7 @@ export default function Home() {
                 </Stack>
               </Stack>
             </Grid>
-            <Grid size={{ xs: 12, md: 5 }}>
+            <Grid xs={12} md={5}>
               <Box
                 component="form"
                 onSubmit={handleHeroSearch}
@@ -408,7 +407,7 @@ export default function Home() {
                   <TextField
                     fullWidth
                     label="지역명 또는 역명을 입력해주세요"
-                    placeholder="예: 서재영, 홍대입구"
+                    placeholder="예: 홍대입구"
                     variant="outlined"
                     value={heroKeyword}
                     onChange={(event) => setHeroKeyword(event.target.value)}
@@ -428,7 +427,6 @@ export default function Home() {
                     <MenuItem value="광진구">광진구</MenuItem>
                     <MenuItem value="송파구">송파구</MenuItem>
                     <MenuItem value="용산구">용산구</MenuItem>
-                    <MenuItem value="서재영">서재영</MenuItem>
                   </TextField>
                   <Button
                     type="submit"
@@ -476,7 +474,7 @@ export default function Home() {
 
           <Grid container spacing={3}>
             {featureHighlights.map((feature) => (
-              <Grid size={{ xs: 12, md: 4 }} key={feature.title}>
+              <Grid xs={12} md={4} key={feature.title}>
                 <Card
                   sx={{
                     height: "100%",
@@ -557,7 +555,7 @@ export default function Home() {
                   const imageUrl = room.images?.[0]?.imageUrl ?? null;
                   const tags = extractTags(room);
                   return (
-                    <Grid size={{ xs: 12, md: 4 }} key={room.roomId}>
+                    <Grid xs={12} md={4} key={room.roomId}>
                       <Card
                         sx={{
                           height: "100%",
@@ -722,7 +720,7 @@ export default function Home() {
                       ? Math.round(district.activityScore)
                       : district.activityScore;
                   return (
-                    <Grid size={{ xs: 12, md: 4 }} key={district.district}>
+                    <Grid xs={12} md={4} key={district.district}>
                       <Card
                         sx={{
                           borderRadius: 3,
@@ -886,7 +884,7 @@ export default function Home() {
       <Box sx={{ bgcolor: "#030b24", color: "rgba(255,255,255,0.75)", py: 6 }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid xs={12} md={4}>
               <Stack spacing={2}>
                 <Typography variant="h6" color="common.white" fontWeight={700}>
                   ShareStay+
@@ -910,9 +908,9 @@ export default function Home() {
                 </Stack>
               </Stack>
             </Grid>
-            <Grid size={{ xs: 12, md: 8 }}>
+            <Grid xs={12} md={8}>
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 4 }}>
+                <Grid xs={12} sm={4}>
                   <Typography
                     variant="subtitle2"
                     color="common.white"
@@ -936,7 +934,7 @@ export default function Home() {
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
+                <Grid xs={12} sm={4}>
                   <Typography
                     variant="subtitle2"
                     color="common.white"
@@ -960,7 +958,7 @@ export default function Home() {
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
+                <Grid xs={12} sm={4}>
                   <Typography
                     variant="subtitle2"
                     color="common.white"

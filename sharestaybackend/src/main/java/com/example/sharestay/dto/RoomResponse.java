@@ -1,11 +1,7 @@
 package com.example.sharestay.dto;
 
 import java.util.List;
-
-import com.example.sharestay.entity.Room;
-import com.example.sharestay.entity.RoomImage;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -20,6 +16,9 @@ public class RoomResponse {
     private String type;
     private int availabilityStatus;
     private String description;
+    private String options;
     private List<RoomImageResponse> images;
     private String shareLinkUrl;
+    private Long hostId;
+    private Long hostUserId;
 }

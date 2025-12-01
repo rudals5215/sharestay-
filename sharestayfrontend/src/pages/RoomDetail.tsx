@@ -23,6 +23,88 @@ import fallbackImageSrc from "../img/no_img.jpg";
 import ShareIcon from "@mui/icons-material/Share";
 
 const fallbackImage = fallbackImageSrc;
+const lifestyleOptionSet = new Set([
+  "금연",
+  "흡연",
+  "조용한 생활",
+  "사교적",
+  "청소 자주",
+  "요리 자주",
+  "늦게 귀가",
+  "일찍 기상",
+  "운동 좋아함",
+  "음악 감상",
+  "게임",
+  "독서",
+]);
+
+const facilityOptionSet = new Set([
+  "에어컨",
+  "냉장고",
+  "세탁기",
+  "인터넷",
+  "와이파이",
+  "엘리베이터",
+  "TV",
+  "침대",
+  "책상",
+  "보안시설",
+  "주차장",
+  "헬스장",
+  "베란다",
+  "반려동물 가능",
+]);
+
+const parseDescriptionAndOptions = (
+  description: string | null | undefined
+): {
+  main: string;
+  lifestyle: string[];
+  facilities: string[];
+  others: string[];
+} => {
+  if (!description) {
+    return { main: "", lifestyle: [], facilities: [], others: [] };
+  }
+
+  const lines = description.split(/\r?\n/);
+  const optionIndex = lines.findIndex((line) =>
+    line.trim().startsWith("선호 옵션")
+  );
+
+  if (optionIndex === -1) {
+    return { main: description, lifestyle: [], facilities: [], others: [] };
+  }
+
+  const main = lines.slice(0, optionIndex).join("\n").trim();
+  const optionLines = lines
+    .slice(optionIndex + 1)
+    .map((line) => line.replace(/^-\s*/, "").trim())
+    .filter(Boolean);
+
+  const lifestyle: string[] = [];
+  const facilities: string[] = [];
+  const others: string[] = [];
+
+  optionLines.forEach((option) => {
+    if (lifestyleOptionSet.has(option)) {
+      lifestyle.push(option);
+      return;
+    }
+    if (facilityOptionSet.has(option)) {
+      facilities.push(option);
+      return;
+    }
+    others.push(option);
+  });
+
+  return {
+    main: main || description,
+    lifestyle,
+    facilities,
+    others,
+  };
+};
 
 const formatCurrency = (amount?: number) => {
   if (typeof amount !== "number" || Number.isNaN(amount)) return "-";
@@ -42,6 +124,16 @@ export default function RoomDetail() {
   const shareButtonLabel = useMemo(
     () => (shareLink ? "공유" : "공유 복사"),
     [shareLink]
+  );
+
+  const {
+    main: mainDescription,
+    lifestyle: parsedLifestyle,
+    facilities: parsedFacilities,
+    others: parsedOthers,
+  } = useMemo(
+    () => parseDescriptionAndOptions(room?.description),
+    [room?.description]
   );
 
   useEffect(() => {
@@ -245,16 +337,37 @@ const handleShareLink = async () => {
                 <Typography>{room.address}</Typography>
               </Stack>
 
-              {room.description && (
+              {mainDescription && (
                 <Stack spacing={1}>
                   <Typography variant="subtitle2" color="text.secondary">
                     상세 설명
                   </Typography>
                   <Typography whiteSpace="pre-line">
-                    {room.description}
+                    {mainDescription}
                   </Typography>
                 </Stack>
               )}
+
+              <Stack spacing={2}>
+                <PreferenceBox
+                  title="생활 패턴"
+                  items={parsedLifestyle}
+                  chipColor="primary"
+                  gradient="linear-gradient(135deg, rgba(12,81,255,0.08), rgba(12,81,255,0.02))"
+                />
+                <PreferenceBox
+                  title="부가 옵션"
+                  items={parsedFacilities}
+                  chipColor="info"
+                  gradient="linear-gradient(135deg, rgba(0,184,217,0.12), rgba(0,184,217,0.04))"
+                />
+                <PreferenceBox
+                  title="기타 옵션"
+                  items={parsedOthers}
+                  chipColor="default"
+                  gradient="linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.01))"
+                />
+              </Stack>
 
               <Stack
                 direction={{ xs: "column", sm: "row" }}
@@ -290,6 +403,48 @@ const handleShareLink = async () => {
         ) : null}
       </Container>
       <SiteFooter />
+    </Box>
+  );
+}
+
+function PreferenceBox({
+  title,
+  items,
+  chipColor = "default",
+  gradient,
+}: {
+  title: string;
+  items: string[];
+  chipColor?: "default" | "primary" | "secondary" | "error" | "info" | "success" | "warning";
+  gradient?: string;
+}) {
+  if (!items || items.length === 0) return null;
+
+  return (
+    <Box
+      sx={{
+        p: { xs: 2.5, md: 3 },
+        borderRadius: 3,
+        background: gradient ?? "rgba(0,0,0,0.02)",
+        border: "1px solid rgba(0,0,0,0.05)",
+      }}
+    >
+      <Stack spacing={1.5}>
+        <Typography variant="subtitle1" fontWeight={700}>
+          {title}
+        </Typography>
+        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+          {items.map((item) => (
+            <Chip
+              key={item}
+              label={item}
+              color={chipColor}
+              variant={chipColor === "default" ? "outlined" : "filled"}
+              sx={{ borderRadius: 1.5, fontWeight: 600 }}
+            />
+          ))}
+        </Stack>
+      </Stack>
     </Box>
   );
 }

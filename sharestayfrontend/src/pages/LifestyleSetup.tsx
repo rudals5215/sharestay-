@@ -1,11 +1,11 @@
 // src/pages/LifestyleSetup.tsx
+import Grid from "@mui/material/Unstable_Grid2";
 import {
   Box,
   Button,
   Checkbox,
   Container,
   FormControlLabel,
-  Grid,
   Paper,
   Stack,
   Typography,
@@ -113,7 +113,7 @@ export default function LifestyleSetup() {
 
             <Grid container spacing={1.5}>
               {lifestyleOptions.map((option) => (
-                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={option}>
+                <Grid xs={12} sm={6} md={3} key={option}>
                   <FormControlLabel
                     control={
                       <Checkbox
