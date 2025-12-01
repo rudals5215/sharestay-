@@ -51,6 +51,20 @@ public class Room {
     @Column(nullable = false)
     private String description;  // 상세 설명 같은 거..?
 
+    // 룸메이트 조건
+    @Column
+    private String preferredGender;   // 선호 성별
+
+    @Column
+    private String preferredAge;      // 선호 연령대
+
+    @Column
+    private Integer totalMembers;     // 총 인원수
+
+    // 생활 패턴 (콤마로 구분된 문자열)
+    @Column(length = 500)
+    private String lifestyle;
+
     // 필터 검색 안 돼서 추가함
     @Column(length = 500)
     private String options;  // 예: "에어컨, 냉장고, 세탁기"
@@ -93,7 +107,7 @@ RoomImage와 ShareLink의 cascade 관계는 명확히 관리되지만, 순환참
                 double latitude, double longitude, int availabilityStatus, String description) {
         this.host = host;
         this.title = title;
-        this.rentPrice = rentPrice;
+                this.rentPrice = rentPrice;
         this.address = address;
         this.type = type;
         this.latitude = latitude;
@@ -112,6 +126,11 @@ RoomImage와 ShareLink의 cascade 관계는 명확히 관리되지만, 순환참
         this.longitude = request.getLongitude();
         this.availabilityStatus = request.getAvailabilityStatus();
         this.description = request.getDescription();
+        this.preferredGender = request.getPreferredGender();
+        this.preferredAge = request.getPreferredAge();
+        this.totalMembers = request.getTotalMembers();
+        setOptionsFromList(request.safeOptions());
+        setLifestyleFromList(request.safeLifestyle());
     }
     // update()로, 수정할 때 매번 필드를 하나하나 꺼내서 set 할 필요가 없음.
     // room.update(request) 하면 끝
@@ -144,6 +163,29 @@ RoomImage와 ShareLink의 cascade 관계는 명확히 관리되지만, 순환참
             return List.of();
         }
         return Arrays.stream(options.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    // lifestyle 검색/응답용
+    public void setLifestyleFromList(List<String> lifestyleList) {
+        if (lifestyleList == null || lifestyleList.isEmpty()) {
+            this.lifestyle = null;
+        } else {
+            this.lifestyle = lifestyleList.stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .distinct()
+                    .collect(Collectors.joining(","));
+        }
+    }
+
+    public List<String> getLifestyleAsList() {
+        if (lifestyle == null || lifestyle.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(lifestyle.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());

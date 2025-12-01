@@ -24,12 +24,21 @@ public class RoomRequest {   // 방 등록, 수정 할 때 필요함
     private int availabilityStatus;
     private String description;
 
+    private String preferredGender;
+    private String preferredAge;
+    private Integer totalMembers;
+
     // 옵션: 0개 이상 선택 가능 → List<String> (nullable 허용)
     private List<String> options;
+    // 생활 패턴: 0개 이상 선택 가능
+    private List<String> lifestyle;
 
     // 편의 메서드 (null 방지용)
     public List<String> safeOptions() {
         return options == null ? List.of() : options;
+    }
+    public List<String> safeLifestyle() {
+        return lifestyle == null ? List.of() : lifestyle;
     }
     /*
         클라이언트가 옵션 안 보냈으면 options == null
@@ -42,7 +51,7 @@ public class RoomRequest {   // 방 등록, 수정 할 때 필요함
     private double longitude;
 
     public Room toEntity(Host host) {
-        return new Room(
+        Room room = new Room(
                 host,
                 this.title,
                 this.rentPrice,
@@ -53,6 +62,12 @@ public class RoomRequest {   // 방 등록, 수정 할 때 필요함
                 this.availabilityStatus,
                 this.description
         );
+        room.setOptionsFromList(safeOptions());
+        room.setLifestyleFromList(safeLifestyle());
+        room.setPreferredGender(this.preferredGender);
+        room.setPreferredAge(this.preferredAge);
+        room.setTotalMembers(this.totalMembers);
+        return room;
     }
     //    private List<MultipartFile> images; // 여러 이미지 업로드 가능
     /*
@@ -61,5 +76,3 @@ public class RoomRequest {   // 방 등록, 수정 할 때 필요함
      */
 
 }
-
-
