@@ -1,3 +1,93 @@
+# ShareStay+
+🏠 룸쉐어/자취방을 공유하고 찾을 수 있는 방 매칭 플랫폼
+
+---
+
+## 1. 프로젝트 개요
+ShareStya+는 안전하고 효율적인 매칭 서비스의 부재를 해결하기 위해 만든 웹 서비스입니다. 
+
+- 개발 기간: 2025.10.29 ~ 2025.12.10
+- 팀 인원: 5명 (FE 2명, BE 3명)
+- 주요 타겟: 자취방/룸메이트를 찾는 대학생 및 직장인
+
+### 🎯 기획 의도
+- 기존의 비공식 거래는 신뢰성 및 안전성 문제가 있었고, 원하는 조건으로 방과 룸메이트를 구할 수 없다는 단점이 있었습니다.
+- 이를 보완하여 사용자들이 위치, 가격, 조건, 룸메이트의 라이프 스타일 등을 기반으로 방/룸메이트를 쉽게 찾을 수 있도록 하는 것을 목표로 합니다.
+
+---
+
+## 2. 주요기능
+
+### 👤 사용자/회원
+
+- 회원가입 / 로그인 (일반 + OAuth 로그인)
+- 내 정보 조회 및 수정
+- Host / Guest 역할 구분 (예: 방 등록자 vs 방 찾는 사람)
+
+### 🏠 방(룸) 관련 기능
+
+- 방 등록 / 수정 / 삭제 (호스트 전용)
+- 방 이미지 업로드
+- 방 목록 조회 (페이지네이션, 정렬, 필터)
+- 키워드 / 조건 기반 검색 (지역, 가격, 방 유형 등)
+- 방 상세 페이지(지도, 설명, 옵션, 이미지, 공유 링크 등)
+
+  ### ⭐ 기타 기능 (예시)
+
+- 방 찜하기 (즐겨찾기)
+- 공유 링크 생성 및 접속
+- Ban 기능 (악성 사용자 제재 예정)
+
+---
+## 3. 기술 스택
+
+### 🔧 Backend
+
+- Java 17
+- Spring Boot
+- Spring Data JPA / Hibernate
+- Spring Security, JWT
+- MariaDB
+- Gradle
+
+### 🎨 Frontend
+
+- React
+- TypeScript
+- Vite
+- MUI (Material UI)
+- React Query / Axios
+
+### 🛠 Dev & 협업
+
+- GitHub (Organization / Branch 전략)
+- IntelliJ IDEA, VSCode
+- Postman, Swagger(OpenAPI)
+- ERDCloud / Miro
+
+
+---
+
+## 5. API & ERD (선택)
+
+- **API 문서**: Swagger UI를 통해 자동 문서화  
+  - 예: `/swagger-ui/index.html`
+
+- **주요 엔드포인트 예시**
+  - `POST /api/auth/signup` – 회원가입
+  - `POST /api/auth/login` – 로그인(JWT 발급)
+  - `GET /api/rooms` – 방 목록 조회
+  - `POST /api/rooms` – 방 등록
+  - `GET /api/rooms/{roomId}` – 방 상세 조회
+  - `GET /api/rooms/search` - 방 검색
+  - `GET /api/{rooms}/share` - 공유 링크 조회
+
+
+- **ERD**:
+<img width="1269" height="648" alt="image" src="https://github.com/user-attachments/assets/236262d9-cbe8-4fb3-9377-0086886b504e" />
+
+
+
 # ShareStay+ Frontend
 
 안전하고 신뢰할 수 있는 룸메이트 매칭 플랫폼 **ShareStay+** 의 프론트엔드 저장소입니다.  

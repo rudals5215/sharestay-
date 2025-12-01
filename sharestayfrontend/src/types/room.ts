@@ -81,6 +81,8 @@ export interface RoomApiResponse {
   type: string;
   availabilityStatus: number;
   description: string;
+  latitude?: number;
+  longitude?: number;
   options?: string | string[] | null;
   images: RoomImageResponse[];
   imageUrls?: string[];
@@ -116,13 +118,15 @@ export interface ShareLinkResponse {
 }
 
 export const mapRoomFromApi = (
-  room: RoomApiResponse | RoomDetailApiResponse,
+  room: RoomApiResponse | RoomDetailApiResponse
 ): RoomSummary => {
+  const roomId = room.roomId ?? room.id;
+
   const normalizedImages: RoomImage[] =
     room.images?.map((image) => ({
       id: image.id,
       imageId: image.id,
-      roomId: room.id,
+      roomId: roomId,
       imageUrl: resolveRoomImageUrl(image.imageUrl) ?? image.imageUrl ?? "",
     })) ??
     room.imageUrls?.map((url, index) => ({
@@ -147,6 +151,8 @@ export const mapRoomFromApi = (
     address: room.address,
     type: room.type,
     availabilityStatus: room.availabilityStatus,
+    latitude: "latitude" in room ? room.latitude : undefined,
+    longitude: "longitude" in room ? room.longitude : undefined,
     description: room.description,
     options: "options" in room ? room.options : undefined,
     images: normalizedImages,

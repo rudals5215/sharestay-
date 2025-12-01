@@ -50,6 +50,19 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             @Param("radiusKm") double radiusKm
     );
 
+    // 지도 경계 기반 방 검색 (가격 필터 포함)
+    @Query("SELECT r FROM Room r WHERE r.latitude BETWEEN :swLat AND :neLat " +
+            "AND r.longitude BETWEEN :swLng AND :neLng " +
+            "AND r.rentPrice BETWEEN :minPrice AND :maxPrice")
+    List<Room> findRoomsInBoundary(
+            @Param("swLat") double swLat,
+            @Param("swLng") double swLng,
+            @Param("neLat") double neLat,
+            @Param("neLng") double neLng,
+            @Param("minPrice") double minPrice,
+            @Param("maxPrice") double maxPrice
+    );
+
     List<Room> findByHostId(Long hostId);
 
 

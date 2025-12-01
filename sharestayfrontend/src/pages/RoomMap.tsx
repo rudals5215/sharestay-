@@ -1,41 +1,151 @@
-import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Box, CircularProgress, Alert } from "@mui/material";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  Box,
+  CircularProgress,
+  Alert,
+  Paper,
+  Select,
+  MenuItem,
+  Slider,
+  TextField,
+  Button,
+  Typography,
+  SelectChangeEvent,
+  List,
+  ListItem,
+  ListItemAvatar,
+  Avatar,
+  ListItemText,
+  Divider,
+  ListItemButton,
+  Stack,
+  Chip,
+  Modal,
+  IconButton,
+  Fab,
+} from "@mui/material";
 import SiteHeader from "../components/SiteHeader";
-import { api } from "../lib/api";
-import type { RoomSummary, RoomApiResponse } from "../types/room"; // ✅ 변경: RoomApiResponse 타입도 같이 import
-import { mapRoomFromApi } from "../types/room";
+import CloseIcon from "@mui/icons-material/Close";
+import MyLocationIcon from "@mui/icons-material/MyLocation";
+import { api, getAccessToken } from "../lib/api";
+import type { RoomSummary, RoomImage } from "../types/room";
+import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
+
+import fallbackImageSrc from "../img/no_img.jpg";
+const fallbackImage = fallbackImageSrc;
+
+// 지역(광역) > 시/군/구 계층형 데이터 (Rooms.tsx 참조)
+const provinces = [
+  { value: "서울", label: "서울" },
+  { value: "경기", label: "경기" },
+  { value: "인천", label: "인천" },
+  { value: "대전", label: "대전" },
+  { value: "세종", label: "세종" },
+  { value: "충남", label: "충남" },
+  { value: "충북", label: "충북" },
+  { value: "광주", label: "광주" },
+  { value: "전남", label: "전남" },
+  { value: "전북", label: "전북" },
+  { value: "대구", label: "대구" },
+  { value: "경북", label: "경북" },
+  { value: "부산", label: "부산" },
+  { value: "울산", label: "울산" },
+  { value: "경남", label: "경남" },
+  { value: "강원", label: "강원" },
+  { value: "제주", label: "제주" },
+];
+
+const provinceDistrictMap: Record<string, string[]> = {
+  서울: ["종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구", "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구", "서초구", "강남구", "송파구", "강동구"],
+  경기: ["수원시", "고양시", "용인시", "성남시", "부천시", "안산시", "안양시", "남양주시", "화성시", "평택시", "의정부시", "시흥시", "파주시", "김포시", "광주시", "광명시", "군포시", "하남시", "오산시", "양주시", "이천시", "구리시", "안성시", "포천시", "의왕시", "여주시", "동두천시"],
+  인천: ["중구", "동구", "미추홀구", "연수구", "남동구", "부평구", "계양구", "서구", "강화군", "옹진군"],
+  대전: ["동구", "서구", "유성구", "중구", "대덕구"],
+  세종: ["세종시"],
+  충남: ["천안시", "공주시", "보령시", "아산시", "서산시", "논산시", "계룡시", "당진시", "금산군", "부여군", "서천군", "청양군", "홍성군", "예산군", "태안군"],
+  충북: ["청주시", "충주시", "제천시", "보은군", "옥천군", "영동군", "증평군", "진천군", "괴산군", "음성군", "단양군"],
+  광주: ["동구", "서구", "남구", "북구", "광산구"],
+  전남: ["목포시", "여수시", "순천시", "나주시", "광양시", "담양군", "곡성군", "구례군", "고흥군", "보성군", "화순군", "장흥군", "강진군", "해남군", "영암군", "무안군", "함평군", "영광군", "장성군", "완도군", "진도군", "신안군"],
+  전북: ["전주시", "군산시", "익산시", "정읍시", "남원시", "김제시", "완주군", "진안군", "무주군", "장수군", "임실군", "순창군", "고창군", "부안군"],
+  대구: ["중구", "동구", "서구", "남구", "북구", "수성구", "달서구", "달성군"],
+  경북: ["포항시", "경주시", "김천시", "안동시", "구미시", "영주시", "영천시", "상주시", "문경시", "경산시", "의성군", "청송군", "영양군", "영덕군", "청도군", "고령군", "성주군", "칠곡군", "예천군", "봉화군", "울진군", "울릉군"],
+  부산: ["중구", "서구", "동구", "영도구", "부산진구", "동래구", "남구", "북구", "해운대구", "사하구", "금정구", "연제구", "수영구", "사상구", "기장군"],
+  울산: ["중구", "남구", "동구", "북구", "울주군"],
+  경남: ["창원시", "진주시", "통영시", "사천시", "김해시", "밀양시", "거제시", "양산시", "의령군", "함안군", "창녕군", "고성군", "남해군", "하동군", "산청군", "함양군", "거창군", "합천군"],
+  강원: ["춘천시", "원주시", "강릉시", "동해시", "태백시", "속초시", "삼척시", "홍천군", "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군", "양구군", "인제군", "고성군", "양양군"],
+  제주: ["제주시", "서귀포시"],
+};
 
 declare global {
   interface Window {
-    kakao: any;
+    kakao: any; // 카카오맵 SDK가 타입스크립트용 타입 정의를 제공하지 않기 때문에 any 사용
   }
 }
 
-type KakaoLatLng = {
-  getLat: () => number;
-  getLng: () => number;
-};
+const roomTypeOptions = [
+  { value: "", label: "전체" },
+  { value: "ONE_ROOM", label: "원룸" },
+  { value: "TWO_ROOM", label: "투룸" },
+  { value: "OFFICETEL", label: "오피스텔" },
+  { value: "APARTMENT", label: "아파트" },
+];
 
-type KakaoMapInstance = {
-  getCenter: () => KakaoLatLng;
-  relayout: () => void;
-};
-
-type KakaoMarker = unknown;
-
-type KakaoMarkerClusterer = {
-  clear: () => void;
-  addMarkers: (markers: KakaoMarker[]) => void;
-};
+const filterFacilities = [
+  "에어컨",
+  "냉장고",
+  "세탁기",
+  "인터넷",
+  "주차장",
+  "헬스장",
+  "반려동물 가능",
+  "발코니",
+];
 
 const RoomMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<KakaoMapInstance | null>(null);
-  const clustererRef = useRef<KakaoMarkerClusterer | null>(null);
-  const location = useLocation();
+  const mapInstanceRef = useRef<any>(null); // 지도 인스턴스를 저장할 ref
+  const navigate = useNavigate(); // useNavigate 훅 추가
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rooms, setRooms] = useState<RoomSummary[]>([]); // 지도에 표시될 방 목록 상태 추가
+
+  const defaultPriceRange: [number, number] = [0, 5000000];
+  // 필터 상태
+  const [roomType, setRoomType] = useState<string>("");
+  const [region, setRegion] = useState<string>(""); // 지역 필터 상태 추가
+  const [district, setDistrict] = useState<string>(""); // 시/군/구 필터 상태 추가
+  const [priceRange, setPriceRange] = useState<number[]>(defaultPriceRange);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [facilities, setFacilities] = useState<Set<string>>(new Set());
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null); // 선택된 방 ID 상태
+  const [hoveredRoomId, setHoveredRoomId] = useState<number | null>(null); // 마우스 오버된 방 ID 상태
+  const highlightOverlayRef = useRef<any>(null); // 강조 효과 오버레이를 관리하기 위한 ref
+  const districtOptions = useMemo(() => {
+    return region ? provinceDistrictMap[region] ?? [] : [];
+  }, [region]);
+
+
+  const [modalRoom, setModalRoom] = useState<RoomSummary | null>(null);
+
+  const handleToggleFacility = (facility: string) => {
+    setFacilities((prev) => {
+      const next = new Set(prev);
+      if (next.has(facility)) next.delete(facility);
+      else next.add(facility);
+      return next;
+    });
+  };
+
+  const handlePriceChange = (event: Event, newValue: number | number[]) => {
+    setPriceRange(newValue as number[]);
+  };
 
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps) {
@@ -44,68 +154,11 @@ const RoomMap: React.FC = () => {
       return;
     }
 
-    // ✅ 변경 1: fetchRoomsNearby를 가장 위에 function 선언으로 이동 (호이스팅 가능)
-    async function fetchRoomsNearby(lat: number, lng: number) {
-      setIsLoading(true);
-      setError(null);
-      try {
-        // ✅ 변경 2: 백엔드 DTO 타입과 맞게 제네릭 지정
-        const { data } = await api.get<RoomApiResponse[]>("/map/rooms/near", {
-          params: { lat, lng, radiusKm: 2 },
-        });
-
-        const roomList: RoomSummary[] = Array.isArray(data)
-          ? data.map(mapRoomFromApi)
-          : [];
-
-        // 마커 생성
-        const markers = roomList
-          .map((room) => {
-            if (room.latitude != null && room.longitude != null) { // ✅ 살짝 안전하게 변경 (0도 허용)
-              const markerPosition = new window.kakao.maps.LatLng(
-                room.latitude,
-                room.longitude
-              );
-              return new window.kakao.maps.Marker({
-                position: markerPosition,
-                title: room.title,
-              });
-            }
-            return null;
-          })
-          .filter((marker): marker is KakaoMarker => marker !== null);
-
-        if (clustererRef.current) {
-          clustererRef.current.clear();
-          clustererRef.current.addMarkers(markers);
-        }
-      } catch (err) {
-        console.error(err);
-        setError("주변 방 정보를 불러오는 중 오류가 발생했습니다.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    // ✅ 변경 3: 이제 이 함수 안에서 fetchRoomsNearby를 안전하게 호출 가능
-    const fetchRoomsForCurrentLocation = (map: KakaoMapInstance | null) => {
-      if (!map) return;
-      const center = map.getCenter();
-      const lat = center.getLat();
-      const lng = center.getLng();
-      fetchRoomsNearby(lat, lng);
-    };
-
-    // 이미 지도 인스턴스가 있으면 재사용 + 데이터만 다시 로드
-    if (mapInstanceRef.current) {
-      fetchRoomsForCurrentLocation(mapInstanceRef.current);
-      return;
-    }
-
     window.kakao.maps.load(() => {
       const mapContainer = mapRef.current;
       if (!mapContainer) return;
 
+      // 1. 사용자의 현재 위치 가져오기
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -117,45 +170,38 @@ const RoomMap: React.FC = () => {
 
             const map = new window.kakao.maps.Map(mapContainer, {
               center: userPosition,
-              level: 5,
+              level: 4,
             });
-            mapInstanceRef.current = map as unknown as KakaoMapInstance;
+            mapInstanceRef.current = map; // 생성된 지도 인스턴스를 ref에 저장
 
-            clustererRef.current = new window.kakao.maps.MarkerClusterer({
-              map,
-              averageCenter: true,
-              minLevel: 6,
-            }) as unknown as KakaoMarkerClusterer;
-
-            new window.kakao.maps.Marker({
-              map,
-              position: userPosition,
-              title: "현재 위치",
+            // 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
+            window.kakao.maps.event.addListener(map, "idle", () => {
+              if (mapInstanceRef.current) {
+                const map = mapInstanceRef.current;
+                const center = map.getCenter();
+                const level = map.getLevel();
+                fetchRoomsNearby(center.getLat(), center.getLng(), level);
+              }
             });
-
-            fetchRoomsNearby(latitude, longitude); // ✅ 여기서도 안전
+            // 현재 위치 기반으로 주변 방 데이터 요청
+            fetchRoomsNearby(latitude, longitude, map.getLevel());
           },
           () => {
+            // 위치 정보 가져오기 실패 시 기본 위치(서울)로 설정
             setError(
               "위치 정보를 가져올 수 없습니다. 기본 위치로 지도를 표시합니다."
             );
+            const defaultLat = 37.5665; // 서울 시청 위도
+            const defaultLng = 126.978; // 서울 시청 경도
             const defaultPosition = new window.kakao.maps.LatLng(
-              37.5665,
-              126.978
+              defaultLat,
+              defaultLng
             );
             const map = new window.kakao.maps.Map(mapContainer, {
               center: defaultPosition,
-              level: 5,
+              level: 4,
             });
-            mapInstanceRef.current = map as unknown as KakaoMapInstance;
-
-            clustererRef.current = new window.kakao.maps.MarkerClusterer({
-              map,
-              averageCenter: true,
-              minLevel: 6,
-            }) as unknown as KakaoMarkerClusterer;
-
-            fetchRoomsNearby(37.5665, 126.978);
+            mapInstanceRef.current = map;
           }
         );
       } else {
@@ -163,7 +209,338 @@ const RoomMap: React.FC = () => {
         setIsLoading(false);
       }
     });
-  }, [location]); // location 변경 시 다시 실행
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 최초 렌더링 시에만 지도를 초기화합니다.
+
+  const fetchRoomsNearby = useCallback(
+    async (lat: number, lng: number, level: number) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        // 현재 지도 화면의 사각 경계를 가져옵니다.
+        const bounds = mapInstanceRef.current.getBounds();
+        const sw = bounds.getSouthWest(); // 남서쪽 좌표
+        const center = mapInstanceRef.current.getCenter();
+        const ne = bounds.getNorthEast(); // 북동쪽 좌표
+
+        // Haversine 공식을 사용하여 지도 중심에서 모서리까지의 거리를 계산합니다.
+        const R = 6371; // 지구의 반지름 (km)
+        const lat1 = center.getLat() * (Math.PI / 180);
+        const lat2 = ne.getLat() * (Math.PI / 180);
+        const deltaLat = (ne.getLat() - center.getLat()) * (Math.PI / 180);
+        const deltaLng = (ne.getLng() - center.getLng()) * (Math.PI / 180);
+
+        const a =
+          Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+          Math.cos(lat1) *
+            Math.cos(lat2) *
+            Math.sin(deltaLng / 2) *
+            Math.sin(deltaLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const radiusKm = R * c; // 계산된 반경 (km)
+
+        const params: Record<string, any> = {
+          swLat: sw.getLat(),
+          swLng: sw.getLng(),
+          neLat: ne.getLat(),
+          neLng: ne.getLng(),
+          lat,
+          lng,
+          radiusKm: Math.min(radiusKm, 50), // 최대 반경 50km 제한은 유지
+          minPrice: priceRange[0],
+          maxPrice: priceRange[1],
+          level, // API에 지도 레벨도 전달
+        };
+        if (roomType) {
+          params.type = roomType;
+        }
+        if (region) {
+          params.region = region;
+        }
+        if (district) {
+          params.district = district;
+        }
+        if (facilities.size > 0) {
+          params.options = Array.from(facilities);
+        }
+
+        const token = getAccessToken();
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const { data } = await api.get("/map/rooms/near", {
+          params,
+          headers,
+        });
+
+        console.log("API 응답 데이터:", data); // [추가] API 응답을 콘솔에서 확인
+
+        // API 응답이 배열이거나, data 또는 result 프로퍼티에 배열이 담겨오는 경우를 모두 처리합니다.
+        const roomData = Array.isArray(data)
+          ? data
+          : data?.data && Array.isArray(data.data)
+          ? data.data
+          : data?.result ?? [];
+
+        const rawRoomList: RoomSummary[] = Array.isArray(roomData)
+          ? roomData.map((apiRoom, index) => {
+              const room = mapRoomFromApi(apiRoom);
+
+              // API 응답에 id가 없거나 mapRoomFromApi 후에도 id가 null인 경우,
+              // 고유한 임시 ID를 부여하여 Map deduplication에서 데이터가 유실되지 않도록 합니다.
+              // 또한, roomId도 함께 설정하여 일관성을 유지합니다.
+              if (room.id == null) {
+                // 위도, 경도, 인덱스를 조합하여 임시 ID 생성
+                const tempId = `temp-${room.latitude ?? 'noLat'}-${room.longitude ?? 'noLng'}-${index}`;
+                room.id = tempId as any; // RoomSummary.id는 number | undefined 이므로 as any 사용
+                room.roomId = tempId as any; // roomId도 함께 설정
+              }
+
+              return room;
+            })
+          : [];
+
+        // ID를 기준으로 중복된 방을 제거합니다.
+        const uniqueRooms = Array.from(
+          new Map(rawRoomList.map((room) => [room.id, room])).values()
+        );
+
+        setRooms(uniqueRooms);
+        console.log("매핑된 방 목록:", uniqueRooms);
+      } catch (err) {
+        console.error("주변 방 정보 로딩 실패:", err); // [추가] 실제 에러를 콘솔에 출력
+        setError("주변 방 정보를 불러오는 중 오류가 발생했습니다.");
+      } finally {
+        setIsLoading(false); // 로딩 상태를 finally 블록에서 해제
+      }
+    },
+    [priceRange, roomType, region, district, facilities] // 의존성 배열에 region, district 추가
+  );
+
+  const handleRoomItemClick = useCallback(
+    (clusterOrRoom: RoomSummary[] | RoomSummary) => {
+      const cluster = Array.isArray(clusterOrRoom)
+        ? clusterOrRoom
+        : [clusterOrRoom];
+      const representativeRoom = cluster[0];
+
+      if (!representativeRoom?.id) return;
+
+      // 이미 선택된 마커를 다시 클릭하면 선택 해제
+      if (selectedRoomId === representativeRoom.id) {
+        setSelectedRoomId(null);
+      } else {
+        // 새로운 마커를 클릭하면 선택
+        setSelectedRoomId(representativeRoom.id);
+      }
+    },
+    [selectedRoomId] // selectedRoomId가 변경될 때마다 함수를 새로 만들어 최신 상태를 참조하도록 합니다.
+  );
+
+  const handleGoToMyLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const myPosition = new window.kakao.maps.LatLng(latitude, longitude);
+          const map = mapInstanceRef.current;
+          if (map) {
+            map.panTo(myPosition);
+            // 지도 이동 후, 해당 위치의 방들을 즉시 검색합니다.
+            fetchRoomsNearby(latitude, longitude, map.getLevel());
+          }
+        },
+        () => {
+          alert("현재 위치를 가져올 수 없습니다.");
+        }
+      );
+    } else {
+      alert("이 브라우저에서는 위치 정보를 지원하지 않습니다.");
+    }
+  }, [fetchRoomsNearby]);
+
+  // rooms 배열이 변경될 때만 마커를 다시 생성합니다.
+  const markers = useMemo(() => {
+    // 1. 그룹화 기준 거리를 30m로 고정
+    const distanceThreshold = 30;
+
+    // 2. 수동 클러스터링 로직
+    const clusters: RoomSummary[][] = [];
+    const clusteredRoomIds = new Set<number>();
+
+    // 위도, 경도를 이용해 두 지점 간의 거리를 미터(m) 단위로 계산하는 함수
+    const getDistanceInMeters = (
+      lat1: number,
+      lon1: number,
+      lat2: number,
+      lon2: number
+    ) => {
+      const R = 6371e3; // metres
+      const φ1 = (lat1 * Math.PI) / 180;
+      const φ2 = (lat2 * Math.PI) / 180;
+      const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+      const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+      const a =
+        Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+        Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    };
+
+    for (const room of rooms) {
+      if (room.id && !clusteredRoomIds.has(room.id)) {
+        const currentCluster: RoomSummary[] = [room];
+        clusteredRoomIds.add(room.id);
+
+        for (const targetRoom of rooms) {
+          if (
+            targetRoom.id &&
+            !clusteredRoomIds.has(targetRoom.id) &&
+            room.latitude &&
+            room.longitude &&
+            targetRoom.latitude &&
+            targetRoom.longitude
+          ) {
+            const distance = getDistanceInMeters(
+              room.latitude,
+              room.longitude,
+              targetRoom.latitude,
+              targetRoom.longitude
+            );
+
+            if (distance <= distanceThreshold) {
+              currentCluster.push(targetRoom);
+              clusteredRoomIds.add(targetRoom.id);
+            }
+          }
+        }
+        clusters.push(currentCluster);
+      }
+    }
+
+    // 3. 클러스터/단일 오버레이 생성
+    return clusters
+      .map((cluster) => {
+        const representativeRoom = cluster[0];
+        if (
+          !representativeRoom.latitude ||
+          !representativeRoom.longitude ||
+          !representativeRoom.id
+        )
+          return null;
+
+        const position = new window.kakao.maps.LatLng(
+          representativeRoom.latitude,
+          representativeRoom.longitude
+        );
+        let contentText = "";
+        const isSelected = cluster.some((room) => room.id === selectedRoomId);
+        const isHovered = cluster.some((room) => room.id === hoveredRoomId);
+
+        if (cluster.length > 1) {
+          const otherCount = cluster.length - 1;
+          contentText = `${representativeRoom.rentPrice.toLocaleString()}원 외 ${otherCount}개`;
+        } else {
+          contentText = `${representativeRoom.rentPrice.toLocaleString()}원`;
+        }
+
+        // 하이라이트 효과를 원으로 대체하므로, 마커 자체의 스타일은 선택 여부에 따라 최소한으로 변경하거나 고정합니다.
+        const color = isSelected ? "#ff5722" : "#000";
+        const fontWeight = isSelected ? "900" : "bold";
+        const content = `<div style="background-color:#fff;color:${color};border:1px solid ${color};border-radius:4px;padding:4px 8px;font-size:12px;font-weight:${fontWeight};white-space:nowrap;cursor:pointer;transition:all 0.2s;">${contentText}</div>`;
+
+        const overlay = new window.kakao.maps.CustomOverlay({
+          position,
+          content,
+          yAnchor: 1,
+        });
+        overlay.cluster = cluster;
+        overlay.customOnClick = () => handleRoomItemClick(cluster);
+        overlay.customOnMouseOver = () =>
+          setHoveredRoomId(representativeRoom.id);
+        overlay.customOnMouseOut = () => setHoveredRoomId(null);
+        return overlay;
+      })
+      .filter((overlay): overlay is any => overlay !== null);
+  }, [rooms, selectedRoomId, handleRoomItemClick]);
+
+  // 생성된 오버레이들을 지도에 업데이트하는 useEffect
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    if (!map.customOverlays) map.customOverlays = [];
+    map.customOverlays.forEach((overlay: any) => overlay.setMap(null));
+    map.customOverlays = [];
+
+    markers.forEach((overlay: any) => {
+      overlay.setMap(map);
+      overlay.a.addEventListener("click", overlay.customOnClick);
+      overlay.a.addEventListener("mouseover", overlay.customOnMouseOver);
+      overlay.a.addEventListener("mouseout", overlay.customOnMouseOut);
+      map.customOverlays.push(overlay);
+    });
+  }, [markers]);
+
+  // Pulsing animation을 위한 keyframes를 style 태그로 주입
+  useEffect(() => {
+    const styleId = "pulsing-animation-style";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.innerHTML = `
+        @keyframes pulse {
+          0% { transform: scale(0.95); opacity: 0.7; }
+          70% { transform: scale(1.4); opacity: 0; }
+          100% { transform: scale(0.95); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // 선택 또는 호버 변경 시 하이라이트 원을 업데이트하는 useEffect
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    // 이전 하이라이트가 있으면 먼저 제거
+    if (highlightOverlayRef.current) {
+      highlightOverlayRef.current.setMap(null);
+    }
+
+    const highlightId = selectedRoomId ?? hoveredRoomId;
+    if (!highlightId) {
+      return;
+    }
+
+    // 하이라이트할 방 찾기
+    const roomToHighlight = rooms.find((room) => room.id === highlightId);
+
+    if (roomToHighlight?.latitude && roomToHighlight?.longitude) {
+      const isSelected = roomToHighlight.id === selectedRoomId;
+
+      const content = document.createElement("div");
+      content.style.width = "100px";
+      content.style.height = "30px";
+      content.style.borderRadius = "8px"; // 둥근 사각형
+      content.style.backgroundColor = isSelected
+        ? "rgba(255, 87, 34, 0.3)"
+        : "rgba(128, 128, 128, 0.4)";
+      content.style.animation = "pulse 1.5s infinite ease-out";
+
+      const newHighlightOverlay = new window.kakao.maps.CustomOverlay({
+        position: new window.kakao.maps.LatLng(
+          roomToHighlight.latitude,
+          roomToHighlight.longitude
+        ),
+        content: content,
+        yAnchor: 1, // 마커와 동일한 yAnchor로 위치 보정
+        xAnchor: 0.5,
+        zIndex: -1, // 마커 뒤에 표시되도록 z-index 설정
+      });
+
+      newHighlightOverlay.setMap(mapInstanceRef.current);
+      highlightOverlayRef.current = newHighlightOverlay;
+    }
+  }, [selectedRoomId, hoveredRoomId, rooms]); // rooms가 변경될 때도 원을 다시 그려야 할 수 있음
 
   // 지도 컨테이너 resize 대응
   useEffect(() => {
@@ -175,30 +552,514 @@ const RoomMap: React.FC = () => {
         mapInstanceRef.current.relayout();
       }
     });
-
     observer.observe(mapContainer);
+
     return () => observer.disconnect();
   }, []);
 
+  const handleApplyFilter = () => {
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const center = map.getCenter();
+    setSelectedRoomId(null); // 필터 적용 시 선택 해제
+    fetchRoomsNearby(center.getLat(), center.getLng(), map.getLevel());
+    setIsFilterModalOpen(false); // 필터 적용 후 모달을 닫습니다.
+  };
+
+  const handleResetFilter = () => {
+    setRoomType("");
+    setRegion(""); // 지역 필터 초기화
+    setDistrict(""); // 시/군/구 필터 초기화
+    setPriceRange(defaultPriceRange);
+    setFacilities(new Set());
+    setSelectedRoomId(null); // 필터 초기화 시 선택 해제
+    // 상태 변경 후 useEffect가 데이터 fetching을 처리하므로 모달만 닫습니다.
+    setIsFilterModalOpen(false);
+  };
+
+  const handleSearch = () => {
+    if (!searchQuery || !window.kakao) return;
+
+    new window.kakao.maps.services.Places().keywordSearch(
+      searchQuery,
+      (data: any, status: any) => {
+        if (status === window.kakao.maps.services.Status.OK) {
+          const map = mapInstanceRef.current;
+          const newPos = new window.kakao.maps.LatLng(data[0].y, data[0].x);
+          setSelectedRoomId(null); // 새로운 지역 검색 시 선택 해제
+          map.setCenter(newPos);
+          fetchRoomsNearby(newPos.getLat(), newPos.getLng(), map.getLevel());
+          setSearchQuery(""); // 검색 후 검색창 내용 초기화
+        } else {
+          setError("검색 결과가 없습니다.");
+        }
+      }
+    );
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
+  // 가격 포맷팅 함수
+  const formatPriceLabel = (value: number) => {
+    if (value >= 2000000) {
+      return "200만+";
+    }
+    if (value === 0) return "0원";
+    return `${value / 10000}만`;
+  };
+
+  const getClusterRepresentativeId = (
+    clusterOrRoom: RoomSummary[] | RoomSummary
+  ) => {
+    const cluster = Array.isArray(clusterOrRoom)
+      ? clusterOrRoom
+      : [clusterOrRoom];
+    return cluster[0]?.id ?? null;
+  };
+
+  const modalStyle = {
+    position: "absolute" as "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: 400,
+    bgcolor: "background.paper",
+    boxShadow: 24,
+    p: 4,
+  };
+
+  const RoomDetailModal: React.FC<{
+    room: RoomSummary | null;
+    onClose: () => void;
+    onNavigate: (roomId: number) => void;
+  }> = ({ room, onClose, onNavigate }) => {
+    if (!room) return null;
+
+    const imageUrl = resolveRoomImageUrl(room.images?.[0]?.imageUrl);
+
+    console.log("MODAL ROOM IMAGES:", room.images);
+    console.log("MODAL ROOM RAW IMAGE URL:", room.images?.[0]?.imageUrl);
+    console.log("RESOLVED:", resolveRoomImageUrl(room.images?.[0]?.imageUrl));
+    return (
+      <Modal
+        open={!!room}
+        onClose={onClose}
+        aria-labelledby="room-detail-modal-title"
+      >
+        <Box sx={modalStyle}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+            }}
+          >
+            <Typography
+              id="room-detail-modal-title"
+              variant="h6"
+              component="h2"
+            >
+              방 정보 요약
+            </Typography>
+            <IconButton onClick={onClose} sx={{ p: 0.5 }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          <Stack spacing={2}>
+            {imageUrl && (
+              <Box
+                component="img"
+                src={imageUrl}
+                alt={room.title}
+                sx={{
+                  width: "100%",
+                  height: 200,
+                  objectFit: "cover",
+                  borderRadius: 2,
+                }}
+              />
+            )}
+
+            <Typography variant="h5" fontWeight={700}>
+              {room.title}
+            </Typography>
+            <Typography variant="h6" color="primary">
+              {room.rentPrice.toLocaleString()}원/월
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              {room.address}
+            </Typography>
+
+            {room.description && (
+              <Typography variant="body2" noWrap textOverflow="ellipsis">
+                {room.description}
+              </Typography>
+            )}
+
+            <Stack direction="row" spacing={2} justifyContent="flex-end" mt={2}>
+              <Button variant="outlined" onClick={onClose}>
+                닫기
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => room.id && onNavigate(room.id)}
+                disabled={!room.id}
+              >
+                상세 페이지로 이동
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      </Modal>
+    );
+  };
+
+  // 목록에 표시할 방 목록을 결정합니다.
+  const displayedRooms = useMemo(() => {
+    if (selectedRoomId) {
+      // markers 배열에서 해당 클러스터를 찾습니다.
+      const selectedMarker = markers.find((marker) =>
+        marker.cluster.some((room: RoomSummary) => room.id === selectedRoomId)
+      );
+
+      if (selectedMarker) {
+        return selectedMarker.cluster;
+      }
+      // 만약 markers에서 못찾는 경우(엣지 케이스)를 대비해 단일 방이라도 보여줍니다.
+      const selectedRoom = rooms.find((room) => room.id === selectedRoomId);
+      return selectedRoom ? [selectedRoom] : [];
+    }
+    return rooms;
+  }, [rooms, selectedRoomId, markers]);
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <SiteHeader activePath="/rooms" />
       <Box
         component="main"
         sx={{
-          flexGrow: 1,
-          position: "relative",
-          width: "100%",
-          height: "calc(100vh - 65px)",
+          display: "flex",
+          flexDirection: "row",
+          height: "calc(100vh - 65px)", // 전체 화면 높이에서 헤더 높이(약 65px)를 뺌
         }}
       >
-        <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
+        {/* 왼쪽 패널 */}
+        <Paper
+          elevation={3}
+          sx={{
+            width: 400,
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            p: 2,
+            overflowY: "hidden", // 전체 패널 스크롤 방지
+          }}
+        >
+          <Stack spacing={2}>
+            {/* 지역 검색 */}
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <TextField
+                label="지역/지하철 검색"
+                variant="outlined"
+                size="small"
+                fullWidth
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
+              />
+              <Button
+                variant="contained"
+                onClick={handleSearch}
+                sx={{ whiteSpace: "nowrap" }}
+              >
+                검색
+              </Button>
+            </Box>
+
+            {/* 주변 방 목록 헤더 및 필터 버튼 */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mt: 2,
+                mb: 1,
+              }}
+            >
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography variant="h6">주변 방 목록</Typography>
+                {displayedRooms.length > 0 && (
+                  <Chip label={`총 ${displayedRooms.length}개`} size="small" />
+                )}
+                {selectedRoomId && (
+                  <Button
+                    size="small"
+                    variant="text"
+                    onClick={() => setSelectedRoomId(null)}
+                    sx={{ ml: 1 }}
+                  >
+                    전체 보기
+                  </Button>
+                )}
+              </Stack>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => setIsFilterModalOpen(true)}
+              >
+                필터
+              </Button>
+            </Box>
+          </Stack>
+
+          {/* 주변 방 목록 */}
+          <Box sx={{ flex: "1 1 0", minHeight: 0, overflowY: "auto", pt: 1 }}>
+            <List dense>
+              {displayedRooms.length === 0 ? (
+                <ListItem key="no-rooms-found">
+                  <ListItemText
+                    primary="주변에 방이 없습니다."
+                    secondary="지도를 이동하거나 필터를 변경해보세요."
+                  />
+                </ListItem>
+              ) : (
+                displayedRooms.map((room) => [
+                  <ListItem
+                    key={room.id}
+                    id={`room-item-${room.id}`}
+                    disablePadding
+                    onMouseEnter={() => setHoveredRoomId(room.id)}
+                    onMouseLeave={() => setHoveredRoomId(null)}
+                    sx={{
+                      backgroundColor:
+                        selectedRoomId === room.id || hoveredRoomId === room.id
+                          ? "action.hover"
+                          : "transparent",
+                      transition: "background-color 0.3s",
+                    }}
+                  >
+                    <ListItemButton
+                      onClick={() => setModalRoom(room)}
+                      sx={{
+                        borderLeft:
+                          hoveredRoomId === room.id
+                            ? "4px solid #ffc107"
+                            : "none",
+                        paddingLeft:
+                          hoveredRoomId === room.id ? "12px" : "16px",
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={room.images?.[0]?.imageUrl ?? fallbackImage}
+                        alt={room.title}
+                        sx={{
+                          width: 170,
+                          height: 150,
+                          borderRadius: 2,
+                          objectFit: "cover",
+                          mr: 2,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <ListItemText
+                        primary={room.title}
+                        secondary={`${room.rentPrice.toLocaleString()}원 | ${
+                          room.address
+                        }`}
+                      />
+                    </ListItemButton>
+                  </ListItem>,
+                  <Divider key={`divider-${room.id}`} component="li" />,
+                ])
+              )}
+            </List>
+          </Box>
+        </Paper>
+        {/* 오른쪽 지도 영역 */}
+        <Box sx={{ width: "100%", height: "100%", position: "relative" }}>
+          <Box ref={mapRef} sx={{ width: "100%", height: "100%" }} />
+          <Fab
+            color="primary"
+            aria-label="go to my location"
+            sx={{ position: "absolute", bottom: 24, right: 24 }}
+            onClick={handleGoToMyLocation}
+          >
+            <MyLocationIcon />
+          </Fab>
+        </Box>
         {(isLoading || error) && (
-          <Box position="absolute" top={0} left={0} right={0} p={2} zIndex={10}>
+          <Box position="absolute" top={16} right={16} p={2} zIndex={1000}>
             {isLoading && <CircularProgress />}
-            {error && <Alert severity="warning">{error}</Alert>}
+            {error && (
+              <Alert severity="warning" onClose={() => setError(null)}>
+                {error}
+              </Alert>
+            )}
           </Box>
         )}
+        <RoomDetailModal
+          room={modalRoom}
+          onClose={() => setModalRoom(null)}
+          onNavigate={(roomId) => navigate(`/rooms/${roomId}`)}
+        />
+        {/* 필터 모달 */}
+        <Modal
+          open={isFilterModalOpen}
+          onClose={() => setIsFilterModalOpen(false)}
+          aria-labelledby="filter-modal-title"
+        >
+          <Box sx={modalStyle}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <Typography id="filter-modal-title" variant="h6" component="h2">
+                필터
+              </Typography>
+              <IconButton
+                onClick={() => setIsFilterModalOpen(false)}
+                sx={{ p: 0.5 }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+
+            <Stack spacing={3}>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  지역
+                </Typography>
+                <Select
+                  value={region}
+                  onChange={(e) => {
+                    setRegion(e.target.value);
+                    setDistrict(""); // 지역 변경 시 시/군/구 초기화
+                  }}
+                  fullWidth
+                  size="small"
+                  displayEmpty
+                >
+                  <MenuItem value="">
+                    <em>지역 전체</em>
+                  </MenuItem>
+                  {provinces.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  시/군/구
+                </Typography>
+                <Select
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  fullWidth
+                  size="small"
+                  displayEmpty
+                  disabled={!region} // 지역이 선택되어야 활성화
+                >
+                  <MenuItem value="">
+                    <em>구/읍/면 전체</em>
+                  </MenuItem>
+                  {districtOptions.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
+                </Select>
+              </Stack>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  방 종류
+                </Typography>
+                <Select
+                  value={roomType}
+                  onChange={(e) => setRoomType(e.target.value)}
+                  fullWidth
+                  size="small"
+                  displayEmpty
+                >
+                  {roomTypeOptions.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  가격 범위
+                </Typography>
+                <Slider
+                  value={priceRange}
+                  onChange={handlePriceChange}
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={formatPriceLabel} // 툴팁 포맷 적용
+                  min={0}
+                  max={2000000}
+                  step={10000}
+                />
+                <Typography variant="caption" color="text.secondary">
+                  {formatPriceLabel(priceRange[0])} ~{" "}
+                  {formatPriceLabel(priceRange[1])}
+                </Typography>
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  편의시설
+                </Typography>
+                <Stack spacing={1} flexWrap="wrap" direction="row" useFlexGap>
+                  {filterFacilities.map((facility) => (
+                    <Chip
+                      key={facility}
+                      label={facility}
+                      variant={facilities.has(facility) ? "filled" : "outlined"}
+                      color={facilities.has(facility) ? "primary" : "default"}
+                      onClick={() => handleToggleFacility(facility)}
+                      sx={{ borderRadius: 2 }}
+                    />
+                  ))}
+                </Stack>
+              </Stack>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 1,
+                  mt: 2,
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  onClick={handleResetFilter}
+                  fullWidth
+                >
+                  초기화
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleApplyFilter}
+                  fullWidth
+                >
+                  적용
+                </Button>
+              </Box>
+            </Stack>
+          </Box>
+        </Modal>
       </Box>
       {/* 필요하면 나중에 지도 아래에 리스트 붙일 수 있음 */}
       {/* <SiteFooter /> */}

@@ -172,6 +172,7 @@ export default function RoomDetail() {
         };
         setRoom(mapped);
         setActiveImage(images[0]?.imageUrl ?? fallbackImage);
+        console.log(images);
 
 
         // 🔴 공유 링크 state에도 저장

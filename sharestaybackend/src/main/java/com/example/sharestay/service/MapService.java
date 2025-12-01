@@ -1,16 +1,19 @@
 package com.example.sharestay.service;
 
 import com.example.sharestay.dto.MapDto;
+import com.example.sharestay.dto.RoomImageResponse;
 import com.example.sharestay.entity.Room;
 import com.example.sharestay.repository.RoomRepository;
-import lombok.Builder;
 import lombok.Data;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(readOnly = true)
 @Data
 public class MapService {
 
@@ -27,8 +30,12 @@ public class MapService {
                         .latitude(room.getLatitude())
                         .longitude(room.getLongitude())
                         .rentPrice(room.getRentPrice())
-                        .availabilityStatus(room.getAvailabilityStatus())
+                        .availabilityStatus(availabilityStatusToString(room.getAvailabilityStatus()))
                         .description(room.getDescription())
+                        .images(room.getRoomImages().stream()
+                                .map(img -> new RoomImageResponse(img.getId(), img.getImageUrl()))
+                                .collect(Collectors.toList())
+                        )
                         .build())
                 .toList();
     }
@@ -47,12 +54,66 @@ public class MapService {
                         .latitude(room.getLatitude())
                         .longitude(room.getLongitude())
                         .rentPrice(room.getRentPrice())
-                        .availabilityStatus(room.getAvailabilityStatus())
+                        .availabilityStatus(availabilityStatusToString(room.getAvailabilityStatus()))
                         .description(room.getDescription())
+                        .images(room.getRoomImages().stream()
+                                .map(img -> new RoomImageResponse(img.getId(), img.getImageUrl()))
+                                .collect(Collectors.toList())
+                        )
                         .build())
                 .toList();
     }
 
+    // 지도 경계 기반 근처 방 조회 (사각형 기준)
+    public List<MapDto> getRoomsInBoundary(
+        double swLat, double swLng, double neLat, double neLng,
+        double minPrice, double maxPrice, String type, List<String> options
+    ) {
+        // 1. Repository를 통해 위치와 가격 기준으로 1차 필터링된 방 목록을 가져옵니다.
+        List<Room> rooms = roomRepository.findRoomsInBoundary(swLat, swLng, neLat, neLng, minPrice, maxPrice);
+
+        // 2. 추가 필터(방 종류, 편의시설)를 적용합니다.
+        List<Room> filteredRooms = rooms.stream()
+                .filter(room -> type == null || type.isEmpty() || room.getType().equalsIgnoreCase(type))
+                .filter(room -> {
+                    if (options == null || options.isEmpty()) {
+                        return true; // 편의시설 필터가 없으면 모두 통과
+                    }
+                    String description = room.getDescription() != null ? room.getDescription() : "";
+                    // 모든 편의시설 옵션을 포함하는지 확인
+                    return options.stream().allMatch(description::contains);
+                })
+                .collect(Collectors.toList());
+
+        // 3. 필터링된 결과를 MapDto로 변환하여 반환합니다.
+        return filteredRooms.stream()
+                .map(room -> MapDto.builder()
+                        .roomId(room.getId())
+                        .title(room.getTitle())
+                        .address(room.getAddress())
+                        .type(room.getType())
+                        .latitude(room.getLatitude())
+                        .longitude(room.getLongitude())
+                        .rentPrice(room.getRentPrice())
+                        .availabilityStatus(availabilityStatusToString(room.getAvailabilityStatus()))
+                        .description(room.getDescription())
+                        .images(room.getRoomImages().stream()
+                                .map(img -> new RoomImageResponse(img.getId(), img.getImageUrl()))
+                                .collect(Collectors.toList())
+                        )
+                        .build())
+                .toList();
+    }
+
+    // int 상태 코드를 String으로 변환하는 헬퍼 메서드
+    private String availabilityStatusToString(int status) {
+        return switch (status) {
+            case 0 -> "모집중";
+            case 1 -> "예약중";
+            case 2 -> "마감";
+            default -> "알 수 없음";
+        };
+    }
     // 두 좌표 사이 거리 계산 (Haversine 공식)
     private double calcDistance(double lat1, double lng1, double lat2, double lng2) {
         double R = 6371; // 지구 반지름 km
@@ -77,8 +138,12 @@ public class MapService {
                 .latitude(room.getLatitude())
                 .longitude(room.getLongitude())
                 .rentPrice(room.getRentPrice())
-                .availabilityStatus(room.getAvailabilityStatus())
+                .availabilityStatus(availabilityStatusToString(room.getAvailabilityStatus()))
                 .description(room.getDescription())
+                .images(room.getRoomImages().stream()
+                        .map(img -> new RoomImageResponse(img.getId(), img.getImageUrl()))
+                        .collect(Collectors.toList())
+                )
                 .build();
     }
 }

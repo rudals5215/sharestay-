@@ -28,7 +28,11 @@ import {
   Search,
 } from "@mui/icons-material";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link as RouterLink, useSearchParams } from "react-router-dom";
+import {
+  Link as RouterLink,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
@@ -111,7 +115,6 @@ const roomTypes = [
 
 const fallbackImage = fallbackImageSrc;
 
-
 const formatCurrency = (amount?: number) => {
   if (typeof amount !== "number" || Number.isNaN(amount)) return "-";
   return `${amount.toLocaleString()}원/월`;
@@ -151,7 +154,6 @@ const availabilityLabel = (status: RoomSummary["availabilityStatus"]) => {
   }
   return "모집중";
 };
-
 
 const getRoomId = (room: RoomSummary) => room.roomId ?? room.id ?? null;
 
@@ -325,8 +327,7 @@ export default function Rooms() {
     const maxParam = searchParams.get("maxPrice");
     const parsedMin = minParam ? Number(minParam) : NaN;
     const parsedMax = maxParam ? Number(maxParam) : NaN;
-    const hasCustomRange =
-      !Number.isNaN(parsedMin) && !Number.isNaN(parsedMax);
+    const hasCustomRange = !Number.isNaN(parsedMin) && !Number.isNaN(parsedMax);
     const nextRange = hasCustomRange ? [parsedMin, parsedMax] : undefined;
 
     if (initialKeyword) setKeyword(initialKeyword);
@@ -456,9 +457,7 @@ export default function Rooms() {
   const loadFavorites = useCallback(async () => {
     if (!user?.id) {
       setFavorites(new Set());
-      setRooms((prev) =>
-        prev.map((room) => ({ ...room, isFavorite: false }))
-      );
+      setRooms((prev) => prev.map((room) => ({ ...room, isFavorite: false })));
       return;
     }
     try {
@@ -507,7 +506,9 @@ export default function Rooms() {
     });
     setRooms((prev) =>
       prev.map((item) =>
-        getRoomId(item) === roomId ? { ...item, isFavorite: !currentlyFavorite } : item
+        getRoomId(item) === roomId
+          ? { ...item, isFavorite: !currentlyFavorite }
+          : item
       )
     );
     try {
@@ -530,7 +531,9 @@ export default function Rooms() {
       });
       setRooms((prev) =>
         prev.map((item) =>
-          getRoomId(item) === roomId ? { ...item, isFavorite: currentlyFavorite } : item
+          getRoomId(item) === roomId
+            ? { ...item, isFavorite: currentlyFavorite }
+            : item
         )
       );
       alert(message);
@@ -826,9 +829,7 @@ export default function Rooms() {
                           xs={12}
                           sm={6}
                           key={roomId ?? `${room.title}-${room.address}`}
-                          ref={
-                            isHighlighted ? highlightedCardRef : undefined
-                          }
+                          ref={isHighlighted ? highlightedCardRef : undefined}
                         >
                           <Card
                             sx={{
