@@ -16,7 +16,11 @@ public class RoomResponse {
     private String type;
     private int availabilityStatus;
     private String description;
-    private String options;
+    private List<String> options;
+    private List<String> lifestyle;
+    private String preferredGender;
+    private String preferredAge;
+    private Integer totalMembers;
     private List<RoomImageResponse> images;
     private String shareLinkUrl;
     private Long hostId;

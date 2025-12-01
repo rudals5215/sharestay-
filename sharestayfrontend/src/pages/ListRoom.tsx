@@ -278,6 +278,8 @@ export default function ListRoom() {
     formData.append("preferredGender", values.preferredGender ?? "");
     formData.append("preferredAge", values.preferredAge ?? "");
     formData.append("totalMembers", String(totalMembersValue ?? ""));
+    selectedFacilities.forEach((option) => formData.append("options", option));
+    selectedLifestyle.forEach((life) => formData.append("lifestyle", life));
 
       // ⭐ 변경 2: 이미지 파일들을 files 필드로 함께 전송
     images.forEach((file) => {
