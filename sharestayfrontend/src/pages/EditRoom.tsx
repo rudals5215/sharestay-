@@ -5,6 +5,8 @@ import {
   Button,
   Container,
   InputAdornment,
+  FormControlLabel,
+  Checkbox,
   MenuItem,
   Paper,
   Stack,
@@ -54,6 +56,9 @@ const roomSchema = z.object({
       (value) => !value || !Number.isNaN(Number(value)),
       "Longitude must be a number."
     ),
+  preferredGender: z.string().optional(),
+  preferredAge: z.string().optional(),
+  totalMembers: z.string().optional(),
   description: z
     .string()
     .min(10, "Description must be at least 10 characters.")
@@ -63,17 +68,17 @@ const roomSchema = z.object({
 type FormValues = z.infer<typeof roomSchema>;
 
 const roomTypes = [
-  { value: "ONE_ROOM", label: "One-room" },
-  { value: "TWO_ROOM", label: "Two-room" },
-  { value: "OFFICETEL", label: "Officetel" },
-  { value: "APARTMENT", label: "Apartment" },
-  { value: "ETC", label: "Other" },
+  { value: "ONE_ROOM", label: "원룸" },
+  { value: "TWO_ROOM", label: "투룸" },
+  { value: "OFFICETEL", label: "오피스텔" },
+  { value: "APARTMENT", label: "아파트" },
+  { value: "ETC", label: "그 외" },
 ];
 
 const availabilityOptions = [
-  { value: "AVAILABLE", label: "Available" },
-  { value: "PENDING", label: "Pending" },
-  { value: "UNAVAILABLE", label: "Unavailable" },
+  { value: "AVAILABLE", label: "모집중" },
+  { value: "PENDING", label: "예약중" },
+  { value: "UNAVAILABLE", label: "마감" },
 ];
 
 const availabilityStatusMap: Record<RoomAvailabilityStatus, number> = {
@@ -88,6 +93,62 @@ const reverseAvailabilityStatusMap: Record<number, RoomAvailabilityStatus> = {
   2: "UNAVAILABLE",
 };
 
+const preferredGenderOptions = [
+  { value: "", label: "선택 안 함" },
+  { value: "남성 선호", label: "남성 선호" },
+  { value: "여성 선호", label: "여성 선호" },
+  { value: "성별 무관", label: "성별 무관" },
+];
+
+const preferredAgeOptions = [
+  { value: "", label: "선택 안 함" },
+  { value: "10s", label: "10대" },
+  { value: "20s", label: "20대" },
+  { value: "30s", label: "30대" },
+  { value: "40s", label: "40대" },
+  { value: "50s", label: "50대 이상" },
+];
+
+const totalMemberOptions = [
+  { value: "", label: "선택 안 함" },
+  { value: "1", label: "1명" },
+  { value: "2", label: "2명" },
+  { value: "3", label: "3명" },
+  { value: "4", label: "4명 이상" },
+];
+
+const lifestyleOptions = [
+  "금연",
+  "흡연",
+  "조용한 생활",
+  "사교적",
+  "청소 자주",
+  "요리 자주",
+  "늦게 귀가",
+  "일찍 기상",
+  "운동 좋아함",
+  "음악 감상",
+  "게임",
+  "독서",
+];
+
+const facilityOptions = [
+  "에어컨",
+  "냉장고",
+  "세탁기",
+  "인터넷",
+  "와이파이",
+  "엘리베이터",
+  "TV",
+  "침대",
+  "책상",
+  "보안시설",
+  "주차장",
+  "헬스장",
+  "베란다",
+  "반려동물 가능",
+];
+
 export default function EditRoom() {
   const { roomId } = useParams<{ roomId: string }>();
   const navigate = useNavigate();
@@ -100,8 +161,12 @@ export default function EditRoom() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [images, setImages] = useState<File[]>([]);
+  const [selectedLifestyle, setSelectedLifestyle] = useState<string[]>([]);
+  const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastValuesRef = useRef<FormValues | null>(null);
+  const initialLifestyleRef = useRef<string[]>([]);
+  const initialFacilitiesRef = useRef<string[]>([]);
 
   const {
     control,
@@ -118,6 +183,9 @@ export default function EditRoom() {
       address: "",
       latitude: "",
       longitude: "",
+      preferredGender: "",
+      preferredAge: "",
+      totalMembers: "",
       description: "",
     },
   });
@@ -127,6 +195,22 @@ export default function EditRoom() {
     if (isAdmin) return true;
     return ownerUserId != null && ownerUserId === user.id;
   }, [isAdmin, ownerUserId, user]);
+
+  const toggleSelection = (value: string, setter: (updater: (prev: string[]) => string[]) => void) =>
+    setter((prev) =>
+      prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+    );
+
+  const toArray = (value?: string[] | string | null) => {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value.filter((item) => typeof item === "string" && item.trim().length > 0);
+    }
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  };
 
   useEffect(() => {
     if (!roomId) {
@@ -157,9 +241,17 @@ export default function EditRoom() {
             typeof data.latitude === "number" ? String(data.latitude) : "",
           longitude:
             typeof data.longitude === "number" ? String(data.longitude) : "",
+          preferredGender: data.preferredGender ?? "",
+          preferredAge: data.preferredAge ?? "",
+          totalMembers:
+            data.totalMembers != null ? String(data.totalMembers) : "",
           description: data.description ?? "",
         };
 
+        setSelectedLifestyle(toArray(data.lifestyle));
+        setSelectedFacilities(toArray(data.options));
+        initialLifestyleRef.current = toArray(data.lifestyle);
+        initialFacilitiesRef.current = toArray(data.options);
         lastValuesRef.current = nextValues;
         reset(nextValues);
         setImages([]);
@@ -184,6 +276,8 @@ export default function EditRoom() {
       reset(lastValuesRef.current);
     }
     setImages([]);
+    setSelectedLifestyle([...initialLifestyleRef.current]);
+    setSelectedFacilities([...initialFacilitiesRef.current]);
   };
 
   const handleImagePick = () => {
@@ -250,6 +344,14 @@ export default function EditRoom() {
           values.availabilityStatus as RoomAvailabilityStatus
         ] ?? 0;
 
+      const totalMembersValue =
+        values.totalMembers && values.totalMembers.trim().length > 0
+          ? Number(values.totalMembers)
+          : null;
+
+      const options = selectedFacilities;
+      const lifestyle = selectedLifestyle;
+
       const payload: RoomRequestPayload = {
         hostId: roomHostId,
         title: values.title,
@@ -260,6 +362,11 @@ export default function EditRoom() {
         longitude: longitudeValue ?? 0,
         availabilityStatus: availabilityCode,
         description: values.description,
+        preferredGender: values.preferredGender ?? "",
+        preferredAge: values.preferredAge ?? "",
+        totalMembers: totalMembersValue,
+        options,
+        lifestyle,
       };
 
       await api.put(`/rooms/${roomId}`, payload);
@@ -272,7 +379,7 @@ export default function EditRoom() {
         });
       }
 
-      alert("Room details updated.");
+      alert("방 정보가 수정되었습니다.");
       navigate(`/rooms/${roomId}`, { replace: true });
     } catch (err) {
       const message =
@@ -446,6 +553,66 @@ export default function EditRoom() {
                   </Grid>
                 </Grid>
 
+                <SectionTitle title="룸메이트 조건" />
+                <Grid container spacing={3}>
+                  <Grid xs={12} sm={4}>
+                    <FormTextField
+                      name="preferredGender"
+                      control={control}
+                      label="선호 성별"
+                      select
+                    >
+                      {preferredGenderOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </FormTextField>
+                  </Grid>
+                  <Grid xs={12} sm={4}>
+                    <FormTextField
+                      name="preferredAge"
+                      control={control}
+                      label="선호 연령대"
+                      select
+                    >
+                      {preferredAgeOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </FormTextField>
+                  </Grid>
+                  <Grid xs={12} sm={4}>
+                    <FormTextField
+                      name="totalMembers"
+                      control={control}
+                      label="총 인원수"
+                      select
+                    >
+                      {totalMemberOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </FormTextField>
+                  </Grid>
+                </Grid>
+
+                <SectionTitle title="생활 패턴" />
+                <CheckboxGroup
+                  options={lifestyleOptions}
+                  selected={selectedLifestyle}
+                  onToggle={(option) => toggleSelection(option, setSelectedLifestyle)}
+                />
+
+                <SectionTitle title="부가 옵션" />
+                <CheckboxGroup
+                  options={facilityOptions}
+                  selected={selectedFacilities}
+                  onToggle={(option) => toggleSelection(option, setSelectedFacilities)}
+                />
+
                 <SectionTitle title="상세 설명" />
                 <FormTextField
                   name="description"
@@ -536,5 +703,33 @@ function SectionTitle({
         {title}
       </Typography>
     </Stack>
+  );
+}
+
+function CheckboxGroup({
+  options,
+  selected,
+  onToggle,
+}: {
+  options: string[];
+  selected: string[];
+  onToggle: (option: string) => void;
+}) {
+  return (
+    <Grid container spacing={1.5}>
+      {options.map((option) => (
+        <Grid xs={12} sm={6} md={3} key={option}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={selected.includes(option)}
+                onChange={() => onToggle(option)}
+              />
+            }
+            label={option}
+          />
+        </Grid>
+      ))}
+    </Grid>
   );
 }

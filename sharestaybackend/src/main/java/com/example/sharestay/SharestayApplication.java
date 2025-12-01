@@ -108,6 +108,18 @@ public class SharestayApplication implements CommandLineRunner {
         );
         userRepository.save(hostUser3);
 
+        User hostUser4 = new User(
+                "host4@test.com",
+                encoder.encode("user1234"),
+                "LOCAL",
+                "부산 호스트",
+                "부산광역시 해운대구",
+                "010-7777-1111",
+                "HOST",
+                "해운대 근처에서 다양한 숙소를 운영 중입니다."
+        );
+        userRepository.save(hostUser4);
+
 
     /* -------------------------
        3. GUEST 계정 3개
@@ -170,9 +182,16 @@ public class SharestayApplication implements CommandLineRunner {
                 hostUser3
         );
 
+        Host host4 = new Host(
+                "부산 해운대/광안리 일대를 기반으로 편안한 숙소를 제공합니다.",
+                true,
+                hostUser4
+        );
+
         hostRepository.save(host1);
         hostRepository.save(host2);
         hostRepository.save(host3);
+        hostRepository.save(host4);
 
 
     /* -------------------------
@@ -261,6 +280,33 @@ public class SharestayApplication implements CommandLineRunner {
                 "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다."
         );
 
+        Room room7 = new Room(
+                host4,
+                "해운대 오션뷰 원룸",
+                600000,
+                "부산광역시 해운대구 우동 1400-1",
+                "원룸",
+                35.163054,
+                129.163556,
+                0,  // 모집중
+                "바다가 보이는 오션뷰 원룸입니다."
+        );
+        room7.setOptions("에어컨, 세탁기, 냉장고, 주차장, 와이파이");
+
+        Room room8 = new Room(
+                host4,
+                "광안리 해변 도보 3분 투룸",
+                550000,
+                "부산광역시 수영구 광안해변로 203",
+                "투룸",
+                35.153215,
+                129.118598,
+                0,  // 모집중
+                "광안리 바다가 보이는 투룸입니다."
+        );
+        room8.setOptions("에어컨, TV, 침대, 옷장, 엘리베이터");
+
+
         room1.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F3d-kwaejeoghan-dogseosil.jpg?alt=media&token=6aa1cc21-20e5-4bc6-b5b5-4552daecd01d");
 
         room2.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F51edef840db1a.png?alt=media&token=720e627b-8d23-4e7e-8fa1-6bd748a83ad9");
@@ -276,7 +322,7 @@ public class SharestayApplication implements CommandLineRunner {
         room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fhome-820389_1280.jpg?alt=media&token=e2d18205-4b4c-4200-a4d5-abe38d720185");
         room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fbedroom-1872196_1280.jpg?alt=media&token=78d11423-e245-4b8a-8bd0-54e31587c66c");
 
-        List<Room> rooms = Arrays.asList(room1, room2, room3, room4, room5, room6);
+        List<Room> rooms = Arrays.asList(room1, room2, room3, room4, room5, room6, room7, room8);
         roomRepository.saveAll(rooms);
 
         List<Room> roomList = new ArrayList<>();

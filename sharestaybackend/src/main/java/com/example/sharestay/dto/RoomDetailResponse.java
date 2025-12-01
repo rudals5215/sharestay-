@@ -16,6 +16,11 @@ public class RoomDetailResponse {
     private String type;
     private int availabilityStatus;
     private String description;
+    private String preferredGender;
+    private String preferredAge;
+    private Integer totalMembers;
+    private List<String> lifestyle;
+    private List<String> options;
     private double latitude;
     private double longitude;
     private List<String> imageUrls;

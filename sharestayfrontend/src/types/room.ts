@@ -28,6 +28,10 @@ export interface RoomSummary {
   id?: number;
   hostId?: number | null;
   hostUserId?: number | null;
+  preferredGender?: string | null;
+  preferredAge?: string | null;
+  totalMembers?: number | null;
+  lifestyle?: string[] | string | null;
   title: string;
   rentPrice: number;
   address: string;
@@ -56,12 +60,21 @@ export interface RoomRequestPayload {
   description: string;
   latitude: number;
   longitude: number;
+  preferredGender?: string | null;
+  preferredAge?: string | null;
+  totalMembers?: number | null;
+  options?: string[];
+  lifestyle?: string[];
 }
 
 export interface RoomApiResponse {
   id: number;
   hostId?: number | null;
   hostUserId?: number | null;
+  preferredGender?: string | null;
+  preferredAge?: string | null;
+  totalMembers?: number | null;
+  lifestyle?: string[] | null;
   title: string;
   rentPrice: number;
   address: string;
@@ -70,7 +83,7 @@ export interface RoomApiResponse {
   description: string;
   latitude?: number;
   longitude?: number;
-  options?: string | null;
+  options?: string | string[] | null;
   images: RoomImageResponse[];
   imageUrls?: string[];
   shareLinkUrl?: string | null;
@@ -81,12 +94,17 @@ export interface RoomDetailApiResponse {
   id: number;
   hostId?: number | null;
   hostUserId?: number | null;
+  preferredGender?: string | null;
+  preferredAge?: string | null;
+  totalMembers?: number | null;
+  lifestyle?: string[] | null;
   title: string;
   rentPrice: number;
   address: string;
   type: string;
   availabilityStatus: number;
   description: string;
+  options?: string[] | string | null;
   latitude: number;
   longitude: number;
   images?: RoomImageResponse[];
@@ -124,6 +142,10 @@ export const mapRoomFromApi = (
     id: room.id,
     hostId: "hostId" in room ? room.hostId : undefined,
     hostUserId: "hostUserId" in room ? room.hostUserId : undefined,
+    preferredGender: "preferredGender" in room ? room.preferredGender : undefined,
+    preferredAge: "preferredAge" in room ? room.preferredAge : undefined,
+    totalMembers: "totalMembers" in room ? room.totalMembers : undefined,
+    lifestyle: "lifestyle" in room ? room.lifestyle : undefined,
     title: room.title,
     rentPrice: room.rentPrice,
     address: room.address,
@@ -132,6 +154,7 @@ export const mapRoomFromApi = (
     latitude: "latitude" in room ? room.latitude : undefined,
     longitude: "longitude" in room ? room.longitude : undefined,
     description: room.description,
+    options: "options" in room ? room.options : undefined,
     images: normalizedImages,
     shareLinkUrl: room.shareLinkUrl ?? room.shareLink?.linkUrl ?? undefined,
   };

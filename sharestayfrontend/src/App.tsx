@@ -23,6 +23,7 @@ import Guide from "./pages/Guide";
 import Rooms from "./pages/Rooms";
 import RoomDetail from "./pages/RoomDetail";
 import ListRoom from "./pages/ListRoom";
+import EditRoom from "./pages/EditRoom";
 import ForgotPassword from "./pages/ForgotPassword";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -85,6 +86,14 @@ function App() {
               element={
                 <ProtectedRoute requireRoles={["HOST", "ADMIN"]}>
                   <ListRoom />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/edit-room/:roomId"
+              element={
+                <ProtectedRoute requireRoles={["HOST", "ADMIN"]}>
+                  <EditRoom />
                 </ProtectedRoute>
               }
             />
