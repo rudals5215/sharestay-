@@ -52,19 +52,38 @@ export default function Login() {
     } catch (err: any) {
       console.error("[Login] 로그인 실패:", err);
 
-      if (err?.response?.status === 403) {
-        const message = err.response.data?.message ?? "정지된 계정입니다.";
-        alert(message);
-        window.location.href = "/login";
+      const status = err?.response?.status;
+      const data = err?.response?.data ?? {};
+      const apiMessage =
+        typeof data === "string" ? data : data?.message ?? null;
+      const endDate =
+        typeof data === "object" && "endDate" in data ? data.endDate : null;
+      const isPermanent =
+        typeof data === "object" && "permanent" in data ? Boolean(data.permanent) : false;
+
+      if (status === 401) {
+        alert(apiMessage ?? "아이디 또는 비밀번호가 올바르지 않습니다.");
+        return;
+      }
+
+      if (status === 403) {
+        const banInfo = endDate
+          ? `정지된 계정입니다. 정지 해제 예정: ${new Date(endDate).toLocaleString()}`
+          : isPermanent
+          ? "영구정지 계정입니다. 관리자에게 문의하세요."
+          : "";
+        alert(
+          [apiMessage ?? banInfo].filter(Boolean).join("\n")
+        );
         return;
       }
 
       if (err?.response) {
-        console.error("[Login] status:", err.response.status);
+        console.error("[Login] status:", status);
         console.error("[Login] data:", err.response.data);
-        alert(`로그인 실패 (${err.response.status})`);
+        alert(apiMessage ?? `로그인 실패 (${status})`);
       } else {
-        alert("로그인 중 오류가 발생했습니다. 콘솔을 확인해 주세요.");
+        alert("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
       }
     }
   };
