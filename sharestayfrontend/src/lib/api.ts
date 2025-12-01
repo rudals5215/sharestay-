@@ -50,10 +50,10 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 403) {
-      const message =
-        (error.response.data as { message?: string } | undefined)?.message ??
-        "정지된 계정입니다. 관리자에게 문의하세요.";
-      alert(message);
+      // const message =
+      //   (error.response.data as { message?: string } | undefined)?.message ??
+      //   "정지된 계정입니다. 관리자에게 문의하세요.";
+      // alert(message);
     }
     throw error;
   }
