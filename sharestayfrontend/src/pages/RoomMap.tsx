@@ -41,6 +41,47 @@ import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
 import fallbackImageSrc from "../img/no_img.jpg";
 const fallbackImage = fallbackImageSrc;
 
+// 지역(광역) > 시/군/구 계층형 데이터 (Rooms.tsx 참조)
+const provinces = [
+  { value: "서울", label: "서울" },
+  { value: "경기", label: "경기" },
+  { value: "인천", label: "인천" },
+  { value: "대전", label: "대전" },
+  { value: "세종", label: "세종" },
+  { value: "충남", label: "충남" },
+  { value: "충북", label: "충북" },
+  { value: "광주", label: "광주" },
+  { value: "전남", label: "전남" },
+  { value: "전북", label: "전북" },
+  { value: "대구", label: "대구" },
+  { value: "경북", label: "경북" },
+  { value: "부산", label: "부산" },
+  { value: "울산", label: "울산" },
+  { value: "경남", label: "경남" },
+  { value: "강원", label: "강원" },
+  { value: "제주", label: "제주" },
+];
+
+const provinceDistrictMap: Record<string, string[]> = {
+  서울: ["종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구", "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구", "서초구", "강남구", "송파구", "강동구"],
+  경기: ["수원시", "고양시", "용인시", "성남시", "부천시", "안산시", "안양시", "남양주시", "화성시", "평택시", "의정부시", "시흥시", "파주시", "김포시", "광주시", "광명시", "군포시", "하남시", "오산시", "양주시", "이천시", "구리시", "안성시", "포천시", "의왕시", "여주시", "동두천시"],
+  인천: ["중구", "동구", "미추홀구", "연수구", "남동구", "부평구", "계양구", "서구", "강화군", "옹진군"],
+  대전: ["동구", "서구", "유성구", "중구", "대덕구"],
+  세종: ["세종시"],
+  충남: ["천안시", "공주시", "보령시", "아산시", "서산시", "논산시", "계룡시", "당진시", "금산군", "부여군", "서천군", "청양군", "홍성군", "예산군", "태안군"],
+  충북: ["청주시", "충주시", "제천시", "보은군", "옥천군", "영동군", "증평군", "진천군", "괴산군", "음성군", "단양군"],
+  광주: ["동구", "서구", "남구", "북구", "광산구"],
+  전남: ["목포시", "여수시", "순천시", "나주시", "광양시", "담양군", "곡성군", "구례군", "고흥군", "보성군", "화순군", "장흥군", "강진군", "해남군", "영암군", "무안군", "함평군", "영광군", "장성군", "완도군", "진도군", "신안군"],
+  전북: ["전주시", "군산시", "익산시", "정읍시", "남원시", "김제시", "완주군", "진안군", "무주군", "장수군", "임실군", "순창군", "고창군", "부안군"],
+  대구: ["중구", "동구", "서구", "남구", "북구", "수성구", "달서구", "달성군"],
+  경북: ["포항시", "경주시", "김천시", "안동시", "구미시", "영주시", "영천시", "상주시", "문경시", "경산시", "의성군", "청송군", "영양군", "영덕군", "청도군", "고령군", "성주군", "칠곡군", "예천군", "봉화군", "울진군", "울릉군"],
+  부산: ["중구", "서구", "동구", "영도구", "부산진구", "동래구", "남구", "북구", "해운대구", "사하구", "금정구", "연제구", "수영구", "사상구", "기장군"],
+  울산: ["중구", "남구", "동구", "북구", "울주군"],
+  경남: ["창원시", "진주시", "통영시", "사천시", "김해시", "밀양시", "거제시", "양산시", "의령군", "함안군", "창녕군", "고성군", "남해군", "하동군", "산청군", "함양군", "거창군", "합천군"],
+  강원: ["춘천시", "원주시", "강릉시", "동해시", "태백시", "속초시", "삼척시", "홍천군", "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군", "양구군", "인제군", "고성군", "양양군"],
+  제주: ["제주시", "서귀포시"],
+};
+
 declare global {
   interface Window {
     kakao: any; // 카카오맵 SDK가 타입스크립트용 타입 정의를 제공하지 않기 때문에 any 사용
@@ -77,6 +118,8 @@ const RoomMap: React.FC = () => {
   const defaultPriceRange: [number, number] = [0, 5000000];
   // 필터 상태
   const [roomType, setRoomType] = useState<string>("");
+  const [region, setRegion] = useState<string>(""); // 지역 필터 상태 추가
+  const [district, setDistrict] = useState<string>(""); // 시/군/구 필터 상태 추가
   const [priceRange, setPriceRange] = useState<number[]>(defaultPriceRange);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [facilities, setFacilities] = useState<Set<string>>(new Set());
@@ -84,6 +127,11 @@ const RoomMap: React.FC = () => {
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null); // 선택된 방 ID 상태
   const [hoveredRoomId, setHoveredRoomId] = useState<number | null>(null); // 마우스 오버된 방 ID 상태
   const highlightOverlayRef = useRef<any>(null); // 강조 효과 오버레이를 관리하기 위한 ref
+  const districtOptions = useMemo(() => {
+    return region ? provinceDistrictMap[region] ?? [] : [];
+  }, [region]);
+
+
   const [modalRoom, setModalRoom] = useState<RoomSummary | null>(null);
 
   const handleToggleFacility = (facility: string) => {
@@ -206,6 +254,12 @@ const RoomMap: React.FC = () => {
         if (roomType) {
           params.type = roomType;
         }
+        if (region) {
+          params.region = region;
+        }
+        if (district) {
+          params.district = district;
+        }
         if (facilities.size > 0) {
           params.options = Array.from(facilities);
         }
@@ -219,22 +273,28 @@ const RoomMap: React.FC = () => {
 
         console.log("API 응답 데이터:", data); // [추가] API 응답을 콘솔에서 확인
 
-        // Rooms.tsx를 참고하여, API 응답이 { result: [...] } 형태일 수 있음을 처리합니다.
-        const roomData = Array.isArray(data) ? data : data?.result ?? [];
+        // API 응답이 배열이거나, data 또는 result 프로퍼티에 배열이 담겨오는 경우를 모두 처리합니다.
+        const roomData = Array.isArray(data)
+          ? data
+          : data?.data && Array.isArray(data.data)
+          ? data.data
+          : data?.result ?? [];
 
         const rawRoomList: RoomSummary[] = Array.isArray(roomData)
-          ? roomData.map((room) => {
-              const images: RoomImage[] =
-                room.images?.map((img: any, index: number) => ({
-                  id: img.id ?? index,
-                  imageId: img.id ?? index,
-                  roomId: room.id,
-                  imageUrl: resolveRoomImageUrl(img.imageUrl) ?? fallbackImage,
-                })) ?? [];
-              return {
-                ...mapRoomFromApi(room),
-                images,
-              };
+          ? roomData.map((apiRoom, index) => {
+              const room = mapRoomFromApi(apiRoom);
+
+              // API 응답에 id가 없거나 mapRoomFromApi 후에도 id가 null인 경우,
+              // 고유한 임시 ID를 부여하여 Map deduplication에서 데이터가 유실되지 않도록 합니다.
+              // 또한, roomId도 함께 설정하여 일관성을 유지합니다.
+              if (room.id == null) {
+                // 위도, 경도, 인덱스를 조합하여 임시 ID 생성
+                const tempId = `temp-${room.latitude ?? 'noLat'}-${room.longitude ?? 'noLng'}-${index}`;
+                room.id = tempId as any; // RoomSummary.id는 number | undefined 이므로 as any 사용
+                room.roomId = tempId as any; // roomId도 함께 설정
+              }
+
+              return room;
             })
           : [];
 
@@ -242,20 +302,17 @@ const RoomMap: React.FC = () => {
         const uniqueRooms = Array.from(
           new Map(rawRoomList.map((room) => [room.id, room])).values()
         );
-        // id가 없는 데이터는 필터링합니다.
-        const roomList = uniqueRooms.filter((room) => room.id != null);
 
-        setRooms(roomList); // 방 목록 상태 업데이트
-
-        console.log("매핑된 방 목록:", roomList); // [추가] 매핑된 데이터를 콘솔에서 확인
+        setRooms(uniqueRooms);
+        console.log("매핑된 방 목록:", uniqueRooms);
       } catch (err) {
         console.error("주변 방 정보 로딩 실패:", err); // [추가] 실제 에러를 콘솔에 출력
         setError("주변 방 정보를 불러오는 중 오류가 발생했습니다.");
       } finally {
-        setIsLoading(false);
+        setIsLoading(false); // 로딩 상태를 finally 블록에서 해제
       }
     },
-    [priceRange, roomType, facilities]
+    [priceRange, roomType, region, district, facilities] // 의존성 배열에 region, district 추가
   );
 
   const handleRoomItemClick = useCallback(
@@ -511,6 +568,8 @@ const RoomMap: React.FC = () => {
 
   const handleResetFilter = () => {
     setRoomType("");
+    setRegion(""); // 지역 필터 초기화
+    setDistrict(""); // 시/군/구 필터 초기화
     setPriceRange(defaultPriceRange);
     setFacilities(new Set());
     setSelectedRoomId(null); // 필터 초기화 시 선택 해제
@@ -797,7 +856,7 @@ const RoomMap: React.FC = () => {
                     >
                       <Box
                         component="img"
-                        src={resolveRoomImageUrl(room.images?.[0]?.imageUrl)}
+                        src={room.images?.[0]?.imageUrl ?? fallbackImage}
                         alt={room.title}
                         sx={{
                           width: 170,
@@ -876,6 +935,49 @@ const RoomMap: React.FC = () => {
             </Box>
 
             <Stack spacing={3}>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  지역
+                </Typography>
+                <Select
+                  value={region}
+                  onChange={(e) => {
+                    setRegion(e.target.value);
+                    setDistrict(""); // 지역 변경 시 시/군/구 초기화
+                  }}
+                  fullWidth
+                  size="small"
+                  displayEmpty
+                >
+                  <MenuItem value="">
+                    <em>지역 전체</em>
+                  </MenuItem>
+                  {provinces.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  시/군/구
+                </Typography>
+                <Select
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  fullWidth
+                  size="small"
+                  displayEmpty
+                  disabled={!region} // 지역이 선택되어야 활성화
+                >
+                  <MenuItem value="">
+                    <em>구/읍/면 전체</em>
+                  </MenuItem>
+                  {districtOptions.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
+                </Select>
+              </Stack>
               <Stack spacing={1}>
                 <Typography variant="subtitle2" color="text.secondary">
                   방 종류
