@@ -2,6 +2,8 @@ package com.example.sharestay.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -9,7 +11,8 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "favorite",
         uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "room_id"}))
-@Data
+@Getter
+@Setter
 public class Favorite {
 
     @Id

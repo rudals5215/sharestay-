@@ -9,11 +9,16 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
-    boolean existsByUserAndRoom(User user, Room room);
+    boolean existsByUserIdAndRoomId(Long userId, Long roomId);
 
-    Optional<Favorite> findByUserAndRoom(User user, Room room);
+    Optional<Favorite> findByUserIdAndRoomId(Long userId, Long roomId);
 
-    List<Favorite> findAllByUser(User user);
+    List<Favorite> findAllByUserId(Long userId);
 
-    void deleteByRoomId(Long roomId);
+    void deleteByUserIdAndRoomId(Long userId, Long roomId);
+
+    // 방 삭제 시 사용 - roomId 전체 삭제
+    void deleteAllByRoomId(Long roomId);
 }
+
+

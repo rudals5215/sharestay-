@@ -29,6 +29,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import SafetyMap from "./pages/SafetyMap";
 import LifestyleSetup from "./pages/LifestyleSetup";
+import LoginSuccess from "./pages/LoginSuccess";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RoomMap from "./pages/RoomMap";
 import { AuthProvider } from "./auth/AuthContext";
@@ -76,6 +77,7 @@ function App() {
             <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/login-success" element={<LoginSuccess />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/guide" element={<Guide />} />
             <Route path="/rooms" element={<Rooms />} />

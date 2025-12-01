@@ -16,10 +16,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../auth/useAuth";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
-//======= 구글 관련 추가 import =======
-import axios from "axios"; 
-import { setStoredUsername } from "../lib/api"; 
-import { useEffect } from "react"; 
 
 const GOOGLE_OAUTH2_URL = "http://localhost:8080/oauth2/authorization/google";
 
@@ -35,7 +31,6 @@ type FormValues = z.infer<typeof schema>;
 
 export default function Login() {
   const { login } = useAuth();
-  const navigate = useNavigate();
 
   const {
     handleSubmit,
@@ -87,25 +82,6 @@ export default function Login() {
       }
     }
   };
-
-  //===== 구글 로그인 redirect 처리
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code"); // 백엔드에서 보내는 code
-
-    if (code) {
-      // 백엔드가 쿠키에 access/refresh 넣어주므로 프론트에서 토큰 직접 처리 불필요
-      axios
-        .get("/api/me", { withCredentials: true }) // 쿠키 포함 요청
-        .then((res) => {
-          setStoredUsername(res.data.username); // 사용자 정보 저장
-        })
-        .finally(() => {
-          navigate("/", { replace: true }); // 홈으로 이동
-        });
-    }
-  }, [navigate]);
-
   //===== 구글 로그인 버튼 클릭
   const handleGoogleLogin = () => {
     window.location.href = GOOGLE_OAUTH2_URL;

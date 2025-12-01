@@ -56,34 +56,15 @@ public class CustomSuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = jwtService.generateAccessToken(email);
         String refreshToken = jwtService.generateRefreshToken(email);
 
-        // jwt를 HttpOnly 쿠키로 저장
-        Cookie accessCookie = createCookie("accessToken", accessToken, 60 * 60); // 쿠키 유효시간 한시간
-        Cookie refreshCookie = createCookie("refreshToken", refreshToken, 7 * 24 * 60 * 60); // 7일
+        String redirectWithToken = UriComponentsBuilder
+                .fromHttpUrl(redirectUrl)
+                .queryParam("accessToken", accessToken)
+                .queryParam("refreshToken", refreshToken)
+                .queryParam("username", email)
+                .build(true)
+                .toUriString();
 
-        response.addCookie(accessCookie);
-        response.addCookie(refreshCookie);
-
-        // 프론트로 리다이렉트 (토큰 전달 x)
-        response.sendRedirect(redirectUrl);
+        // 프론트로 리다이렉트
+        response.sendRedirect(redirectWithToken);
     }
-
-    private Cookie createCookie(String name, String value, int maxAge) {
-        Cookie cookie = new Cookie(name, value);
-        // 개발용 (HTTP)
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(maxAge);
-        cookie.setAttribute("SameSite", "Lax");
-
-        // 배포용 (HTTPS)
-//        cookie.setHttpOnly(true);
-//        cookie.setSecure(true);
-//        cookie.setPath("/");
-//        cookie.setMaxAge(maxAge);
-//        cookie.setAttribute("SameSite", "None");
-
-       return cookie;
-    }
-
 }

@@ -78,7 +78,7 @@ public class RoomService {
 
     @Transactional
     public void deleteRoom(Long roomId) {
-        favoriteRepository.deleteByRoomId(roomId);
+        favoriteRepository.deleteAllByRoomId(roomId);
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found"));
         roomRepository.delete(room);
