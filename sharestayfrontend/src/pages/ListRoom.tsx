@@ -31,11 +31,6 @@ import type {
 } from "../types/room";
 import SectionPaper from "../components/SectionPaper";
 
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
 
 // ------------------------------
 // Zod Schema

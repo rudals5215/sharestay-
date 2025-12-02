@@ -31,11 +31,6 @@ import type {
   RoomRequestPayload,
 } from "../types/room";
 
-declare global {
-  interface Window {
-    kakao: any;
-  }
-}
 
 const roomSchema = z.object({
   title: z.string().min(1, "Please enter a title."),

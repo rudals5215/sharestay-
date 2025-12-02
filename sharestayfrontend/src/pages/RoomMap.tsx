@@ -33,7 +33,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { api, getAccessToken } from "../lib/api";
 import type { RoomSummary } from "../types/room";
-import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room"; // RoomApiResponse 추가
+import { mapRoomFromApi, resolveRoomImageUrl, RoomApiResponse } from "../types/room"; // RoomApiResponse 추가
 import {
   provinces,
   provinceDistrictMap,
@@ -43,83 +43,10 @@ import {
 import fallbackImageSrc from "../img/no_img.jpg";
 const fallbackImage = fallbackImageSrc;
 
-// --- Kakao Maps SDK 타입 정의 ---
-
-interface KakaoLatLng {
-  getLat(): number;
-  getLng(): number;
-}
-
-interface KakaoMap {
-  getCenter(): KakaoLatLng;
-  getLevel(): number;
-  getBounds(): {
-    getSouthWest(): KakaoLatLng;
-    getNorthEast(): KakaoLatLng;
-  };
-  panTo(latlng: KakaoLatLng): void;
-  relayout(): void;
-  setCenter(latlng: KakaoLatLng): void;
-  customOverlays?: KakaoCustomOverlay[]; // 사용자 정의 속성
-}
-
-interface KakaoCustomOverlay {
-  setMap(map: KakaoMap | null): void;
-  getElement(): HTMLElement | undefined; // CustomOverlay의 getElement() 메서드 추가
-  // 사용자 정의 속성
-  cluster: RoomSummary[];
-}
-
-type KakaoGeocoderStatus = "OK" | "ZERO_RESULT" | "ERROR";
-
-interface KakaoGeocoder {
-  addressSearch(
-    address: string,
-    callback: (result: { x: string; y: string }[], status: KakaoGeocoderStatus) => void
-  ): void;
-  coord2RegionCode(
-    lng: number,
-    lat: number,
-    callback: (result: { region_type: 'H' | 'B'; region_2depth_name: string }[], status: KakaoGeocoderStatus) => void
-  ): void;
-}
-
-interface KakaoPlaces {
-  keywordSearch(
-    keyword: string,
-    callback: (data: { x: string; y: string }[], status: KakaoGeocoderStatus) => void
-  ): void;
-}
-
-declare global {
-  interface Window {
-    kakao: {
-      maps: {
-        load(callback: () => void): void;
-        LatLng: new (lat: number, lng: number) => KakaoLatLng;
-        Map: new (container: HTMLElement, options: object) => KakaoMap;
-        event: {
-          addListener(target: KakaoMap, type: string, handler: () => void): void;
-        };
-        services: {
-          Geocoder: new () => KakaoGeocoder;
-          Places: new () => KakaoPlaces;
-          Status: {
-            OK: "OK";
-            ZERO_RESULT: "ZERO_RESULT";
-            ERROR: "ERROR";
-          };
-        };
-        CustomOverlay: new (options: object) => KakaoCustomOverlay;
-      };
-    };
-  }
-}
-
 const RoomMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<KakaoMap | null>(null); // 지도 인스턴스를 저장할 ref
-  const geocoderRef = useRef<KakaoGeocoder | null>(null); // 지오코더 인스턴스를 저장할 ref
+  const mapInstanceRef = useRef<kakao.maps.Map | null>(null); // 지도 인스턴스를 저장할 ref
+  const geocoderRef = useRef<kakao.maps.services.Geocoder | null>(null); // 지오코더 인스턴스를 저장할 ref
   const navigate = useNavigate(); // useNavigate 훅 추가
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,7 +63,7 @@ const RoomMap: React.FC = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null); // 선택된 방 ID 상태
   const [hoveredRoomId, setHoveredRoomId] = useState<number | null>(null); // 마우스 오버된 방 ID 상태
-  const highlightOverlayRef = useRef<KakaoCustomOverlay | null>(null); // 강조 효과 오버레이를 관리하기 위한 ref
+  const highlightOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null); // 강조 효과 오버레이를 관리하기 위한 ref
   const districtOptions = useMemo(() => {
     return region ? provinceDistrictMap[region] ?? [] : [];
   }, [region]);
@@ -236,10 +163,10 @@ const RoomMap: React.FC = () => {
             geocoderRef.current!.coord2RegionCode(
               center.getLng(),
               center.getLat(),
-              (result, status) => {
-                if (status === "OK") {
+              (result, status) => { // result: { region_type: 'H' | 'B'; ... }[]
+                if (status === window.kakao.maps.services.Status.OK) {
                   // '구' 단위 주소(예: 강남구)를 찾아서 반환
-                  const regionInfo = result.find((r: any) => r.region_type === 'H');
+                  const regionInfo = result.find((r) => r.region_type === 'H');
                   resolve(regionInfo ? regionInfo.region_2depth_name : null);
                 } else {
                   resolve(null);
@@ -272,8 +199,6 @@ const RoomMap: React.FC = () => {
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         const radiusKm = R * c; // 계산된 반경 (km)
 
-        const centerAddress = await getCenterAddress();
-
         const params: Record<string, string | number | string[] | undefined> = {
           swLat: sw.getLat(),
           swLng: sw.getLng(),
@@ -281,7 +206,6 @@ const RoomMap: React.FC = () => {
           neLng: ne.getLng(),
           minPrice: priceRange[0],
           maxPrice: priceRange[1],
-          centerAddress: centerAddress,
           level, // API에 지도 레벨도 전달
         };
         if (roomType) {
@@ -314,7 +238,7 @@ const RoomMap: React.FC = () => {
           : data?.result ?? [];
 
         const rawRoomList: RoomSummary[] = Array.isArray(roomData) // apiRoom의 타입은 RoomApiResponse
-          ? roomData.map((apiRoom, index) => {
+          ? roomData.map((apiRoom: any, index) => {
               const room = mapRoomFromApi(apiRoom);
               // mapRoomFromApi에서 roomId가 매핑되지 않는 경우를 대비해 직접 할당합니다.
               if (room.roomId === undefined && apiRoom.roomId !== undefined) {
@@ -339,8 +263,8 @@ const RoomMap: React.FC = () => {
               }
               geocoderRef.current!.addressSearch(
                 room.address,
-                (result, status) => {
-                  if (status === "OK") {
+                (result, status) => { // result: { x: string, y: string }[]
+                  if (status === window.kakao.maps.services.Status.OK) {
                     // 검색 성공 시, 좌표를 추가하여 반환
                     resolve({
                       ...room,
@@ -543,7 +467,7 @@ const RoomMap: React.FC = () => {
         );
         return overlay;
       })
-      .filter((overlay): overlay is KakaoCustomOverlay => overlay !== null);
+      .filter((overlay): overlay is kakao.maps.CustomOverlay & { cluster: RoomSummary[] } => overlay !== null);
   }, [rooms, selectedRoomId, hoveredRoomId, handleRoomItemClick]);
 
   // 생성된 오버레이들을 지도에 업데이트하는 useEffect
@@ -551,13 +475,13 @@ const RoomMap: React.FC = () => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
-    if (!map.customOverlays) map.customOverlays = []; // map.customOverlays가 undefined일 경우 초기화
-    map.customOverlays.forEach((overlay) => overlay.setMap(null));
-    map.customOverlays = [];
+    // if (!map.customOverlays) map.customOverlays = []; // map.customOverlays가 undefined일 경우 초기화
+    // map.customOverlays.forEach((overlay) => overlay.setMap(null));
+    // map.customOverlays = [];
 
     markers.forEach((overlay) => {
       overlay.setMap(map);
-      map.customOverlays.push(overlay);
+      // map.customOverlays.push(overlay);
     });
   }, [markers]);
 
@@ -663,8 +587,8 @@ const RoomMap: React.FC = () => {
 
     new window.kakao.maps.services.Places().keywordSearch( // eslint-disable-line
       searchQuery,
-      (data, status) => {
-        if (status === "OK") {
+      (data, status) => { // data: { x: string, y: string }[]
+        if (status === window.kakao.maps.services.Status.OK) {
           const map = mapInstanceRef.current;
           const newPos = new window.kakao.maps.LatLng(data[0].y, data[0].x);
           setSelectedRoomId(null); // 새로운 지역 검색 시 선택 해제
@@ -722,10 +646,6 @@ const RoomMap: React.FC = () => {
 
     const imageUrl = resolveRoomImageUrl(room.images?.[0]?.imageUrl);
 
-    // 이미지 출력 확인용
-    // console.log("MODAL ROOM IMAGES:", room.images);
-    // console.log("MODAL ROOM RAW IMAGE URL:", room.images?.[0]?.imageUrl);
-    // console.log("RESOLVED:", resolveRoomImageUrl(room.images?.[0]?.imageUrl));
     return (
       <Modal
         open={!!room}
@@ -806,8 +726,8 @@ const RoomMap: React.FC = () => {
   const displayedRooms = useMemo(() => {
     if (selectedRoomId) {
       // markers 배열에서 해당 클러스터를 찾습니다.
-      const selectedMarker = markers.find((marker) =>
-        marker.cluster.some((room: RoomSummary) => room.id === selectedRoomId) // marker의 타입은 KakaoCustomOverlay
+      const selectedMarker = markers.find((marker: kakao.maps.CustomOverlay & { cluster: RoomSummary[] }) =>
+        marker.cluster.some((room) => room.id === selectedRoomId)
       );
 
       if (selectedMarker) {
