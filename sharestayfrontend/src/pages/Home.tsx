@@ -36,7 +36,7 @@ const heroBackground =
 
 const navLinks = [
   { label: "방 찾기", href: "/rooms" },
-  { label: "지도", href: "/RoomMap" },
+  { label: "지도로 찾기", href: "/RoomMap" },
   { label: "이용방법", href: "/guide" },
   {
     label: "방 등록",
@@ -996,8 +996,8 @@ export default function Home() {
                     <Box component="a" href="/rooms" color="inherit">
                       룸메이트 찾기
                     </Box>
-                    <Box component="a" href="/safety-map" color="inherit">
-                      안전도 지도
+                    <Box component="a" href="/RoomMap" color="inherit">
+                      지도로 찾기
                     </Box>
                     <Box component="a" href="/matching" color="inherit">
                       룸메이트 매칭

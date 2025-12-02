@@ -744,7 +744,7 @@ export default function Rooms() {
                 </Stack>
                                 <Stack spacing={1}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    편의시설
+                    부가옵션
                   </Typography>
                   <Stack
                     spacing={1}
@@ -926,12 +926,13 @@ export default function Rooms() {
                           <Typography variant="body1" fontWeight={700} color="primary">
                             {formatCurrency(room.rentPrice)}
                           </Typography>
-
-                          {room.description && (
+                          
+                          {/* 설명 길어지니깐 지저분해보여서 주석해놨어요. */}
+                          {/* {room.description && (
                             <Typography variant="body2" color="text.secondary">
                               {room.description}
                             </Typography>
-                          )}
+                          )} */}
 
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             {tags.slice(0, 4).map((tag) => (
