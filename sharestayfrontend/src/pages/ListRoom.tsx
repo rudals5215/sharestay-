@@ -29,6 +29,7 @@ import type {
   RoomAvailabilityStatus,
   RoomApiResponse,
 } from "../types/room";
+import SectionPaper from "../components/SectionPaper";
 
 // ------------------------------
 // Zod Schema
@@ -591,50 +592,7 @@ export default function ListRoom() {
   );
 }
 
-// ------------------------------
-// Components
-// ------------------------------
-function SectionTitle({
-  icon,
-  title,
-}: {
-  icon?: React.ReactNode;
-  title: string;
-}) {
-  return (
-    <Stack direction="row" spacing={1} alignItems="center">
-      {icon}
-      <Typography variant="h6" fontWeight={700}>
-        {title}
-      </Typography>
-    </Stack>
-  );
-}
 
-function SectionPaper({
-  icon,
-  title,
-  children,
-}: {
-  icon?: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Paper
-      sx={{
-        p: { xs: 3, md: 4 },
-        borderRadius: 4,
-        boxShadow: "0 24px 48px rgba(15, 40, 105, 0.08)",
-      }}
-    >
-      <Stack spacing={3}>
-        <SectionTitle icon={icon} title={title} />
-        {children}
-      </Stack>
-    </Paper>
-  );
-}
 
 function CheckboxGroup({
   options,
