@@ -155,15 +155,13 @@ const genderLabel = (value?: string | null) => {
 
 const ageLabel = (value?: string | null) => {
   switch (value) {
-    case "10s":
-      return "10대";
-    case "20s":
+    case "20대":
       return "20대";
-    case "30s":
+    case "30대":
       return "30대";
-    case "40s":
+    case "40대":
       return "40대";
-    case "50s":
+    case "50대":
       return "50대 이상";
     case "":
     case null:
@@ -405,6 +403,12 @@ const handleShareLink = async () => {
 
                 {/* 방 정보 */}
                 <SectionPaper title="방 정보">
+                  <Stack
+                    direction="row"
+                    spacing={10}
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
                   {room.type !== undefined && room.type !== null && (
                     <Box>
                       <Typography
@@ -419,6 +423,44 @@ const handleShareLink = async () => {
                       </Typography>
                     </Box>
                   )}
+                  {/* 면적, 층수 넣기 */}
+                  </Stack>
+
+
+
+                    {displayFacilities.length > 0 && (
+                    <>
+                      <Divider sx={{ my: 3 }} />
+
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: 700, mb: 1 }}
+                      >
+                        부가 옵션
+                      </Typography>
+
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        {displayFacilities.map((item) => (
+                          <Chip
+                            key={item}
+                            label={item}
+                            sx={{
+                              borderRadius: 999,
+                              bgcolor: "rgba(0,0,0,0.03)",
+                              // color: "primary.main",
+                              fontWeight: 600,
+                            }}
+                          />
+                        ))}
+                      </Stack>
+                    </>
+                  )}
+
                 </SectionPaper>
 
                 {/* 룸메이트 조건 */}
@@ -508,13 +550,17 @@ const handleShareLink = async () => {
                   </SectionPaper>
                 )}
 
+                <SectionPaper title="현재 룸메이트 정보">
+                  들어갈 예정입니다.
+                </SectionPaper>
+
                 <SectionPaper title="생활 규칙">
                   들어갈 예정입니다.
                 </SectionPaper>
 
-                <SectionPaper title="부가 옵션">
-                  들어갈 예정입니다.
-                </SectionPaper>
+                
+
+
 
                 <SectionPaper title="기타 옵션">
                   <PreferenceBox
@@ -596,13 +642,21 @@ const handleShareLink = async () => {
                     <Button
                       fullWidth
                       variant="outlined"
+                      sx={{ borderRadius: 999, py: 1.2 }}
+                    >
+                      문의하기
+                    </Button>
+
+                    {/* <Button
+                      fullWidth
+                      variant="outlined"
                       onClick={handleShareLink}
                       disabled={isShareGenerating}
                       sx={{ borderRadius: 999, py: 1.2 }}
                       startIcon={<ShareIcon />}
                     >
                       {shareButtonLabel}
-                    </Button>
+                    </Button> */}
 
                     <Button
                       fullWidth

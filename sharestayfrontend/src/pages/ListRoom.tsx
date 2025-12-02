@@ -96,11 +96,11 @@ const preferredGenderOptions = [
 ];
 
 const preferredAgeOptions = [
-  { value: "", label: "무관" },
-  { value: "TEENS", label: "10대" },
-  { value: "TWENTIES", label: "20대" },
-  { value: "THIRTIES", label: "30대" },
-  { value: "FORTIES_PLUS", label: "40대 이상" },
+  { value: "", label: "선택 안 함" },
+  { value: "20대", label: "20대" },
+  { value: "30대", label: "30대" },
+  { value: "40대", label: "40대" },
+  { value: "50대", label: "50대 이상" },
 ];
 
 const totalMemberOptions = [
