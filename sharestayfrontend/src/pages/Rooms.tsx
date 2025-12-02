@@ -508,6 +508,12 @@ export default function Rooms() {
       alert("로그인이 필요한 기능입니다.");
       return;
     }
+
+    // 호스트 로그인 차단
+    if (user.role === "HOST" || user.roles?.includes("HOST")) {
+      alert("게스트로 로그인해 주세요.");
+      return;
+    }
     // const currentlyFavorite = favorites.has(roomId);
     // 여기 두 줄이 추가된 부분임. 나중에 재수정할 수도 있음.
     if (!roomId) return;
