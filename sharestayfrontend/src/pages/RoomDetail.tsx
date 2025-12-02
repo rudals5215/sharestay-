@@ -7,6 +7,7 @@ import {
   Paper,
   Stack,
   Typography,
+  Divider
 } from "@mui/material";
 import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
@@ -21,6 +22,8 @@ import type {
 import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
 import fallbackImageSrc from "../img/no_img.jpg";
 import ShareIcon from "@mui/icons-material/Share";
+import SectionPaper from "../components/SectionPaper";
+import Grid from "@mui/material/Unstable_Grid2";
 
 const fallbackImage = fallbackImageSrc;
 const lifestyleOptionSet = new Set([
@@ -311,7 +314,7 @@ const handleShareLink = async () => {
   return (
     <Box sx={{ bgcolor: "#f4f6fb", minHeight: "100vh" }}>
       <SiteHeader activePath="/rooms" />
-      <Container maxWidth="md" sx={{ py: { xs: 6, md: 8 } }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 6, md: 8 } }}>
         {isLoading ? (
           <Stack alignItems="center" spacing={2} py={12}>
             <CircularProgress />
@@ -319,191 +322,311 @@ const handleShareLink = async () => {
               방 정보를 불러오는 중입니다...
             </Typography>
           </Stack>
-        ) : error ? (
+                ) : error ? (
+          
           <Paper sx={{ p: { xs: 4, md: 6 }, borderRadius: 4 }}>
-            <Stack spacing={2} alignItems="center">
-              <Typography variant="h6" color="error" fontWeight={700}>
-                데이터를 가져오지 못했어요
-              </Typography>
-              <Typography color="text.secondary" textAlign="center">
-                {error}
-              </Typography>
-              <Button
-                variant="contained"
-                component={RouterLink}
-                to="/rooms"
-                sx={{ borderRadius: 999 }}
-              >
-                방 목록으로 돌아가기
-              </Button>
-            </Stack>
+            ...
           </Paper>
         ) : room ? (
-          <Paper
-            sx={{
-              p: { xs: 4, md: 5 },
-              borderRadius: 4,
-              boxShadow: "0 32px 64px rgba(15, 40, 105, 0.12)",
-            }}
+          <Grid
+            container
+            spacing={4}
+            alignItems="flex-start"
           >
-            <Stack spacing={3}>
-              <Box
-                component="img"
-                src={activeImage}
-                alt={room.title}
+            {/* ========== LEFT : 메인 상세 영역 ========== */}
+            <Grid xs={12} md={8}>
+              <Stack spacing={3}>
+                {/* 이미지 섹션 */}
+                <Box
+                  component="img"
+                  src={activeImage}
+                  alt={room.title}
+                  sx={{
+                    width: "100%",
+                    height: 480,
+                    objectFit: "cover",
+                    borderRadius: 3,
+                    bgcolor: "#e8ecf4",
+                  }}
+                />
+
+                {room.images && room.images.length > 1 && (
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {room.images.map((img) => {
+                      const thumbnail = img.imageUrl ?? fallbackImage;
+                      const key = img.id ?? img.imageId ?? thumbnail;
+                      const isActive = activeImage === thumbnail;
+                      return (
+                        <Box
+                          key={key}
+                          component="img"
+                          src={thumbnail}
+                          alt={room.title}
+                          onClick={() => setActiveImage(thumbnail)}
+                          sx={{
+                            width: 72,
+                            height: 72,
+                            objectFit: "cover",
+                            borderRadius: 2,
+                            border: isActive
+                              ? "2px solid #0c51ff"
+                              : "1px solid rgba(0,0,0,0.08)",
+                            cursor: "pointer",
+                          }}
+                        />
+                      );
+                    })}
+                  </Stack>
+                )}
+
+                {/* 제목 + 타입 + 상단 공유 버튼 */}
+                <Stack spacing={1} mb={2}>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <Typography variant="h4" fontWeight={800}>
+                      {room.title}
+                    </Typography>
+                    <Chip
+                      label={getRoomTypeLabel(room.type)}
+                      color="primary"
+                      sx={{ borderRadius: 999 }}
+                    />
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={handleShareLink}
+                      disabled={isShareGenerating}
+                      sx={{ borderRadius: 999 }}
+                      startIcon={<ShareIcon />}
+                    >
+                      {shareButtonLabel}
+                    </Button>
+                  </Stack>
+                </Stack>
+
+                {/* 방 정보 */}
+                <SectionPaper title="방 정보">
+                  {room.type !== undefined && room.type !== null && (
+                    <Box>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 0.5 }}
+                      >
+                        방 종류
+                      </Typography>
+                      <Typography fontWeight={700}>
+                        {getRoomTypeLabel(room.type)}  {/* ⬅️ genderLabel 말고 이거! */}
+                      </Typography>
+                    </Box>
+                  )}
+                </SectionPaper>
+
+                {/* 룸메이트 조건 */}
+                <SectionPaper title="룸메이트 조건">
+                  <Stack
+                    direction="row"
+                    spacing={10}
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
+                    {room.preferredGender !== undefined &&
+                      room.preferredGender !== null && (
+                        <Box>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mb: 0.5 }}
+                          >
+                            선호 성별
+                          </Typography>
+                          <Typography fontWeight={700}>
+                            {genderLabel(room.preferredGender)}
+                          </Typography>
+                        </Box>
+                      )}
+
+                    {room.preferredAge !== undefined &&
+                      room.preferredAge !== null && (
+                        <Box>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mb: 0.5 }}
+                          >
+                            선호 연령
+                          </Typography>
+                          <Typography fontWeight={700}>
+                            {ageLabel(room.preferredAge)}
+                          </Typography>
+                        </Box>
+                      )}
+                  </Stack>
+
+                  {displayLifestyle.length > 0 && (
+                    <>
+                      <Divider sx={{ my: 3 }} />
+
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: 700, mb: 1 }}
+                      >
+                        선호 생활패턴
+                      </Typography>
+
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        {displayLifestyle.map((item) => (
+                          <Chip
+                            key={item}
+                            label={item}
+                            sx={{
+                              borderRadius: 999,
+                              bgcolor: "rgba(12, 81, 255, 0.12)",
+                              color: "primary.main",
+                              fontWeight: 600,
+                            }}
+                          />
+                        ))}
+                      </Stack>
+                    </>
+                  )}
+                </SectionPaper>
+
+                <SectionPaper title="주소">
+                  <Typography>{room.address}</Typography>
+                </SectionPaper>
+
+                {mainDescription && (
+                  <SectionPaper title="상세 설명">
+                    <Typography whiteSpace="pre-line">
+                      {mainDescription}
+                    </Typography>
+                  </SectionPaper>
+                )}
+
+                <SectionPaper title="생활 규칙">
+                  들어갈 예정입니다.
+                </SectionPaper>
+
+                <SectionPaper title="부가 옵션">
+                  들어갈 예정입니다.
+                </SectionPaper>
+
+                <SectionPaper title="기타 옵션">
+                  <PreferenceBox
+                    title="기타 옵션"
+                    items={displayOtherOptions}
+                    chipColor="default"
+                    gradient="linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.01))"
+                  />
+                </SectionPaper>
+              </Stack>
+            </Grid>
+
+            {/* ========== RIGHT : sticky 요약 카드 ========== */}
+            <Grid xs={12} md={4}
+              sx={{
+                position: { md: "sticky" }, // md 이상에서만 sticky 적용
+                top: { md: 96 },            // 화면 상단에서 96px 아래에 붙도록
+                alignSelf: "flex-start",    // 위쪽에 붙게 (세로 가운데 방지)
+              }}>
+              
+            
+              <Paper
                 sx={{
-                  width: "100%",
-                  height: 320,
-                  objectFit: "cover",
-                  borderRadius: 3,
-                  bgcolor: "#e8ecf4",
+                  p: { xs: 3, md: 4 },
+                  borderRadius: 4,
+                  boxShadow: "0 24px 48px rgba(15, 40, 105, 0.12)",
                 }}
-              />
-
-              {room.images && room.images.length > 1 && (
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  {room.images.map((img) => {
-                    const thumbnail = img.imageUrl ?? fallbackImage;
-                    const key = img.id ?? img.imageId ?? thumbnail;
-                    const isActive = activeImage === thumbnail;
-                    return (
-                      <Box
-                        key={key}
-                        component="img"
-                        src={thumbnail}
-                        alt={room.title}
-                        onClick={() => setActiveImage(thumbnail)}
-                        sx={{
-                          width: 72,
-                          height: 72,
-                          objectFit: "cover",
-                          borderRadius: 2,
-                          border: isActive
-                            ? "2px solid #0c51ff"
-                            : "1px solid rgba(0,0,0,0.08)",
-                          cursor: "pointer",
-                        }}
-                      />
-                    );
-                  })}
-                </Stack>
-              )}
-
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Typography variant="h4" fontWeight={800}>
-                  {room.title}
-                </Typography>
-                <Chip
-                  label={getRoomTypeLabel(room.type)}
-                  color="primary"
-                  sx={{ borderRadius: 999 }}
-                />
-              </Stack>
-
-              <Typography variant="h5" color="primary" fontWeight={700}>
-                {formatCurrency(room.rentPrice)}
-              </Typography>
-
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  룸메이트 조건
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  {room.preferredGender !== undefined && room.preferredGender !== null && (
-                    <Chip
-                      label={`선호 성별: ${genderLabel(room.preferredGender)}`}
-                      color="secondary"
-                      sx={{ borderRadius: 1.5 }}
-                    />
-                  )}
-                  {room.preferredAge !== undefined && room.preferredAge !== null && (
-                    <Chip
-                      label={`선호 연령대: ${ageLabel(room.preferredAge)}`}
-                      color="secondary"
-                      sx={{ borderRadius: 1.5 }}
-                    />
-                  )}
-                  {room.totalMembers !== undefined && room.totalMembers !== null && (
-                    <Chip
-                      label={`총 인원수: ${room.totalMembers}명`}
-                      color="secondary"
-                      sx={{ borderRadius: 1.5 }}
-                    />
-                  )}
-                </Stack>
-              </Stack>
-
-              <Stack spacing={1}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  주소
-                </Typography>
-                <Typography>{room.address}</Typography>
-              </Stack>
-
-              {mainDescription && (
-                <Stack spacing={1}>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    상세 설명
-                  </Typography>
-                  <Typography whiteSpace="pre-line">
-                    {mainDescription}
-                  </Typography>
-                </Stack>
-              )}
-
-              <Stack spacing={2}>
-                <PreferenceBox
-                  title="생활 패턴"
-                  items={displayLifestyle}
-                  chipColor="primary"
-                  gradient="linear-gradient(135deg, rgba(12,81,255,0.08), rgba(12,81,255,0.02))"
-                />
-                <PreferenceBox
-                  title="부가 옵션"
-                  items={displayFacilities}
-                  chipColor="info"
-                  gradient="linear-gradient(135deg, rgba(0,184,217,0.12), rgba(0,184,217,0.04))"
-                />
-                <PreferenceBox
-                  title="기타 옵션"
-                  items={displayOtherOptions}
-                  chipColor="default"
-                  gradient="linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.01))"
-                />
-              </Stack>
-
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={2}
-                alignItems={{ xs: "stretch", sm: "center" }}
               >
-                <Button
-                  variant="contained"
-                  component={RouterLink}
-                  to="/rooms"
-                  sx={{ borderRadius: 999 }}
-                >
-                  방 목록으로 돌아가기
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={handleShareLink}
-                  disabled={isShareGenerating}
-                  sx={{ borderRadius: 999 }}
-                  startIcon={<ShareIcon />}
-                >
-                  {shareButtonLabel}
-                </Button>
-              </Stack>
+                <Stack spacing={3}>
+                  {/* 가격 */}
+                  <Box>
+                    <Typography
+                      variant="h5"
+                      color="primary"
+                      fontWeight={800}
+                    >
+                      {formatCurrency(room.rentPrice)}
+                    </Typography>
+                    {/* 여기에 보증금/관리비 등 있으면 추가 */}
+                  </Box>
 
-              {/* {shareLink && (
-                <Typography variant="body2" color="text.secondary">
-                  {shareLink}
-                </Typography>
-              )} */}
-            </Stack>
-          </Paper>
+                  <Divider />
+
+                  {/* 룸메이트 조건 요약 */}
+                  <Stack spacing={1}>
+                    <Typography
+                      variant="subtitle2"
+                      color="text.secondary"
+                      sx={{ fontWeight: 700 }}
+                    >
+                      룸메이트 조건
+                    </Typography>
+                    <Stack spacing={0.5}>
+                      {room.preferredGender && (
+                        <Typography variant="body2">
+                          <strong>성별&nbsp;</strong>
+                          {genderLabel(room.preferredGender)}
+                        </Typography>
+                      )}
+                      {room.preferredAge && (
+                        <Typography variant="body2">
+                          <strong>연령&nbsp;</strong>
+                          {ageLabel(room.preferredAge)}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Stack>
+
+                  {/* 버튼들 */}
+                  <Stack spacing={1.5}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      sx={{ borderRadius: 999, py: 1.2 }}
+                    >
+                      룸메이트에게 연락하기
+                    </Button>
+
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      onClick={handleShareLink}
+                      disabled={isShareGenerating}
+                      sx={{ borderRadius: 999, py: 1.2 }}
+                      startIcon={<ShareIcon />}
+                    >
+                      {shareButtonLabel}
+                    </Button>
+
+                    <Button
+                      fullWidth
+                      variant="text"
+                      component={RouterLink}
+                      to="/rooms"
+                    >
+                      방 목록으로 돌아가기
+                    </Button>
+                  </Stack>
+
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    안전한 거래를 위해 직접 만나서 확인하세요.
+                  </Typography>
+                </Stack>
+              </Paper>
+            </Grid>
+          </Grid>
         ) : null}
+
       </Container>
       <SiteFooter />
     </Box>
