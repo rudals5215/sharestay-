@@ -6,7 +6,7 @@ import type { Roles } from "../auth/types";
 
 const navLinks: { label: string; href: string; requireRoles?: Roles[] }[] = [
   { label: "방찾기", href: "/rooms" },
-  { label: "안전도 지도", href: "/safety-map" },
+  { label: "지도로 찾기", href: "/RoomMap" },
   { label: "이용 가이드", href: "/guide" },
   { label: "룸 등록", href: "/list-room", requireRoles: ["HOST", "ADMIN"] },
 ];
