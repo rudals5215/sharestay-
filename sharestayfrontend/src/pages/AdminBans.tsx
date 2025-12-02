@@ -321,6 +321,7 @@ export default function AdminBans() {
                   type="datetime-local"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
                   fullWidth
                 />
                 <Stack direction="row" spacing={1} flexWrap="wrap">
