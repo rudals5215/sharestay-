@@ -80,6 +80,14 @@ public class RoomService {
         ShareLink shareLink = new ShareLink();
         room.setShareLink(shareLink);
 
+        // 위도/경도가 null이거나 0일 경우 DB에 null로 저장
+        if (room.getLatitude() == null || room.getLatitude() == 0.0) {
+            room.setLatitude(null);
+        }
+        if (room.getLongitude() == null || room.getLongitude() == 0.0) {
+            room.setLongitude(null);
+        }
+
         roomRepository.save(room);
 
         if (files != null && !files.isEmpty()) {
@@ -115,6 +123,15 @@ public class RoomService {
                 .orElseThrow(() -> new IllegalArgumentException("Room not found"));
 
         room.update(request);
+
+        // 위도/경도가 null이거나 0일 경우 DB에 null로 저장
+        if (room.getLatitude() == null || room.getLatitude() == 0.0) {
+            room.setLatitude(null);
+        }
+        if (room.getLongitude() == null || room.getLongitude() == 0.0) {
+            room.setLongitude(null);
+        }
+
         Room updated = roomRepository.save(room);
         return toResponse(updated);
     }

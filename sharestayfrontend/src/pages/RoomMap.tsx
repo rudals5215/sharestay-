@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   CircularProgress,
@@ -17,11 +17,8 @@ import {
   TextField,
   Button,
   Typography,
-  SelectChangeEvent,
   List,
   ListItem,
-  ListItemAvatar,
-  Avatar,
   ListItemText,
   Divider,
   ListItemButton,
@@ -35,81 +32,21 @@ import SiteHeader from "../components/SiteHeader";
 import CloseIcon from "@mui/icons-material/Close";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { api, getAccessToken } from "../lib/api";
-import type { RoomSummary, RoomImage } from "../types/room";
-import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
-
+import type { RoomSummary } from "../types/room";
+import { mapRoomFromApi, resolveRoomImageUrl, RoomApiResponse } from "../types/room"; // RoomApiResponse 추가
+import {
+  provinces,
+  provinceDistrictMap,
+  roomTypeOptions,
+  filterFacilities,
+} from "../types/filters";
 import fallbackImageSrc from "../img/no_img.jpg";
 const fallbackImage = fallbackImageSrc;
 
-// 지역(광역) > 시/군/구 계층형 데이터 (Rooms.tsx 참조)
-const provinces = [
-  { value: "서울", label: "서울" },
-  { value: "경기", label: "경기" },
-  { value: "인천", label: "인천" },
-  { value: "대전", label: "대전" },
-  { value: "세종", label: "세종" },
-  { value: "충남", label: "충남" },
-  { value: "충북", label: "충북" },
-  { value: "광주", label: "광주" },
-  { value: "전남", label: "전남" },
-  { value: "전북", label: "전북" },
-  { value: "대구", label: "대구" },
-  { value: "경북", label: "경북" },
-  { value: "부산", label: "부산" },
-  { value: "울산", label: "울산" },
-  { value: "경남", label: "경남" },
-  { value: "강원", label: "강원" },
-  { value: "제주", label: "제주" },
-];
-
-const provinceDistrictMap: Record<string, string[]> = {
-  서울: ["종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구", "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구", "서초구", "강남구", "송파구", "강동구"],
-  경기: ["수원시", "고양시", "용인시", "성남시", "부천시", "안산시", "안양시", "남양주시", "화성시", "평택시", "의정부시", "시흥시", "파주시", "김포시", "광주시", "광명시", "군포시", "하남시", "오산시", "양주시", "이천시", "구리시", "안성시", "포천시", "의왕시", "여주시", "동두천시"],
-  인천: ["중구", "동구", "미추홀구", "연수구", "남동구", "부평구", "계양구", "서구", "강화군", "옹진군"],
-  대전: ["동구", "서구", "유성구", "중구", "대덕구"],
-  세종: ["세종시"],
-  충남: ["천안시", "공주시", "보령시", "아산시", "서산시", "논산시", "계룡시", "당진시", "금산군", "부여군", "서천군", "청양군", "홍성군", "예산군", "태안군"],
-  충북: ["청주시", "충주시", "제천시", "보은군", "옥천군", "영동군", "증평군", "진천군", "괴산군", "음성군", "단양군"],
-  광주: ["동구", "서구", "남구", "북구", "광산구"],
-  전남: ["목포시", "여수시", "순천시", "나주시", "광양시", "담양군", "곡성군", "구례군", "고흥군", "보성군", "화순군", "장흥군", "강진군", "해남군", "영암군", "무안군", "함평군", "영광군", "장성군", "완도군", "진도군", "신안군"],
-  전북: ["전주시", "군산시", "익산시", "정읍시", "남원시", "김제시", "완주군", "진안군", "무주군", "장수군", "임실군", "순창군", "고창군", "부안군"],
-  대구: ["중구", "동구", "서구", "남구", "북구", "수성구", "달서구", "달성군"],
-  경북: ["포항시", "경주시", "김천시", "안동시", "구미시", "영주시", "영천시", "상주시", "문경시", "경산시", "의성군", "청송군", "영양군", "영덕군", "청도군", "고령군", "성주군", "칠곡군", "예천군", "봉화군", "울진군", "울릉군"],
-  부산: ["중구", "서구", "동구", "영도구", "부산진구", "동래구", "남구", "북구", "해운대구", "사하구", "금정구", "연제구", "수영구", "사상구", "기장군"],
-  울산: ["중구", "남구", "동구", "북구", "울주군"],
-  경남: ["창원시", "진주시", "통영시", "사천시", "김해시", "밀양시", "거제시", "양산시", "의령군", "함안군", "창녕군", "고성군", "남해군", "하동군", "산청군", "함양군", "거창군", "합천군"],
-  강원: ["춘천시", "원주시", "강릉시", "동해시", "태백시", "속초시", "삼척시", "홍천군", "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군", "양구군", "인제군", "고성군", "양양군"],
-  제주: ["제주시", "서귀포시"],
-};
-
-declare global {
-  interface Window {
-    kakao: any; // 카카오맵 SDK가 타입스크립트용 타입 정의를 제공하지 않기 때문에 any 사용
-  }
-}
-
-const roomTypeOptions = [
-  { value: "", label: "전체" },
-  { value: "ONE_ROOM", label: "원룸" },
-  { value: "TWO_ROOM", label: "투룸" },
-  { value: "OFFICETEL", label: "오피스텔" },
-  { value: "APARTMENT", label: "아파트" },
-];
-
-const filterFacilities = [
-  "에어컨",
-  "냉장고",
-  "세탁기",
-  "인터넷",
-  "주차장",
-  "헬스장",
-  "반려동물 가능",
-  "발코니",
-];
-
 const RoomMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null); // 지도 인스턴스를 저장할 ref
+  const mapInstanceRef = useRef<kakao.maps.Map | null>(null); // 지도 인스턴스를 저장할 ref
+  const geocoderRef = useRef<kakao.maps.services.Geocoder | null>(null); // 지오코더 인스턴스를 저장할 ref
   const navigate = useNavigate(); // useNavigate 훅 추가
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,11 +63,10 @@ const RoomMap: React.FC = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null); // 선택된 방 ID 상태
   const [hoveredRoomId, setHoveredRoomId] = useState<number | null>(null); // 마우스 오버된 방 ID 상태
-  const highlightOverlayRef = useRef<any>(null); // 강조 효과 오버레이를 관리하기 위한 ref
+  const highlightOverlayRef = useRef<kakao.maps.CustomOverlay | null>(null); // 강조 효과 오버레이를 관리하기 위한 ref
   const districtOptions = useMemo(() => {
     return region ? provinceDistrictMap[region] ?? [] : [];
   }, [region]);
-
 
   const [modalRoom, setModalRoom] = useState<RoomSummary | null>(null);
 
@@ -162,21 +98,22 @@ const RoomMap: React.FC = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            const { latitude, longitude } = position.coords;
-            const userPosition = new window.kakao.maps.LatLng(
-              latitude,
-              longitude
-            );
+          const { latitude, longitude } = position.coords;
+          const userPosition = new window.kakao.maps.LatLng(
+            latitude,
+            longitude
+          );
 
-            const map = new window.kakao.maps.Map(mapContainer, {
+          const map = new window.kakao.maps.Map(mapContainer, {
               center: userPosition,
               level: 4,
             });
             mapInstanceRef.current = map; // 생성된 지도 인스턴스를 ref에 저장
+            geocoderRef.current = new window.kakao.maps.services.Geocoder(); // 지오코더 인스턴스 생성
 
             // 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
             window.kakao.maps.event.addListener(map, "idle", () => {
-              if (mapInstanceRef.current) {
+              if (mapInstanceRef.current) { // mapInstanceRef.current가 null이 아님을 보장
                 const map = mapInstanceRef.current;
                 const center = map.getCenter();
                 const level = map.getLevel();
@@ -200,8 +137,9 @@ const RoomMap: React.FC = () => {
             const map = new window.kakao.maps.Map(mapContainer, {
               center: defaultPosition,
               level: 4,
-            });
+            }); // mapInstanceRef.current가 null이 아님을 보장
             mapInstanceRef.current = map;
+            geocoderRef.current = new window.kakao.maps.services.Geocoder(); // 지오코더 인스턴스 생성
           }
         );
       } else {
@@ -217,10 +155,32 @@ const RoomMap: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
+        // 지도 중심 주소 가져오기 (비동기)
+        const getCenterAddress = (): Promise<string | null> => { // mapInstanceRef.current가 null이 아님을 보장
+          if (!mapInstanceRef.current || !geocoderRef.current) return Promise.resolve(null);
+          return new Promise((resolve) => {
+            const center = mapInstanceRef.current.getCenter();
+            geocoderRef.current!.coord2RegionCode(
+              center.getLng(),
+              center.getLat(),
+              (result, status) => { // result: { region_type: 'H' | 'B'; ... }[]
+                if (status === window.kakao.maps.services.Status.OK) {
+                  // '구' 단위 주소(예: 강남구)를 찾아서 반환
+                  const regionInfo = result.find((r) => r.region_type === 'H');
+                  resolve(regionInfo ? regionInfo.region_2depth_name : null);
+                } else {
+                  resolve(null);
+                }
+              }
+            );
+          });
+        };
+
         // 현재 지도 화면의 사각 경계를 가져옵니다.
+        if (!mapInstanceRef.current) return; // mapInstanceRef.current가 null이 아님을 보장
         const bounds = mapInstanceRef.current.getBounds();
         const sw = bounds.getSouthWest(); // 남서쪽 좌표
-        const center = mapInstanceRef.current.getCenter();
+        const center = mapInstanceRef.current!.getCenter();
         const ne = bounds.getNorthEast(); // 북동쪽 좌표
 
         // Haversine 공식을 사용하여 지도 중심에서 모서리까지의 거리를 계산합니다.
@@ -239,14 +199,11 @@ const RoomMap: React.FC = () => {
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         const radiusKm = R * c; // 계산된 반경 (km)
 
-        const params: Record<string, any> = {
+        const params: Record<string, string | number | string[] | undefined> = {
           swLat: sw.getLat(),
           swLng: sw.getLng(),
           neLat: ne.getLat(),
           neLng: ne.getLng(),
-          lat,
-          lng,
-          radiusKm: Math.min(radiusKm, 50), // 최대 반경 50km 제한은 유지
           minPrice: priceRange[0],
           maxPrice: priceRange[1],
           level, // API에 지도 레벨도 전달
@@ -280,27 +237,62 @@ const RoomMap: React.FC = () => {
           ? data.data
           : data?.result ?? [];
 
-        const rawRoomList: RoomSummary[] = Array.isArray(roomData)
-          ? roomData.map((apiRoom, index) => {
+        const rawRoomList: RoomSummary[] = Array.isArray(roomData) // apiRoom의 타입은 RoomApiResponse
+          ? roomData.map((apiRoom: any, index) => {
               const room = mapRoomFromApi(apiRoom);
-
-              // API 응답에 id가 없거나 mapRoomFromApi 후에도 id가 null인 경우,
-              // 고유한 임시 ID를 부여하여 Map deduplication에서 데이터가 유실되지 않도록 합니다.
-              // 또한, roomId도 함께 설정하여 일관성을 유지합니다.
-              if (room.id == null) {
-                // 위도, 경도, 인덱스를 조합하여 임시 ID 생성
-                const tempId = `temp-${room.latitude ?? 'noLat'}-${room.longitude ?? 'noLng'}-${index}`;
-                room.id = tempId as any; // RoomSummary.id는 number | undefined 이므로 as any 사용
-                room.roomId = tempId as any; // roomId도 함께 설정
+              // mapRoomFromApi에서 roomId가 매핑되지 않는 경우를 대비해 직접 할당합니다.
+              if (room.roomId === undefined && apiRoom.roomId !== undefined) {
+                room.roomId = apiRoom.roomId;
+                room.id = apiRoom.roomId;
+                room.totalMembers = apiRoom.availabilityStatus;
+                room.hostId = apiRoom.hostId;
               }
 
               return room;
             })
           : [];
+          
+          // 주소는 있지만 좌표가 없는 방들을 지오코딩합니다. (latitude 또는 longitude가 없는 경우)
+          const geocodingPromises = rawRoomList
+          .filter((room) => room.address && (!room.latitude || !room.longitude))
+          .map((room) => {
+            return new Promise<RoomSummary>((resolve) => {
+              if (!geocoderRef.current) {
+                resolve(room); // 지오코더가 없으면 원본 방 정보 반환
+                return;
+              }
+              geocoderRef.current!.addressSearch(
+                room.address,
+                (result, status) => { // result: { x: string, y: string }[]
+                  if (status === window.kakao.maps.services.Status.OK) {
+                    // 검색 성공 시, 좌표를 추가하여 반환
+                    resolve({
+                      ...room,
+                      latitude: parseFloat(result[0].y),
+                      longitude: parseFloat(result[0].x),
+                    });
+                  } else {
+                    // 검색 실패 시, 원본 방 정보 반환
+                    resolve(room);
+                  }
+                }
+              );
+            });
+          });
+
+        const geocodedRooms = await Promise.all(geocodingPromises);
+        console.log(
+          "Geocoded Rooms (with new coords):",
+          geocodedRooms.filter((r) => r.latitude && r.longitude)
+        );
 
         // ID를 기준으로 중복된 방을 제거합니다.
         const uniqueRooms = Array.from(
-          new Map(rawRoomList.map((room) => [room.id, room])).values()
+          new Map(
+            [...rawRoomList, ...geocodedRooms]
+              .filter((room) => room.id)
+              .map((room) => [room.id, room])
+          ).values()
         );
 
         setRooms(uniqueRooms);
@@ -366,7 +358,15 @@ const RoomMap: React.FC = () => {
     const clusters: RoomSummary[][] = [];
     const clusteredRoomIds = new Set<number>();
 
-    // 위도, 경도를 이용해 두 지점 간의 거리를 미터(m) 단위로 계산하는 함수
+    // 좌표가 있는 방만 필터링합니다.
+    const roomsWithCoords = rooms.filter(
+      (room) => room.latitude && room.longitude
+    );
+    console.log(
+      "Rooms with valid coordinates for clustering:",
+      roomsWithCoords
+    );
+
     const getDistanceInMeters = (
       lat1: number,
       lon1: number,
@@ -385,7 +385,8 @@ const RoomMap: React.FC = () => {
       return R * c;
     };
 
-    for (const room of rooms) {
+    for (const room of roomsWithCoords) {
+      // 필터링된 방 목록 사용
       if (room.id && !clusteredRoomIds.has(room.id)) {
         const currentCluster: RoomSummary[] = [room];
         clusteredRoomIds.add(room.id);
@@ -419,7 +420,7 @@ const RoomMap: React.FC = () => {
     // 3. 클러스터/단일 오버레이 생성
     return clusters
       .map((cluster) => {
-        const representativeRoom = cluster[0];
+        const representativeRoom = cluster[0]; // 클러스터의 첫 번째 방을 대표로 사용
         if (
           !representativeRoom.latitude ||
           !representativeRoom.longitude ||
@@ -447,36 +448,40 @@ const RoomMap: React.FC = () => {
         const fontWeight = isSelected ? "900" : "bold";
         const content = `<div style="background-color:#fff;color:${color};border:1px solid ${color};border-radius:4px;padding:4px 8px;font-size:12px;font-weight:${fontWeight};white-space:nowrap;cursor:pointer;transition:all 0.2s;">${contentText}</div>`;
 
+        const contentNode = document.createElement("div");
+        contentNode.innerHTML = content;
+        contentNode.onclick = () => handleRoomItemClick(cluster);
+        contentNode.onmouseover = () => setHoveredRoomId(representativeRoom.id);
+        contentNode.onmouseout = () => setHoveredRoomId(null);
+
         const overlay = new window.kakao.maps.CustomOverlay({
           position,
-          content,
+          content: contentNode,
           yAnchor: 1,
         });
         overlay.cluster = cluster;
-        overlay.customOnClick = () => handleRoomItemClick(cluster);
-        overlay.customOnMouseOver = () =>
-          setHoveredRoomId(representativeRoom.id);
-        overlay.customOnMouseOut = () => setHoveredRoomId(null);
+        console.log(
+          "Created CustomOverlay for room/cluster:",
+          representativeRoom.id,
+          representativeRoom.title
+        );
         return overlay;
       })
-      .filter((overlay): overlay is any => overlay !== null);
-  }, [rooms, selectedRoomId, handleRoomItemClick]);
+      .filter((overlay): overlay is kakao.maps.CustomOverlay & { cluster: RoomSummary[] } => overlay !== null);
+  }, [rooms, selectedRoomId, hoveredRoomId, handleRoomItemClick]);
 
   // 생성된 오버레이들을 지도에 업데이트하는 useEffect
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
-    if (!map.customOverlays) map.customOverlays = [];
-    map.customOverlays.forEach((overlay: any) => overlay.setMap(null));
-    map.customOverlays = [];
+    // if (!map.customOverlays) map.customOverlays = []; // map.customOverlays가 undefined일 경우 초기화
+    // map.customOverlays.forEach((overlay) => overlay.setMap(null));
+    // map.customOverlays = [];
 
-    markers.forEach((overlay: any) => {
+    markers.forEach((overlay) => {
       overlay.setMap(map);
-      overlay.a.addEventListener("click", overlay.customOnClick);
-      overlay.a.addEventListener("mouseover", overlay.customOnMouseOver);
-      overlay.a.addEventListener("mouseout", overlay.customOnMouseOut);
-      map.customOverlays.push(overlay);
+      // map.customOverlays.push(overlay);
     });
   }, [markers]);
 
@@ -580,9 +585,9 @@ const RoomMap: React.FC = () => {
   const handleSearch = () => {
     if (!searchQuery || !window.kakao) return;
 
-    new window.kakao.maps.services.Places().keywordSearch(
+    new window.kakao.maps.services.Places().keywordSearch( // eslint-disable-line
       searchQuery,
-      (data: any, status: any) => {
+      (data, status) => { // data: { x: string, y: string }[]
         if (status === window.kakao.maps.services.Status.OK) {
           const map = mapInstanceRef.current;
           const newPos = new window.kakao.maps.LatLng(data[0].y, data[0].x);
@@ -641,9 +646,6 @@ const RoomMap: React.FC = () => {
 
     const imageUrl = resolveRoomImageUrl(room.images?.[0]?.imageUrl);
 
-    console.log("MODAL ROOM IMAGES:", room.images);
-    console.log("MODAL ROOM RAW IMAGE URL:", room.images?.[0]?.imageUrl);
-    console.log("RESOLVED:", resolveRoomImageUrl(room.images?.[0]?.imageUrl));
     return (
       <Modal
         open={!!room}
@@ -724,8 +726,8 @@ const RoomMap: React.FC = () => {
   const displayedRooms = useMemo(() => {
     if (selectedRoomId) {
       // markers 배열에서 해당 클러스터를 찾습니다.
-      const selectedMarker = markers.find((marker) =>
-        marker.cluster.some((room: RoomSummary) => room.id === selectedRoomId)
+      const selectedMarker = markers.find((marker: kakao.maps.CustomOverlay & { cluster: RoomSummary[] }) =>
+        marker.cluster.some((room) => room.id === selectedRoomId)
       );
 
       if (selectedMarker) {
@@ -830,7 +832,7 @@ const RoomMap: React.FC = () => {
               ) : (
                 displayedRooms.map((room) => [
                   <ListItem
-                    key={room.id}
+                    key={room.roomId ?? room.id}
                     id={`room-item-${room.id}`}
                     disablePadding
                     onMouseEnter={() => setHoveredRoomId(room.id)}
@@ -975,7 +977,11 @@ const RoomMap: React.FC = () => {
                   <MenuItem value="">
                     <em>구/읍/면 전체</em>
                   </MenuItem>
-                  {districtOptions.map((option) => (<MenuItem key={option} value={option}>{option}</MenuItem>))}
+                  {districtOptions.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
                 </Select>
               </Stack>
               <Stack spacing={1}>

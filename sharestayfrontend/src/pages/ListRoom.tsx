@@ -31,6 +31,7 @@ import type {
 } from "../types/room";
 import SectionPaper from "../components/SectionPaper";
 
+
 // ------------------------------
 // Zod Schema
 // ------------------------------
@@ -226,16 +227,46 @@ export default function ListRoom() {
       alert("이 기능은 호스트 전용입니다. 호스트 전환을 완료해 주세요.");
       return;
     }
+
+    // 주소를 좌표로 변환하는 함수
+    const getCoordsFromAddress = (address: string): Promise<{ lat: number; lng: number } | null> => {
+      return new Promise((resolve) => {
+        if (!window.kakao || !window.kakao.maps) {
+          resolve(null);
+          return;
+        }
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.addressSearch(address, (result: any, status: any) => {
+          if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+            resolve({
+              lat: parseFloat(result[0].y),
+              lng: parseFloat(result[0].x),
+            });
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    };
+
     try {
       const rentPrice = Number(values.rentPrice);
-      const latitudeValue =
+      let latitudeValue =
         values.latitude && values.latitude.trim().length > 0
           ? Number(values.latitude)
           : undefined;
-      const longitudeValue =
+      let longitudeValue =
         values.longitude && values.longitude.trim().length > 0
           ? Number(values.longitude)
           : undefined;
+
+      if ((latitudeValue === undefined || longitudeValue === undefined) && values.address) {
+        const coords = await getCoordsFromAddress(values.address);
+        if (coords) {
+          latitudeValue = coords.lat;
+          longitudeValue = coords.lng;
+        }
+      }
 
       if (Number.isNaN(rentPrice)) {
         throw new Error("월세 값이 올바르지 않습니다.");

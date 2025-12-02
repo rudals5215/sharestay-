@@ -742,9 +742,6 @@ export default function Rooms() {
                   {priceLabel}
                 </Typography>
                 </Stack>
-
-                <RouterLink to="/RoomMap">지도로 찾기</RouterLink>
-
                                 <Stack spacing={1}>
                   <Typography variant="subtitle2" color="text.secondary">
                     부가옵션
