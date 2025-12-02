@@ -65,15 +65,13 @@ public class Room {
     @Column(length = 500)
     private String lifestyle;
 
-    // 필터 검색 안 돼서 추가함
+    // 필터 검색 안 돼서 추가함 (한 꺼번에 저장하고 프론트에 , 기준으로 땜)
     @Column(length = 500)
     private String options;  // 예: "에어컨, 냉장고, 세탁기"
     /*
         Application 에서 room.setOption으로 넣으면 프론트에서 이미 쓰고 있는 extractTags 함수가
         "에어컨, 냉장고, 세탁기"를 잘라서 [ "에어컨", "냉장고", "세탁기" ]로 만들어줌.
      */
-
-    // 나중에 생활패턴도 추가하고 필터에 넣어 놔야 할 것 같음
 
 
 

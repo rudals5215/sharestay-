@@ -225,6 +225,23 @@ export default function Rooms() {
 
   const pageSize = 6;
   const totalPages = Math.max(1, Math.ceil(rooms.length / pageSize));
+  const pageWindowSize = 10;
+  const pageWindowStart = useMemo(
+    () => Math.floor((currentPage - 1) / pageWindowSize) * pageWindowSize + 1,
+    [currentPage]
+  );
+  const pageWindowEnd = useMemo(
+    () => Math.min(totalPages, pageWindowStart + pageWindowSize - 1),
+    [pageWindowStart, totalPages]
+  );
+  const pageNumbers = useMemo(
+    () =>
+      Array.from(
+        { length: pageWindowEnd - pageWindowStart + 1 },
+        (_, index) => pageWindowStart + index
+      ),
+    [pageWindowEnd, pageWindowStart]
+  );
   const paginatedRooms = useMemo(
     () =>
       rooms.slice(
@@ -976,7 +993,15 @@ export default function Rooms() {
                 )}
 
                 <Stack direction="row" justifyContent="center" spacing={1}>
-                  {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+                  <Button
+                    variant="outlined"
+                    onClick={() => setCurrentPage(Math.max(1, pageWindowStart - 1))}
+                    sx={{ borderRadius: 999, minWidth: 44 }}
+                    disabled={pageWindowStart === 1}
+                  >
+                    ‹
+                  </Button>
+                  {pageNumbers.map((page) => (
                     <Button
                       key={page}
                       variant={page === currentPage ? "contained" : "outlined"}
@@ -987,6 +1012,14 @@ export default function Rooms() {
                       {page}
                     </Button>
                   ))}
+                  <Button
+                    variant="outlined"
+                    onClick={() => setCurrentPage(Math.min(totalPages, pageWindowEnd + 1))}
+                    sx={{ borderRadius: 999, minWidth: 44 }}
+                    disabled={pageWindowEnd === totalPages}
+                  >
+                    ›
+                  </Button>
                 </Stack>
               </Stack>
             </Grid>

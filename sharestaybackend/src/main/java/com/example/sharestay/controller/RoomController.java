@@ -64,6 +64,13 @@ public class RoomController {
         return ResponseEntity.ok(rooms);
     }
 
+
+    @Operation(summary = "방 상세 조회", description = "특정 방의 상세 정보를 조회합니다.")
+    @GetMapping("/{roomId}")
+    public ResponseEntity<RoomDetailResponse> getRoomDetail(@PathVariable Long roomId) {
+        return ResponseEntity.ok(roomService.getRoomDetail(roomId));
+    }
+
     @Operation(summary = "내 방 관리", description = "특정 호스트가 등록한 방 목록을 조회합니다.")
     @GetMapping("/host/{hostId}")
     public ResponseEntity<List<RoomResponse>> getRoomsByHost(@PathVariable Long hostId) {
@@ -71,11 +78,6 @@ public class RoomController {
         return ResponseEntity.ok(rooms);
     }
 
-    @Operation(summary = "방 상세 조회", description = "특정 방의 상세 정보를 조회합니다.")
-    @GetMapping("/{roomId}")
-    public ResponseEntity<RoomDetailResponse> getRoomDetail(@PathVariable Long roomId) {
-        return ResponseEntity.ok(roomService.getRoomDetail(roomId));
-    }
 
     @Operation(summary = "방 정보 수정", description = "방 기본 정보를 수정합니다.")
     @PutMapping("/{roomId}")

@@ -349,42 +349,42 @@ public class SharestayApplication implements CommandLineRunner {
 
         String[] TYPES = {"ONE_ROOM", "TWO_ROOM", "OFFICETEL", "APARTMENT"};
 
-        for (int i = 1; i <= 200; i++) {
-            // 🔥 랜덤 구 선택
-            List<String> keys = new ArrayList<>(REGION_DATA.keySet());
-            String gu = keys.get((int) (Math.random() * keys.size()));
-
-            Object[] regionInfo = REGION_DATA.get(gu);
-
-            String[] dongs = (String[]) regionInfo[0];
-            double minLat = (double) regionInfo[1];
-            double maxLat = (double) regionInfo[2];
-            double minLng = (double) regionInfo[3];
-            double maxLng = (double) regionInfo[4];
-
-            String dong = dongs[(int) (Math.random() * dongs.length)];
-
-            double lat = minLat + Math.random() * (maxLat - minLat);
-            double lng = minLng + Math.random() * (maxLng - minLng);
-
-            String type = TYPES[(int) (Math.random() * TYPES.length)];
-
-            Room room19 = new Room(
-                    host1,
-                    gu + " " + dong + " 랜덤 방 " + i,
-                    300000 + (int)(Math.random() * 271) * 10000,
-                    "부산광역시 " + gu + " " + dong + " " + i + "-1",
-                    type,
-                    lat,
-                    lng,
-                    1 + (int)(Math.random() * 3),
-                    "부산 전역 랜덤 더미 데이터입니다."
-            );
-
-            roomList.add(room19);
-        }
-
-        roomRepository.saveAll(roomList);
+//        for (int i = 1; i <= 200; i++) {
+//            // 🔥 랜덤 구 선택
+//            List<String> keys = new ArrayList<>(REGION_DATA.keySet());
+//            String gu = keys.get((int) (Math.random() * keys.size()));
+//
+//            Object[] regionInfo = REGION_DATA.get(gu);
+//
+//            String[] dongs = (String[]) regionInfo[0];
+//            double minLat = (double) regionInfo[1];
+//            double maxLat = (double) regionInfo[2];
+//            double minLng = (double) regionInfo[3];
+//            double maxLng = (double) regionInfo[4];
+//
+//            String dong = dongs[(int) (Math.random() * dongs.length)];
+//
+//            double lat = minLat + Math.random() * (maxLat - minLat);
+//            double lng = minLng + Math.random() * (maxLng - minLng);
+//
+//            String type = TYPES[(int) (Math.random() * TYPES.length)];
+//
+//            Room room19 = new Room(
+//                    host1,
+//                    gu + " " + dong + " 랜덤 방 " + i,
+//                    300000 + (int)(Math.random() * 271) * 10000,
+//                    "부산광역시 " + gu + " " + dong + " " + i + "-1",
+//                    type,
+//                    lat,
+//                    lng,
+//                    1 + (int)(Math.random() * 3),
+//                    "부산 전역 랜덤 더미 데이터입니다."
+//            );
+//
+//            roomList.add(room19);
+//        }
+//
+//        roomRepository.saveAll(roomList);
 
 
 

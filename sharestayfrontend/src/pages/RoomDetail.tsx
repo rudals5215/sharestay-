@@ -55,6 +55,17 @@ const facilityOptionSet = new Set([
   "반려동물 가능",
 ]);
 
+export const ROOM_TYPES = [
+  { value: "ONE_ROOM", label: "원룸" },
+  { value: "TWO_ROOM", label: "투룸" },
+  { value: "OFFICETEL", label: "오피스텔" },
+  { value: "Apart", label: "아파트" }
+] as const;
+
+export const getRoomTypeLabel = (value: string) =>
+  ROOM_TYPES.find((t) => t.value === value)?.label ?? value;
+
+
 const parseDescriptionAndOptions = (
   description: string | null | undefined
 ): {
@@ -111,6 +122,55 @@ const formatCurrency = (amount?: number) => {
   return `${amount.toLocaleString()}원/월`;
 };
 
+const toArray = (value?: string[] | string | null) => {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.filter((item) => typeof item === "string" && item.trim().length > 0);
+  }
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+};
+
+const genderLabel = (value?: string | null) => {
+  switch (value) {
+    case "male":
+      return "남성 선호";
+    case "female":
+      return "여성 선호";
+    case "any":
+      return "성별 무관";
+    case "":
+    case null:
+    case undefined:
+      return "제한 없음";
+    default:
+      return value;
+  }
+};
+
+const ageLabel = (value?: string | null) => {
+  switch (value) {
+    case "10s":
+      return "10대";
+    case "20s":
+      return "20대";
+    case "30s":
+      return "30대";
+    case "40s":
+      return "40대";
+    case "50s":
+      return "50대 이상";
+    case "":
+    case null:
+    case undefined:
+      return "제한 없음";
+    default:
+      return value;
+  }
+};
+
 export default function RoomDetail() {
   const { roomId } = useParams<{ roomId: string }>();
 
@@ -135,6 +195,23 @@ export default function RoomDetail() {
     () => parseDescriptionAndOptions(room?.description),
     [room?.description]
   );
+
+  const explicitLifestyle = useMemo(() => toArray(room?.lifestyle), [room?.lifestyle]);
+  const explicitOptions = useMemo(() => toArray(room?.options), [room?.options]);
+
+  const displayLifestyle = explicitLifestyle.length ? explicitLifestyle : parsedLifestyle;
+
+  const displayFacilities = useMemo(() => {
+    if (explicitOptions.length === 0) return parsedFacilities;
+    return explicitOptions.filter((opt) => facilityOptionSet.has(opt));
+  }, [explicitOptions, parsedFacilities]);
+
+  const displayOtherOptions = useMemo(() => {
+    if (explicitOptions.length === 0) return parsedOthers;
+    return explicitOptions.filter(
+      (opt) => !facilityOptionSet.has(opt) && !lifestyleOptionSet.has(opt)
+    );
+  }, [explicitOptions, parsedOthers]);
 
   useEffect(() => {
     if (!roomId) {
@@ -194,6 +271,8 @@ export default function RoomDetail() {
 
     fetchRoom();
   }, [roomId]);
+
+  
 
   // ✅ 수정본
 const handleShareLink = async () => {
@@ -315,13 +394,7 @@ const handleShareLink = async () => {
                   {room.title}
                 </Typography>
                 <Chip
-                  label={
-                    room.type === "ONE_ROOM"
-                      ? "원룸"
-                      : room.type === "TWO_ROOM"
-                      ? "투룸"
-                      : room.type
-                  }
+                  label={getRoomTypeLabel(room.type)}
                   color="primary"
                   sx={{ borderRadius: 999 }}
                 />
@@ -330,6 +403,35 @@ const handleShareLink = async () => {
               <Typography variant="h5" color="primary" fontWeight={700}>
                 {formatCurrency(room.rentPrice)}
               </Typography>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  룸메이트 조건
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {room.preferredGender !== undefined && room.preferredGender !== null && (
+                    <Chip
+                      label={`선호 성별: ${genderLabel(room.preferredGender)}`}
+                      color="secondary"
+                      sx={{ borderRadius: 1.5 }}
+                    />
+                  )}
+                  {room.preferredAge !== undefined && room.preferredAge !== null && (
+                    <Chip
+                      label={`선호 연령대: ${ageLabel(room.preferredAge)}`}
+                      color="secondary"
+                      sx={{ borderRadius: 1.5 }}
+                    />
+                  )}
+                  {room.totalMembers !== undefined && room.totalMembers !== null && (
+                    <Chip
+                      label={`총 인원수: ${room.totalMembers}명`}
+                      color="secondary"
+                      sx={{ borderRadius: 1.5 }}
+                    />
+                  )}
+                </Stack>
+              </Stack>
 
               <Stack spacing={1}>
                 <Typography variant="subtitle2" color="text.secondary">
@@ -352,19 +454,19 @@ const handleShareLink = async () => {
               <Stack spacing={2}>
                 <PreferenceBox
                   title="생활 패턴"
-                  items={parsedLifestyle}
+                  items={displayLifestyle}
                   chipColor="primary"
                   gradient="linear-gradient(135deg, rgba(12,81,255,0.08), rgba(12,81,255,0.02))"
                 />
                 <PreferenceBox
                   title="부가 옵션"
-                  items={parsedFacilities}
+                  items={displayFacilities}
                   chipColor="info"
                   gradient="linear-gradient(135deg, rgba(0,184,217,0.12), rgba(0,184,217,0.04))"
                 />
                 <PreferenceBox
                   title="기타 옵션"
-                  items={parsedOthers}
+                  items={displayOtherOptions}
                   chipColor="default"
                   gradient="linear-gradient(135deg, rgba(0,0,0,0.04), rgba(0,0,0,0.01))"
                 />

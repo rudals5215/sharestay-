@@ -29,77 +29,8 @@ public class RoomService {
     private final FirebaseService firebaseService;
     private final FavoriteRepository favoriteRepository;
 
-    @Transactional
-    public RoomResponse createRoom(RoomRequest request, List<MultipartFile> files) {
-        Host host = hostRepository.findById(request.getHostId())
-                .orElseThrow(() -> new IllegalArgumentException("Host not found"));
 
-        Room room = request.toEntity(host);
-
-        ShareLink shareLink = new ShareLink();
-        room.setShareLink(shareLink);
-
-        roomRepository.save(room);
-
-        if (files != null && !files.isEmpty()) {
-            for (MultipartFile file : files) {
-                String imageUrl = firebaseService.uploadFile(file);
-                RoomImage image = new RoomImage(room, imageUrl);
-                room.getRoomImages().add(image);
-            }
-        }
-
-        Room savedRoom = roomRepository.save(room);
-        return toResponse(savedRoom);
-    }
-
-    @Transactional(readOnly = true)
-    public List<RoomResponse> searchRooms(
-            String region, String district, String type,
-            Double minPrice, Double maxPrice,
-            String option
-    ) {
-        List<Room> rooms = roomRepository.searchRooms(district, region, type, minPrice, maxPrice, option);
-
-        return rooms.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public RoomResponse updateRoom(Long roomId, RoomRequest request) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
-
-        room.update(request);
-        Room updated = roomRepository.save(room);
-        return toResponse(updated);
-    }
-
-    @Transactional
-    public void deleteRoom(Long roomId) {
-        favoriteRepository.deleteAllByRoomId(roomId);
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
-        roomRepository.delete(room);
-    }
-
-    @Transactional(readOnly = true)
-    public List<RoomResponse> getRoomList() {
-        return roomRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<RoomResponse> getRoomListByHost(Long hostId) {
-        List<Room> rooms = roomRepository.findByHostId(hostId);
-        return rooms.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
-    }
-
+    // 상세보기
     @Transactional(readOnly = true)
     public RoomDetailResponse getRoomDetail(Long roomId) {
         Room room = roomRepository.findById(roomId)
@@ -136,6 +67,84 @@ public class RoomService {
                 hostUserId
         );
     }
+
+
+    // 방 등록
+    @Transactional
+    public RoomResponse createRoom(RoomRequest request, List<MultipartFile> files) {
+        Host host = hostRepository.findById(request.getHostId())
+                .orElseThrow(() -> new IllegalArgumentException("Host not found"));
+
+        Room room = request.toEntity(host);
+
+        ShareLink shareLink = new ShareLink();
+        room.setShareLink(shareLink);
+
+        roomRepository.save(room);
+
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                String imageUrl = firebaseService.uploadFile(file);
+                RoomImage image = new RoomImage(room, imageUrl);
+                room.getRoomImages().add(image);
+            }
+        }
+
+        Room savedRoom = roomRepository.save(room);
+        return toResponse(savedRoom);
+    }
+
+    // 검색(간단 검색 / 필터 검색 통합)
+    @Transactional(readOnly = true)
+    public List<RoomResponse> searchRooms(
+            String region, String district, String type,
+            Double minPrice, Double maxPrice,
+            String option
+    ) {
+        List<Room> rooms = roomRepository.searchRooms(district, region, type, minPrice, maxPrice, option);
+
+        return rooms.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+
+    @Transactional
+    public RoomResponse updateRoom(Long roomId, RoomRequest request) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+
+        room.update(request);
+        Room updated = roomRepository.save(room);
+        return toResponse(updated);
+    }
+
+    @Transactional
+    public void deleteRoom(Long roomId) {
+        favoriteRepository.deleteByRoomId(roomId);
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+        roomRepository.delete(room);
+    }
+
+    // 그냥 전체 목록만 불러오기
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getRoomList() {
+        return roomRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getRoomListByHost(Long hostId) {
+        List<Room> rooms = roomRepository.findByHostId(hostId);
+        return rooms.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+
 
     /**
      * 마이그레이션 용도: 기존 방들 중 공유 링크가 없는 경우 기본 ShareLink를 채워 넣습니다.
