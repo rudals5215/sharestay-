@@ -40,10 +40,10 @@ public class Room {
     private String type;  // 원룸인지 투룸인지
 
     @Column
-    private double latitude;  // 위도
+    private Double latitude;  // 위도
 
     @Column
-    private double longitude;     // 경도
+    private Double longitude;     // 경도
 
     @Column(nullable = false)
     private int availabilityStatus;   // 수용 인원

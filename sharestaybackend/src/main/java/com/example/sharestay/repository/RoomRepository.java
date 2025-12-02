@@ -45,9 +45,9 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             "cos(radians(r.longitude) - radians(:userLng)) + sin(radians(:userLat)) * " +
             "sin(radians(r.latitude)))) <= :radiusKm", nativeQuery = true)
     List<Room> findRoomsNearLocation(
-            @Param("userLat") double userLat,
-            @Param("userLng") double userLng,
-            @Param("radiusKm") double radiusKm
+            @Param("userLat") Double userLat,
+            @Param("userLng") Double userLng,
+            @Param("radiusKm") Double radiusKm
     );
 
     // 지도 경계 기반 방 검색 (가격 필터 포함)
@@ -55,10 +55,10 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
             "AND r.longitude BETWEEN :swLng AND :neLng " +
             "AND r.rentPrice BETWEEN :minPrice AND :maxPrice")
     List<Room> findRoomsInBoundary(
-            @Param("swLat") double swLat,
-            @Param("swLng") double swLng,
-            @Param("neLat") double neLat,
-            @Param("neLng") double neLng,
+            @Param("swLat") Double swLat,
+            @Param("swLng") Double swLng,
+            @Param("neLat") Double neLat,
+            @Param("neLng") Double neLng,
             @Param("minPrice") double minPrice,
             @Param("maxPrice") double maxPrice
     );

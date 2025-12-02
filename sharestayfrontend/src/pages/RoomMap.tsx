@@ -33,27 +33,93 @@ import CloseIcon from "@mui/icons-material/Close";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { api, getAccessToken } from "../lib/api";
 import type { RoomSummary } from "../types/room";
-import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
+import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room"; // RoomApiResponse 추가
 import {
   provinces,
   provinceDistrictMap,
   roomTypeOptions,
   filterFacilities,
 } from "../types/filters";
-
 import fallbackImageSrc from "../img/no_img.jpg";
 const fallbackImage = fallbackImageSrc;
 
+// --- Kakao Maps SDK 타입 정의 ---
+
+interface KakaoLatLng {
+  getLat(): number;
+  getLng(): number;
+}
+
+interface KakaoMap {
+  getCenter(): KakaoLatLng;
+  getLevel(): number;
+  getBounds(): {
+    getSouthWest(): KakaoLatLng;
+    getNorthEast(): KakaoLatLng;
+  };
+  panTo(latlng: KakaoLatLng): void;
+  relayout(): void;
+  setCenter(latlng: KakaoLatLng): void;
+  customOverlays?: KakaoCustomOverlay[]; // 사용자 정의 속성
+}
+
+interface KakaoCustomOverlay {
+  setMap(map: KakaoMap | null): void;
+  getElement(): HTMLElement | undefined; // CustomOverlay의 getElement() 메서드 추가
+  // 사용자 정의 속성
+  cluster: RoomSummary[];
+}
+
+type KakaoGeocoderStatus = "OK" | "ZERO_RESULT" | "ERROR";
+
+interface KakaoGeocoder {
+  addressSearch(
+    address: string,
+    callback: (result: { x: string; y: string }[], status: KakaoGeocoderStatus) => void
+  ): void;
+  coord2RegionCode(
+    lng: number,
+    lat: number,
+    callback: (result: { region_type: 'H' | 'B'; region_2depth_name: string }[], status: KakaoGeocoderStatus) => void
+  ): void;
+}
+
+interface KakaoPlaces {
+  keywordSearch(
+    keyword: string,
+    callback: (data: { x: string; y: string }[], status: KakaoGeocoderStatus) => void
+  ): void;
+}
+
 declare global {
   interface Window {
-    kakao: any; // 카카오맵 SDK가 타입스크립트용 타입 정의를 제공하지 않기 때문에 any 사용
+    kakao: {
+      maps: {
+        load(callback: () => void): void;
+        LatLng: new (lat: number, lng: number) => KakaoLatLng;
+        Map: new (container: HTMLElement, options: object) => KakaoMap;
+        event: {
+          addListener(target: KakaoMap, type: string, handler: () => void): void;
+        };
+        services: {
+          Geocoder: new () => KakaoGeocoder;
+          Places: new () => KakaoPlaces;
+          Status: {
+            OK: "OK";
+            ZERO_RESULT: "ZERO_RESULT";
+            ERROR: "ERROR";
+          };
+        };
+        CustomOverlay: new (options: object) => KakaoCustomOverlay;
+      };
+    };
   }
 }
 
 const RoomMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null); // 지도 인스턴스를 저장할 ref
-  const geocoderRef = useRef<any>(null); // 지오코더 인스턴스를 저장할 ref
+  const mapInstanceRef = useRef<KakaoMap | null>(null); // 지도 인스턴스를 저장할 ref
+  const geocoderRef = useRef<KakaoGeocoder | null>(null); // 지오코더 인스턴스를 저장할 ref
   const navigate = useNavigate(); // useNavigate 훅 추가
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +136,7 @@ const RoomMap: React.FC = () => {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedRoomId, setSelectedRoomId] = useState<number | null>(null); // 선택된 방 ID 상태
   const [hoveredRoomId, setHoveredRoomId] = useState<number | null>(null); // 마우스 오버된 방 ID 상태
-  const highlightOverlayRef = useRef<any>(null); // 강조 효과 오버레이를 관리하기 위한 ref
+  const highlightOverlayRef = useRef<KakaoCustomOverlay | null>(null); // 강조 효과 오버레이를 관리하기 위한 ref
   const districtOptions = useMemo(() => {
     return region ? provinceDistrictMap[region] ?? [] : [];
   }, [region]);
@@ -105,13 +171,13 @@ const RoomMap: React.FC = () => {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            const { latitude, longitude } = position.coords;
-            const userPosition = new window.kakao.maps.LatLng(
-              latitude,
-              longitude
-            );
+          const { latitude, longitude } = position.coords;
+          const userPosition = new window.kakao.maps.LatLng(
+            latitude,
+            longitude
+          );
 
-            const map = new window.kakao.maps.Map(mapContainer, {
+          const map = new window.kakao.maps.Map(mapContainer, {
               center: userPosition,
               level: 4,
             });
@@ -120,7 +186,7 @@ const RoomMap: React.FC = () => {
 
             // 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
             window.kakao.maps.event.addListener(map, "idle", () => {
-              if (mapInstanceRef.current) {
+              if (mapInstanceRef.current) { // mapInstanceRef.current가 null이 아님을 보장
                 const map = mapInstanceRef.current;
                 const center = map.getCenter();
                 const level = map.getLevel();
@@ -144,7 +210,7 @@ const RoomMap: React.FC = () => {
             const map = new window.kakao.maps.Map(mapContainer, {
               center: defaultPosition,
               level: 4,
-            });
+            }); // mapInstanceRef.current가 null이 아님을 보장
             mapInstanceRef.current = map;
             geocoderRef.current = new window.kakao.maps.services.Geocoder(); // 지오코더 인스턴스 생성
           }
@@ -162,10 +228,32 @@ const RoomMap: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
+        // 지도 중심 주소 가져오기 (비동기)
+        const getCenterAddress = (): Promise<string | null> => { // mapInstanceRef.current가 null이 아님을 보장
+          if (!mapInstanceRef.current || !geocoderRef.current) return Promise.resolve(null);
+          return new Promise((resolve) => {
+            const center = mapInstanceRef.current.getCenter();
+            geocoderRef.current!.coord2RegionCode(
+              center.getLng(),
+              center.getLat(),
+              (result, status) => {
+                if (status === "OK") {
+                  // '구' 단위 주소(예: 강남구)를 찾아서 반환
+                  const regionInfo = result.find((r: any) => r.region_type === 'H');
+                  resolve(regionInfo ? regionInfo.region_2depth_name : null);
+                } else {
+                  resolve(null);
+                }
+              }
+            );
+          });
+        };
+
         // 현재 지도 화면의 사각 경계를 가져옵니다.
+        if (!mapInstanceRef.current) return; // mapInstanceRef.current가 null이 아님을 보장
         const bounds = mapInstanceRef.current.getBounds();
         const sw = bounds.getSouthWest(); // 남서쪽 좌표
-        const center = mapInstanceRef.current.getCenter();
+        const center = mapInstanceRef.current!.getCenter();
         const ne = bounds.getNorthEast(); // 북동쪽 좌표
 
         // Haversine 공식을 사용하여 지도 중심에서 모서리까지의 거리를 계산합니다.
@@ -184,16 +272,16 @@ const RoomMap: React.FC = () => {
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         const radiusKm = R * c; // 계산된 반경 (km)
 
-        const params: Record<string, any> = {
+        const centerAddress = await getCenterAddress();
+
+        const params: Record<string, string | number | string[] | undefined> = {
           swLat: sw.getLat(),
           swLng: sw.getLng(),
           neLat: ne.getLat(),
           neLng: ne.getLng(),
-          lat,
-          lng,
-          radiusKm: Math.min(radiusKm, 50), // 최대 반경 50km 제한은 유지
           minPrice: priceRange[0],
           maxPrice: priceRange[1],
+          centerAddress: centerAddress,
           level, // API에 지도 레벨도 전달
         };
         if (roomType) {
@@ -225,7 +313,7 @@ const RoomMap: React.FC = () => {
           ? data.data
           : data?.result ?? [];
 
-        const rawRoomList: RoomSummary[] = Array.isArray(roomData)
+        const rawRoomList: RoomSummary[] = Array.isArray(roomData) // apiRoom의 타입은 RoomApiResponse
           ? roomData.map((apiRoom, index) => {
               const room = mapRoomFromApi(apiRoom);
               // mapRoomFromApi에서 roomId가 매핑되지 않는 경우를 대비해 직접 할당합니다.
@@ -239,9 +327,9 @@ const RoomMap: React.FC = () => {
               return room;
             })
           : [];
-
-        // 주소는 있지만 좌표가 없는 방들을 지오코딩합니다. (latitude 또는 longitude가 없는 경우)
-        const geocodingPromises = rawRoomList
+          
+          // 주소는 있지만 좌표가 없는 방들을 지오코딩합니다. (latitude 또는 longitude가 없는 경우)
+          const geocodingPromises = rawRoomList
           .filter((room) => room.address && (!room.latitude || !room.longitude))
           .map((room) => {
             return new Promise<RoomSummary>((resolve) => {
@@ -249,10 +337,10 @@ const RoomMap: React.FC = () => {
                 resolve(room); // 지오코더가 없으면 원본 방 정보 반환
                 return;
               }
-              geocoderRef.current.addressSearch(
+              geocoderRef.current!.addressSearch(
                 room.address,
-                (result: any, status: any) => {
-                  if (status === window.kakao.maps.services.Status.OK) {
+                (result, status) => {
+                  if (status === "OK") {
                     // 검색 성공 시, 좌표를 추가하여 반환
                     resolve({
                       ...room,
@@ -455,7 +543,7 @@ const RoomMap: React.FC = () => {
         );
         return overlay;
       })
-      .filter((overlay): overlay is any => overlay !== null);
+      .filter((overlay): overlay is KakaoCustomOverlay => overlay !== null);
   }, [rooms, selectedRoomId, hoveredRoomId, handleRoomItemClick]);
 
   // 생성된 오버레이들을 지도에 업데이트하는 useEffect
@@ -463,8 +551,8 @@ const RoomMap: React.FC = () => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
-    if (!map.customOverlays) map.customOverlays = [];
-    map.customOverlays.forEach((overlay: any) => overlay.setMap(null));
+    if (!map.customOverlays) map.customOverlays = []; // map.customOverlays가 undefined일 경우 초기화
+    map.customOverlays.forEach((overlay) => overlay.setMap(null));
     map.customOverlays = [];
 
     markers.forEach((overlay) => {
@@ -573,10 +661,10 @@ const RoomMap: React.FC = () => {
   const handleSearch = () => {
     if (!searchQuery || !window.kakao) return;
 
-    new window.kakao.maps.services.Places().keywordSearch(
+    new window.kakao.maps.services.Places().keywordSearch( // eslint-disable-line
       searchQuery,
-      (data: any, status: any) => {
-        if (status === window.kakao.maps.services.Status.OK) {
+      (data, status) => {
+        if (status === "OK") {
           const map = mapInstanceRef.current;
           const newPos = new window.kakao.maps.LatLng(data[0].y, data[0].x);
           setSelectedRoomId(null); // 새로운 지역 검색 시 선택 해제
@@ -719,7 +807,7 @@ const RoomMap: React.FC = () => {
     if (selectedRoomId) {
       // markers 배열에서 해당 클러스터를 찾습니다.
       const selectedMarker = markers.find((marker) =>
-        marker.cluster.some((room: RoomSummary) => room.id === selectedRoomId)
+        marker.cluster.some((room: RoomSummary) => room.id === selectedRoomId) // marker의 타입은 KakaoCustomOverlay
       );
 
       if (selectedMarker) {

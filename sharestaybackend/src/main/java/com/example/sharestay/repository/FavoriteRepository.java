@@ -19,6 +19,7 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
     // 방 삭제 시 사용 - roomId 전체 삭제
     void deleteAllByRoomId(Long roomId);
+
 }
 
 
