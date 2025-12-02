@@ -25,7 +25,7 @@ export type RoomAvailabilityStatus = "AVAILABLE" | "UNAVAILABLE" | "PENDING";
 
 export interface RoomSummary {
   roomId?: number;
-  id?: number;
+  id?: number | null;
   hostId?: number | null;
   hostUserId?: number | null;
   preferredGender?: string | null;
@@ -58,14 +58,15 @@ export interface RoomRequestPayload {
   type: string;
   availabilityStatus: number;
   description: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   preferredGender?: string | null;
   preferredAge?: string | null;
   totalMembers?: number | null;
   options?: string[];
   lifestyle?: string[];
 }
+
 
 export interface RoomApiResponse {
   id: number;

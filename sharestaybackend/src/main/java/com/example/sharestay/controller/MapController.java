@@ -21,10 +21,10 @@ public class MapController {
     @GetMapping("/rooms/near")
     public ResponseEntity<List<MapDto>> findRoomsNearby(
             // 프론트엔드에서 보내는 사각 경계 및 필터 파라미터
-            @RequestParam("swLat") double swLat,
-            @RequestParam("swLng") double swLng,
-            @RequestParam("neLat") double neLat,
-            @RequestParam("neLng") double neLng,
+            @RequestParam("swLat") Double swLat,
+            @RequestParam("swLng") Double swLng,
+            @RequestParam("neLat") Double neLat,
+            @RequestParam("neLng") Double neLng,
             @RequestParam(value = "minPrice", defaultValue = "0") double minPrice,
             @RequestParam(value = "maxPrice", defaultValue = "5000000") double maxPrice,
             @RequestParam(value = "type", required = false) String type,

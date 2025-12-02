@@ -511,6 +511,12 @@ export default function Rooms() {
       alert("로그인이 필요한 기능입니다.");
       return;
     }
+
+    // 호스트 로그인 차단
+    if (user.role === "HOST" || user.roles?.includes("HOST")) {
+      alert("게스트로 로그인해 주세요.");
+      return;
+    }
     // const currentlyFavorite = favorites.has(roomId);
     // 여기 두 줄이 추가된 부분임. 나중에 재수정할 수도 있음.
     if (!roomId) return;
@@ -745,12 +751,9 @@ export default function Rooms() {
                   {priceLabel}
                 </Typography>
                 </Stack>
-
-                <RouterLink to="/RoomMap">지도로 찾기</RouterLink>
-
                                 <Stack spacing={1}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    편의시설
+                    부가옵션
                   </Typography>
                   <Stack
                     spacing={1}
@@ -932,12 +935,13 @@ export default function Rooms() {
                           <Typography variant="body1" fontWeight={700} color="primary">
                             {formatCurrency(room.rentPrice)}
                           </Typography>
-
-                          {room.description && (
+                          
+                          {/* 설명 길어지니깐 지저분해보여서 주석해놨어요. */}
+                          {/* {room.description && (
                             <Typography variant="body2" color="text.secondary">
                               {room.description}
                             </Typography>
-                          )}
+                          )} */}
 
                           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                             {tags.slice(0, 4).map((tag) => (
