@@ -5,7 +5,7 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   CircularProgress,
@@ -17,11 +17,8 @@ import {
   TextField,
   Button,
   Typography,
-  SelectChangeEvent,
   List,
   ListItem,
-  ListItemAvatar,
-  Avatar,
   ListItemText,
   Divider,
   ListItemButton,
@@ -35,7 +32,7 @@ import SiteHeader from "../components/SiteHeader";
 import CloseIcon from "@mui/icons-material/Close";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { api, getAccessToken } from "../lib/api";
-import type { RoomSummary, RoomImage } from "../types/room";
+import type { RoomSummary } from "../types/room";
 import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room";
 
 import fallbackImageSrc from "../img/no_img.jpg";
@@ -110,6 +107,7 @@ const filterFacilities = [
 const RoomMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null); // 지도 인스턴스를 저장할 ref
+  const geocoderRef = useRef<any>(null); // 지오코더 인스턴스를 저장할 ref
   const navigate = useNavigate(); // useNavigate 훅 추가
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -173,6 +171,7 @@ const RoomMap: React.FC = () => {
               level: 4,
             });
             mapInstanceRef.current = map; // 생성된 지도 인스턴스를 ref에 저장
+            geocoderRef.current = new window.kakao.maps.services.Geocoder(); // 지오코더 인스턴스 생성
 
             // 지도 이동이 멈추면 주변 방 데이터를 다시 불러오는 이벤트 리스너 추가
             window.kakao.maps.event.addListener(map, "idle", () => {
@@ -202,6 +201,7 @@ const RoomMap: React.FC = () => {
               level: 4,
             });
             mapInstanceRef.current = map;
+            geocoderRef.current = new window.kakao.maps.services.Geocoder(); // 지오코더 인스턴스 생성
           }
         );
       } else {
@@ -296,9 +296,42 @@ const RoomMap: React.FC = () => {
             })
           : [];
 
+        // 주소는 있지만 좌표가 없는 방들을 지오코딩합니다. (latitude 또는 longitude가 없는 경우)
+        const geocodingPromises = rawRoomList
+          .filter(
+            (room) => room.address && (!room.latitude || !room.longitude)
+          )
+          .map((room) => {
+            return new Promise<RoomSummary>((resolve) => {
+              if (!geocoderRef.current) {
+                resolve(room); // 지오코더가 없으면 원본 방 정보 반환
+                return;
+              }
+              geocoderRef.current.addressSearch(
+                room.address,
+                (result: any, status: any) => {
+                  if (status === window.kakao.maps.services.Status.OK) {
+                    // 검색 성공 시, 좌표를 추가하여 반환
+                    resolve({
+                      ...room,
+                      latitude: parseFloat(result[0].y),
+                      longitude: parseFloat(result[0].x),
+                    });
+                  } else {
+                    // 검색 실패 시, 원본 방 정보 반환
+                    resolve(room);
+                  }
+                }
+              );
+            });
+          });
+
+        const geocodedRooms = await Promise.all(geocodingPromises);
+        console.log("Geocoded Rooms (with new coords):", geocodedRooms.filter(r => r.latitude && r.longitude));
+
         // ID를 기준으로 중복된 방을 제거합니다.
         const uniqueRooms = Array.from(
-          new Map(rawRoomList.map((room) => [room.id, room])).values()
+          new Map([...rawRoomList, ...geocodedRooms].filter(room => room.id).map((room) => [room.id, room])).values()
         );
 
         setRooms(uniqueRooms);
@@ -364,7 +397,10 @@ const RoomMap: React.FC = () => {
     const clusters: RoomSummary[][] = [];
     const clusteredRoomIds = new Set<number>();
 
-    // 위도, 경도를 이용해 두 지점 간의 거리를 미터(m) 단위로 계산하는 함수
+    // 좌표가 있는 방만 필터링합니다.
+    const roomsWithCoords = rooms.filter(room => room.latitude && room.longitude);
+    console.log("Rooms with valid coordinates for clustering:", roomsWithCoords);
+
     const getDistanceInMeters = (
       lat1: number,
       lon1: number,
@@ -383,7 +419,7 @@ const RoomMap: React.FC = () => {
       return R * c;
     };
 
-    for (const room of rooms) {
+    for (const room of roomsWithCoords) { // 필터링된 방 목록 사용
       if (room.id && !clusteredRoomIds.has(room.id)) {
         const currentCluster: RoomSummary[] = [room];
         clusteredRoomIds.add(room.id);
@@ -417,7 +453,7 @@ const RoomMap: React.FC = () => {
     // 3. 클러스터/단일 오버레이 생성
     return clusters
       .map((cluster) => {
-        const representativeRoom = cluster[0];
+        const representativeRoom = cluster[0]; // 클러스터의 첫 번째 방을 대표로 사용
         if (
           !representativeRoom.latitude ||
           !representativeRoom.longitude ||
@@ -445,20 +481,23 @@ const RoomMap: React.FC = () => {
         const fontWeight = isSelected ? "900" : "bold";
         const content = `<div style="background-color:#fff;color:${color};border:1px solid ${color};border-radius:4px;padding:4px 8px;font-size:12px;font-weight:${fontWeight};white-space:nowrap;cursor:pointer;transition:all 0.2s;">${contentText}</div>`;
 
+        const contentNode = document.createElement('div');
+        contentNode.innerHTML = content;
+        contentNode.onclick = () => handleRoomItemClick(cluster);
+        contentNode.onmouseover = () => setHoveredRoomId(representativeRoom.id);
+        contentNode.onmouseout = () => setHoveredRoomId(null);
+
         const overlay = new window.kakao.maps.CustomOverlay({
           position,
-          content,
+          content: contentNode,
           yAnchor: 1,
         });
         overlay.cluster = cluster;
-        overlay.customOnClick = () => handleRoomItemClick(cluster);
-        overlay.customOnMouseOver = () =>
-          setHoveredRoomId(representativeRoom.id);
-        overlay.customOnMouseOut = () => setHoveredRoomId(null);
+        console.log("Created CustomOverlay for room/cluster:", representativeRoom.id, representativeRoom.title);
         return overlay;
       })
       .filter((overlay): overlay is any => overlay !== null);
-  }, [rooms, selectedRoomId, handleRoomItemClick]);
+  }, [rooms, selectedRoomId, hoveredRoomId, handleRoomItemClick]);
 
   // 생성된 오버레이들을 지도에 업데이트하는 useEffect
   useEffect(() => {
@@ -469,11 +508,8 @@ const RoomMap: React.FC = () => {
     map.customOverlays.forEach((overlay: any) => overlay.setMap(null));
     map.customOverlays = [];
 
-    markers.forEach((overlay: any) => {
+    markers.forEach((overlay) => {
       overlay.setMap(map);
-      overlay.a.addEventListener("click", overlay.customOnClick);
-      overlay.a.addEventListener("mouseover", overlay.customOnMouseOver);
-      overlay.a.addEventListener("mouseout", overlay.customOnMouseOut);
       map.customOverlays.push(overlay);
     });
   }, [markers]);
