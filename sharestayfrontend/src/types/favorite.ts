@@ -12,7 +12,7 @@ export type FavoriteRoomImage =
   | null
   | undefined
   | FavoriteRoomImageObject
-  | Array<FavoriteRoomImage | FavoriteRoomImageObject>;
+  | Array<string | FavoriteRoomImageObject | null | undefined>;
 
 interface FavoriteRoomImageObject {
   imageUrl?: string | null;
@@ -37,7 +37,9 @@ export const extractFavoriteImageUrl = (
     return tryResolve(source);
   }
 
-  const list = Array.isArray(source) ? source : [source];
+  const list: Array<string | FavoriteRoomImageObject | null | undefined> = Array.isArray(source)
+    ? source
+    : [source];
   for (const candidate of list) {
     if (!candidate) continue;
     if (typeof candidate === "string") {

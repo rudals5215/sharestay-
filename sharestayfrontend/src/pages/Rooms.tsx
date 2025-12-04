@@ -20,8 +20,6 @@ import {
   Typography,
 } from "@mui/material";
 import {
-  Favorite,
-  FavoriteBorder,
   GridView,
   ListAlt,
   LocationOn,
@@ -30,7 +28,6 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Link as RouterLink,
-  useNavigate,
   useSearchParams,
 } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";

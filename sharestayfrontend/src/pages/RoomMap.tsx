@@ -33,7 +33,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { api, getAccessToken } from "../lib/api";
 import type { RoomSummary } from "../types/room";
-import { mapRoomFromApi, resolveRoomImageUrl, RoomApiResponse } from "../types/room"; // RoomApiResponse 추가
+import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room"; // RoomApiResponse 추가
 import {
   provinces,
   provinceDistrictMap,
@@ -79,7 +79,7 @@ const RoomMap: React.FC = () => {
     });
   };
 
-  const handlePriceChange = (event: Event, newValue: number | number[]) => {
+  const handlePriceChange = (_event: Event, newValue: number | number[]) => {
     setPriceRange(newValue as number[]);
   };
 
@@ -155,29 +155,11 @@ const RoomMap: React.FC = () => {
       setIsLoading(true);
       setError(null);
       try {
-        // 지도 중심 주소 가져오기 (비동기)
-        const getCenterAddress = (): Promise<string | null> => { // mapInstanceRef.current가 null이 아님을 보장
-          if (!mapInstanceRef.current || !geocoderRef.current) return Promise.resolve(null);
-          return new Promise((resolve) => {
-            const center = mapInstanceRef.current.getCenter();
-            geocoderRef.current!.coord2RegionCode(
-              center.getLng(),
-              center.getLat(),
-              (result, status) => { // result: { region_type: 'H' | 'B'; ... }[]
-                if (status === window.kakao.maps.services.Status.OK) {
-                  // '구' 단위 주소(예: 강남구)를 찾아서 반환
-                  const regionInfo = result.find((r) => r.region_type === 'H');
-                  resolve(regionInfo ? regionInfo.region_2depth_name : null);
-                } else {
-                  resolve(null);
-                }
-              }
-            );
-          });
-        };
-
         // 현재 지도 화면의 사각 경계를 가져옵니다.
-        if (!mapInstanceRef.current) return; // mapInstanceRef.current가 null이 아님을 보장
+        if (!mapInstanceRef.current) {
+          console.warn(`Map instance missing for fetchRoomsNearby (lat:${lat}, lng:${lng}, level:${level})`);
+          return; // mapInstanceRef.current가 null이 아님을 보장
+        }
         const bounds = mapInstanceRef.current.getBounds();
         const sw = bounds.getSouthWest(); // 남서쪽 좌표
         const center = mapInstanceRef.current!.getCenter();
@@ -207,6 +189,7 @@ const RoomMap: React.FC = () => {
           minPrice: priceRange[0],
           maxPrice: priceRange[1],
           level, // API에 지도 레벨도 전달
+          radiusKm,
         };
         if (roomType) {
           params.type = roomType;
@@ -238,7 +221,7 @@ const RoomMap: React.FC = () => {
           : data?.result ?? [];
 
         const rawRoomList: RoomSummary[] = Array.isArray(roomData) // apiRoom의 타입은 RoomApiResponse
-          ? roomData.map((apiRoom: any, index) => {
+          ? roomData.map((apiRoom: any) => {
               const room = mapRoomFromApi(apiRoom);
               // mapRoomFromApi에서 roomId가 매핑되지 않는 경우를 대비해 직접 할당합니다.
               if (room.roomId === undefined && apiRoom.roomId !== undefined) {
@@ -444,21 +427,22 @@ const RoomMap: React.FC = () => {
         }
 
         // 하이라이트 효과를 원으로 대체하므로, 마커 자체의 스타일은 선택 여부에 따라 최소한으로 변경하거나 고정합니다.
-        const color = isSelected ? "#ff5722" : "#000";
-        const fontWeight = isSelected ? "900" : "bold";
+        const isEmphasized = isSelected || isHovered;
+        const color = isEmphasized ? "#ff5722" : "#000";
+        const fontWeight = isEmphasized ? "900" : "bold";
         const content = `<div style="background-color:#fff;color:${color};border:1px solid ${color};border-radius:4px;padding:4px 8px;font-size:12px;font-weight:${fontWeight};white-space:nowrap;cursor:pointer;transition:all 0.2s;">${contentText}</div>`;
 
         const contentNode = document.createElement("div");
         contentNode.innerHTML = content;
         contentNode.onclick = () => handleRoomItemClick(cluster);
-        contentNode.onmouseover = () => setHoveredRoomId(representativeRoom.id);
+        contentNode.onmouseover = () => setHoveredRoomId(representativeRoom.id ?? null);
         contentNode.onmouseout = () => setHoveredRoomId(null);
 
         const overlay = new window.kakao.maps.CustomOverlay({
           position,
           content: contentNode,
           yAnchor: 1,
-        });
+        }) as any;
         overlay.cluster = cluster;
         console.log(
           "Created CustomOverlay for room/cluster:",
@@ -590,7 +574,11 @@ const RoomMap: React.FC = () => {
       (data, status) => { // data: { x: string, y: string }[]
         if (status === window.kakao.maps.services.Status.OK) {
           const map = mapInstanceRef.current;
-          const newPos = new window.kakao.maps.LatLng(data[0].y, data[0].x);
+          if (!map) return;
+          const newPos = new window.kakao.maps.LatLng(
+            Number(data[0].y),
+            Number(data[0].x)
+          );
           setSelectedRoomId(null); // 새로운 지역 검색 시 선택 해제
           map.setCenter(newPos);
           fetchRoomsNearby(newPos.getLat(), newPos.getLng(), map.getLevel());
@@ -615,15 +603,6 @@ const RoomMap: React.FC = () => {
     }
     if (value === 0) return "0원";
     return `${value / 10000}만`;
-  };
-
-  const getClusterRepresentativeId = (
-    clusterOrRoom: RoomSummary[] | RoomSummary
-  ) => {
-    const cluster = Array.isArray(clusterOrRoom)
-      ? clusterOrRoom
-      : [clusterOrRoom];
-    return cluster[0]?.id ?? null;
   };
 
   const modalStyle = {
@@ -830,16 +809,20 @@ const RoomMap: React.FC = () => {
                   />
                 </ListItem>
               ) : (
-                displayedRooms.map((room) => [
+                displayedRooms.map((room) => {
+                  const roomId = room.id ?? room.roomId ?? null;
+                  if (roomId === null) return null;
+
+                  return [
                   <ListItem
-                    key={room.roomId ?? room.id}
-                    id={`room-item-${room.id}`}
+                    key={roomId}
+                    id={`room-item-${roomId}`}
                     disablePadding
-                    onMouseEnter={() => setHoveredRoomId(room.id)}
+                    onMouseEnter={() => setHoveredRoomId(roomId)}
                     onMouseLeave={() => setHoveredRoomId(null)}
                     sx={{
                       backgroundColor:
-                        selectedRoomId === room.id || hoveredRoomId === room.id
+                        selectedRoomId === roomId || hoveredRoomId === roomId
                           ? "action.hover"
                           : "transparent",
                       transition: "background-color 0.3s",
@@ -849,11 +832,11 @@ const RoomMap: React.FC = () => {
                       onClick={() => setModalRoom(room)}
                       sx={{
                         borderLeft:
-                          hoveredRoomId === room.id
+                          hoveredRoomId === roomId
                             ? "4px solid #ffc107"
                             : "none",
                         paddingLeft:
-                          hoveredRoomId === room.id ? "12px" : "16px",
+                          hoveredRoomId === roomId ? "12px" : "16px",
                       }}
                     >
                       <Box
@@ -877,8 +860,9 @@ const RoomMap: React.FC = () => {
                       />
                     </ListItemButton>
                   </ListItem>,
-                  <Divider key={`divider-${room.id}`} component="li" />,
-                ])
+                  <Divider key={`divider-${roomId}`} component="li" />,
+                ];
+                })
               )}
             </List>
           </Box>

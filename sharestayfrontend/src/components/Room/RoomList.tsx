@@ -9,7 +9,6 @@ import {
   ListItemText,
   Divider,
   Typography,
-  Chip,
   Stack,
   Button,
 } from "@mui/material";
@@ -81,26 +80,30 @@ const RoomList: React.FC<Props> = ({
               />
             </ListItem>
           ) : (
-            rooms.map((room) => [
+            rooms.map((room) => {
+              const roomId = room.id ?? room.roomId ?? null;
+              if (roomId === null) return null;
+
+              return [
               <ListItem
-                key={room.id}
+                key={roomId}
                 disablePadding
-                onMouseEnter={() => setHoveredRoomId(room.id)}
+                onMouseEnter={() => setHoveredRoomId(roomId)}
                 onMouseLeave={() => setHoveredRoomId(null)}
                 sx={{
                   backgroundColor:
-                    selectedRoomId === room.id || hoveredRoomId === room.id
+                    selectedRoomId === roomId || hoveredRoomId === roomId
                       ? "action.hover"
                       : "transparent",
                   transition: "background-color 0.3s",
                 }}
               >
                 <ListItemButton
-                  onClick={() => setSelectedRoomId(room.id)}
+                  onClick={() => setSelectedRoomId(roomId)}
                   sx={{
                     borderLeft:
-                      hoveredRoomId === room.id ? "4px solid #ffc107" : "none",
-                    paddingLeft: hoveredRoomId === room.id ? "12px" : "16px",
+                      hoveredRoomId === roomId ? "4px solid #ffc107" : "none",
+                    paddingLeft: hoveredRoomId === roomId ? "12px" : "16px",
                   }}
                 >
                   <ListItemAvatar>
@@ -119,8 +122,9 @@ const RoomList: React.FC<Props> = ({
                   />
                 </ListItemButton>
               </ListItem>,
-              <Divider key={`divider-${room.id}`} component="li" />,
-            ])
+              <Divider key={`divider-${roomId}`} component="li" />,
+            ];
+            })
           )}
         </List>
       </Box>

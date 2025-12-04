@@ -409,7 +409,7 @@ public class SharestayApplication implements CommandLineRunner {
 
 
         // ⚠ 개발용: 더미 데이터에만 한 번 돌리고, 끝난 뒤에는 주석 처리해 두기
-        roomService.backfillShareLinks();
+        //roomService.backfillShareLinks();
     }
 
 }

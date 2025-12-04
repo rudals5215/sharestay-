@@ -75,16 +75,16 @@ public class Room {
 
 
 
-    // Room 이 저장될 때 함께 저장, 삭제 될 때 함께 삭제
-    @OneToOne(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ShareLink shareLink;
-
-    public void setShareLink(ShareLink shareLink) {
-        this.shareLink = shareLink;
-        if (shareLink != null && shareLink.getRoom() != this) {
-            shareLink.setRoom(this);  // 주인 쪽도 맞춰줌
-        }
-    }
+//    // Room 이 저장될 때 함께 저장, 삭제 될 때 함께 삭제
+//    @OneToOne(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private ShareLink shareLink;
+//
+//    public void setShareLink(ShareLink shareLink) {
+//        this.shareLink = shareLink;
+//        if (shareLink != null && shareLink.getRoom() != this) {
+//            shareLink.setRoom(this);  // 주인 쪽도 맞춰줌
+//        }
+//    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id")

@@ -200,7 +200,6 @@ export default function RoomDetail() {
   const {
     main: mainDescription,
     lifestyle: parsedLifestyle,
-    facilities: parsedFacilities,
     others: parsedOthers,
   } = useMemo(
     () => parseDescriptionAndOptions(room?.description),
@@ -211,11 +210,6 @@ export default function RoomDetail() {
   const explicitOptions = useMemo(() => toArray(room?.options), [room?.options]);
 
   const displayLifestyle = explicitLifestyle.length ? explicitLifestyle : parsedLifestyle;
-
-  const displayFacilities = useMemo(() => {
-    if (explicitOptions.length === 0) return parsedFacilities;
-    return explicitOptions.filter((opt) => facilityOptionSet.has(opt));
-  }, [explicitOptions, parsedFacilities]);
 
   const displayOtherOptions = useMemo(() => {
     if (explicitOptions.length === 0) return parsedOthers;
@@ -271,11 +265,8 @@ export default function RoomDetail() {
           });
         }
 
-        // 🔴 공유 링크 state에도 저장
-      // 1순위: DTO에 있는 shareLinkUrl
-      // 2순위: 혹시 shareLink 객체 안에 linkUrl 로 왔을 경우 대비
-      // 🔥 이 줄만 이렇게 고쳐 두기
-      setShareLink(data.shareLinkUrl ?? null);
+        setShareLink(`${window.location.origin}/rooms/${data.id}`);
+
     } catch (err) {
     const message =
         err instanceof Error
@@ -308,7 +299,7 @@ export default function RoomDetail() {
   }, [user?.id]);
 
 
-// ✅ 수정본
+  // 수정: 공유 링크 생성 및 복사
 const handleShareLink = async () => {
   // roomId 없어도 사실 복사엔 상관 없지만, 안전하게 체크
   if (!roomId) return;
@@ -317,9 +308,7 @@ const handleShareLink = async () => {
   console.log(">>> shareLink state:", shareLink);
   console.log(">>> room.shareLinkUrl:", room?.shareLinkUrl);
 
-  // 1순위: state 에 저장된 shareLink
-  // 2순위: roomSummary 안에 있는 shareLinkUrl
-  const link = shareLink ?? room?.shareLinkUrl ?? null;
+  const link = shareLink;
 
   if (!link) {
     alert("공유 링크를 불러올 수 없습니다. 관리자에게 문의해 주세요.");
@@ -342,13 +331,8 @@ const handleShareLink = async () => {
 };
 
 
-const isLiked = room
-  ? favorites.has(room.roomId) || room.isFavorite === true
-  : false;
-
-
-// ⭐ 추가: 좋아요 토글
-const handleToggleFavorite = async (nextLiked?: boolean) => {
+// ⭐ 챙ㄷ채추가: 좋아요 토글
+const handleToggleFavorite = async () => {
   if (!user?.id) {
     alert("로그인이 필요합니다.");
     return;
@@ -359,19 +343,18 @@ const handleToggleFavorite = async (nextLiked?: boolean) => {
 
   if (isFavoriteLoading) return;
 
-  const targetLiked =
-    typeof nextLiked === "boolean" ? nextLiked : !isLiked;
-  const currentlyLiked = !targetLiked;
+  const currentlyLiked =
+    favorites.has(roomNum) || (room?.isFavorite ?? false);
 
   // UI 즉시 반영
   setFavorites((prev) => {
     const next = new Set(prev);
-    targetLiked ? next.add(roomNum) : next.delete(roomNum);
+    currentlyLiked ? next.delete(roomNum) : next.add(roomNum);
     return next;
   });
 
   setRoom((prev) =>
-    prev ? { ...prev, isFavorite: targetLiked } : prev
+    prev ? { ...prev, isFavorite: !currentlyLiked } : prev
   );
 
   // 서버 반영
@@ -395,6 +378,10 @@ const handleToggleFavorite = async (nextLiked?: boolean) => {
   }
 };
 
+
+const isLiked = room
+  ? favorites.has(room.roomId) || room.isFavorite === true
+  : false;
 
   return (
     <Box sx={{ bgcolor: "#f4f6fb", minHeight: "100vh" }}>
@@ -475,6 +462,13 @@ const handleToggleFavorite = async (nextLiked?: boolean) => {
                       color="primary"
                       sx={{ borderRadius: 999 }}
                     />
+                    <FavoriteButton
+                      roomId={room.roomId}
+                      isLiked={isLiked}
+                      loading={isFavoriteLoading}
+                      onToggle={handleToggleFavorite}
+                    />
+                    
                     <Button
                       size="small"
                       variant="outlined"
@@ -670,14 +664,6 @@ const handleToggleFavorite = async (nextLiked?: boolean) => {
 
                   {/* 버튼들 */}
                   <Stack spacing={1.5}>
-                   {/* ⭐ 찜 버튼 추가 */}
-                    <FavoriteButton 
-                      roomId={room.roomId} 
-                      isLiked={isLiked} 
-                      loading={isFavoriteLoading}
-                      onToggle={handleToggleFavorite}
-                    />
-
                     <Button
                       fullWidth
                       variant="contained"

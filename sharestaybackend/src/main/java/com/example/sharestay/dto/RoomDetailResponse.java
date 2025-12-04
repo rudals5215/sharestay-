@@ -27,7 +27,7 @@ public class RoomDetailResponse {
     private double latitude;
     private double longitude;
     private List<String> imageUrls;
-    private String shareLinkUrl;
+//    private String shareLinkUrl;
 
     // 호스트 프로필로 들어가서 수정할 때 필요해서 추가
     private Long hostId;

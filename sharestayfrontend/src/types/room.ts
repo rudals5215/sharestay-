@@ -148,10 +148,11 @@ export const mapRoomFromApi = (
     })) ??
     [];
 
+//  - 공유 링크를 백엔드가 아니라 프론트에서 직접 생성한다.
+//  - 백엔드 ShareLink 기능(엔티티/서비스/컨트롤러)을 전부 주석 때문에
+//  - 항상 /rooms/{roomId} 형태의 단순 URL만 사용하도록 강제함
   const shareLinkUrl =
-    room.shareLinkUrl ??
-    room.shareLink?.linkUrl ??
-    (roomId ? `${window.location.origin}/rooms/${roomId}` : undefined);
+  roomId ? `${window.location.origin}/rooms/${roomId}` : undefined;
 
   return {
     roomId: roomId,

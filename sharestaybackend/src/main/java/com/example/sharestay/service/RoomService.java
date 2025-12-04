@@ -7,7 +7,7 @@ import com.example.sharestay.dto.RoomResponse;
 import com.example.sharestay.entity.Host;
 import com.example.sharestay.entity.Room;
 import com.example.sharestay.entity.RoomImage;
-import com.example.sharestay.entity.ShareLink;
+//import com.example.sharestay.entity.ShareLink;
 import com.example.sharestay.repository.FavoriteRepository;
 import com.example.sharestay.repository.HostRepository;
 import com.example.sharestay.repository.RoomImageRepository;
@@ -62,7 +62,7 @@ public class RoomService {
                 room.getLatitude(),
                 room.getLongitude(),
                 imageUrls,
-                room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null,
+                //room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null,
                 hostId,
                 hostUserId
         );
@@ -77,8 +77,8 @@ public class RoomService {
 
         Room room = request.toEntity(host);
 
-        ShareLink shareLink = new ShareLink();
-        room.setShareLink(shareLink);
+//        ShareLink shareLink = new ShareLink();
+//        room.setShareLink(shareLink);
 
         // 위도/경도가 null이거나 0일 경우 DB에 null로 저장
         if (room.getLatitude() == null || room.getLatitude() == 0.0) {
@@ -167,17 +167,17 @@ public class RoomService {
      * 마이그레이션 용도: 기존 방들 중 공유 링크가 없는 경우 기본 ShareLink를 채워 넣습니다.
      * 존재하지 않으면 새 ShareLink를 생성하고 저장합니다.
      */
-    @Transactional
-    public void backfillShareLinks() {
-        List<Room> rooms = roomRepository.findAll();
-        for (Room room : rooms) {
-            if (room.getShareLink() == null) {
-                ShareLink link = new ShareLink();
-                room.setShareLink(link);
-                roomRepository.save(room);
-            }
-        }
-    }
+//    @Transactional
+//    public void backfillShareLinks() {
+//        List<Room> rooms = roomRepository.findAll();
+//        for (Room room : rooms) {
+//            if (room.getShareLink() == null) {
+//                ShareLink link = new ShareLink();
+//                room.setShareLink(link);
+//                roomRepository.save(room);
+//            }
+//        }
+//    }
 
     private RoomResponse toResponse(Room room) {
         List<RoomImageResponse> imageUrls = room.getRoomImages()
@@ -204,7 +204,7 @@ public class RoomService {
                 room.getPreferredAge(),
                 room.getTotalMembers(),
                 imageUrls,
-                room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null,
+                //room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null,
                 hostId,
                 hostUserId
         );

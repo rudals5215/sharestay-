@@ -22,7 +22,7 @@ public class RoomResponse {
     private String preferredAge;
     private Integer totalMembers;
     private List<RoomImageResponse> images;
-    private String shareLinkUrl;
+    //private String shareLinkUrl;
     private Long hostId;
     private Long hostUserId;
 }
