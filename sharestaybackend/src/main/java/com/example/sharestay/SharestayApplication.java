@@ -213,6 +213,10 @@ public class SharestayApplication implements CommandLineRunner {
                 "깔끔하고 교통 좋은 원룸입니다."
         );
         room1.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터");
+        room1.setPreferredGender("여성");
+        room1.setPreferredAge("20대");
+        room1.setTotalMembers(2);
+        room1.setLifestyleFromList(List.of("금연", "조용한 생활"));
 
         Room room2 = new Room(
                 host1,
@@ -226,6 +230,10 @@ public class SharestayApplication implements CommandLineRunner {
                 "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다."
         );
         room2.setOptions("와이파이, TV, 주차장, 침대");
+        room2.setPreferredGender("무관");
+        room2.setPreferredAge("30대");
+        room2.setTotalMembers(4);
+        room2.setLifestyleFromList(List.of("사교적", "요리 자주"));
 
         // host2 방 2개
         Room room3 = new Room(
@@ -239,7 +247,11 @@ public class SharestayApplication implements CommandLineRunner {
                 1, // 예약중
                 "강남역 인근 직장인에게 최적의 원룸입니다."
         );
-        room3.setOptions("엘리베이터, 주차장, 와이파이, 전자렌지");
+        room3.setOptions("엘리베이터, 주차장, 와이파이, 책상");
+        room3.setPreferredGender("여성");
+        room3.setPreferredAge("20대");
+        room3.setTotalMembers(2);
+        room3.setLifestyleFromList(List.of("운동 좋아함", "조용한 생활"));
 
         Room room4 = new Room(
                 host2,
@@ -253,7 +265,11 @@ public class SharestayApplication implements CommandLineRunner {
                 "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다."
         );
 
-        room3.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터, TV");
+        room4.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터, TV");
+        room4.setPreferredGender("남성");
+        room4.setPreferredAge("30대");
+        room4.setTotalMembers(1);
+        room4.setLifestyleFromList(List.of("금연", "일찍 기상"));
 
         // host3 방 2개
         Room room5 = new Room(
@@ -267,6 +283,11 @@ public class SharestayApplication implements CommandLineRunner {
                 2, // 마감
                 "연세대/이대생에게 인기 많은 조용한 투룸입니다."
         );
+        room5.setOptions("에어컨, 세탁기, 인터넷, 보안시설");
+        room5.setPreferredGender("여성");
+        room5.setPreferredAge("20대");
+        room5.setTotalMembers(3);
+        room5.setLifestyleFromList(List.of("조용한 생활", "독서"));
 
         Room room6 = new Room(
                 host3,
@@ -279,6 +300,11 @@ public class SharestayApplication implements CommandLineRunner {
                 2, // 마감
                 "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다."
         );
+        room6.setOptions("엘리베이터, 주차장, 와이파이, 침대");
+        room6.setPreferredGender("남성");
+        room6.setPreferredAge("30대");
+        room6.setTotalMembers(2);
+        room6.setLifestyleFromList(List.of("사교적", "운동 좋아함"));
 
         Room room7 = new Room(
                 host4,
@@ -292,6 +318,10 @@ public class SharestayApplication implements CommandLineRunner {
                 "바다가 보이는 오션뷰 원룸입니다."
         );
         room7.setOptions("에어컨, 세탁기, 냉장고, 주차장, 와이파이");
+        room7.setPreferredGender("여성");
+        room7.setPreferredAge("20대");
+        room7.setTotalMembers(2);
+        room7.setLifestyleFromList(List.of("금연", "운동 좋아함"));
 
         Room room8 = new Room(
                 host4,
@@ -304,7 +334,11 @@ public class SharestayApplication implements CommandLineRunner {
                 0,  // 모집중
                 "광안리 바다가 보이는 투룸입니다."
         );
-        room8.setOptions("에어컨, TV, 침대, 옷장, 엘리베이터");
+        room8.setOptions("에어컨, TV, 침대, 베란다, 엘리베이터");
+        room8.setPreferredGender("무관");
+        room8.setPreferredAge("30대");
+        room8.setTotalMembers(4);
+        room8.setLifestyleFromList(List.of("음악 감상", "사교적"));
 
 
         room1.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F3d-kwaejeoghan-dogseosil.jpg?alt=media&token=6aa1cc21-20e5-4bc6-b5b5-4552daecd01d");
