@@ -23,6 +23,7 @@ import ListRoom from "./pages/ListRoom";
 import ForgotPassword from "./pages/ForgotPassword";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import Contact from "./pages/Contact";
 import SafetyMap from "./pages/SafetyMap";
 import LifestyleSetup from "./pages/LifestyleSetup";
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -99,6 +100,8 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/contact/i" element={<Contact />} />
             <Route
               path="/profile"
               element={

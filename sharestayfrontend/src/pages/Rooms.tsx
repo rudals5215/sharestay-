@@ -514,7 +514,17 @@ export default function Rooms() {
                     </Typography>
                   </Stack>
 
-                      <RouterLink to="/RoomMap">지도로 찾기</RouterLink>
+                  <Button
+                    component={RouterLink}
+                    to="/RoomMap"
+                    variant="contained"
+                    fullWidth
+                    startIcon={<LocationOn />}
+                    sx={{ borderRadius: 2, my: 1 }}
+                  >
+                    지도로 찾기
+                  </Button>
+
                   <Stack spacing={1}>
                     <Typography variant="subtitle2" color="text.secondary">
                       편의시설

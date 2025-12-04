@@ -12,7 +12,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@fontsource/roboto": "^5.2.8",
+    "@fontsource/roboto": "^5.2.9",
     "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^5.18.0",
     "@mui/material": "^5.18.0",
@@ -25,7 +25,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.66.1",
     "react-router-dom": "^7.9.6",
-    "zod": "^4.1.12"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/react": "^18.2.15",
