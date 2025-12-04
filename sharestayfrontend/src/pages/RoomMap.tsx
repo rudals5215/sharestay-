@@ -1,39 +1,13 @@
-import React, {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo,} from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  CircularProgress,
-  Alert,
-  Paper,
-  Select,
-  MenuItem,
-  Slider,
-  TextField,
-  Button,
-  Typography,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  ListItemButton,
-  Stack,
-  Chip,
-  Modal,
-  IconButton,
-  Fab,
-} from "@mui/material";
+import { Box, CircularProgress, Alert, Paper, Select, MenuItem, Slider, TextField, Button, Typography, List, ListItem, ListItemText, Divider, ListItemButton, Stack, Chip, Modal, IconButton, Fab } from "@mui/material";
 import SiteHeader from "../components/SiteHeader";
 import CloseIcon from "@mui/icons-material/Close";
 import MyLocationIcon from "@mui/icons-material/MyLocation";
 import { api, getAccessToken } from "../lib/api";
 import type { RoomSummary } from "../types/room";
-import { mapRoomFromApi, resolveRoomImageUrl } from "../types/room"; // RoomApiResponse 추가
+import { useAuth } from "../auth/useAuth";
+import { mapRoomFromApi, resolveRoomImageUrl, } from "../types/room";
 import {
   provinces,
   provinceDistrictMap,
@@ -41,9 +15,14 @@ import {
   filterFacilities,
 } from "../types/filters";
 import fallbackImageSrc from "../img/no_img.jpg";
+import { fetchFavoriteRooms, toggleFavoriteRoom } from "../lib/favorites";
+import FavoriteButton from "../components/FavoriteButton";
+
+
 const fallbackImage = fallbackImageSrc;
 
 const RoomMap: React.FC = () => {
+  const { user } = useAuth();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<kakao.maps.Map | null>(null); // 지도 인스턴스를 저장할 ref
   const geocoderRef = useRef<kakao.maps.services.Geocoder | null>(null); // 지오코더 인스턴스를 저장할 ref
@@ -69,6 +48,8 @@ const RoomMap: React.FC = () => {
   }, [region]);
 
   const [modalRoom, setModalRoom] = useState<RoomSummary | null>(null);
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
 
   const handleToggleFacility = (facility: string) => {
     setFacilities((prev) => {
@@ -83,6 +64,20 @@ const RoomMap: React.FC = () => {
     setPriceRange(newValue as number[]);
   };
 
+  useEffect(() => {
+    if (!user?.id) {
+      setFavorites(new Set());
+      return;
+    }
+
+    const loadFavorites = async () => {
+      const favList = await fetchFavoriteRooms(user.id);
+      const next = new Set<number>();
+      favList.forEach((f) => next.add(Number(f.roomId)));
+      setFavorites(next);
+    };
+    loadFavorites();
+  }, [user?.id]);
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps) {
       setError("카카오맵 SDK를 불러오지 못했습니다.");
@@ -165,6 +160,13 @@ const RoomMap: React.FC = () => {
         const center = mapInstanceRef.current!.getCenter();
         const ne = bounds.getNorthEast(); // 북동쪽 좌표
 
+        // API 요청 시 isFavorite 상태를 포함시키기 위해 favorites를 의존성 배열에 추가하고,
+        // API 응답 처리 시 favorites Set을 참조하여 isFavorite을 설정합니다.
+        const currentFavorites = new Set(favorites);
+        if (user?.id) {
+          // 로그인 상태일 때만 찜 목록을 다시 불러와서 최신화
+        }
+
         // Haversine 공식을 사용하여 지도 중심에서 모서리까지의 거리를 계산합니다.
         const R = 6371; // 지구의 반지름 (km)
         const lat1 = center.getLat() * (Math.PI / 180);
@@ -231,6 +233,11 @@ const RoomMap: React.FC = () => {
                 room.hostId = apiRoom.hostId;
               }
 
+              // 찜 상태 반영
+              if (room.id && currentFavorites.has(room.id)) {
+                room.isFavorite = true;
+              }
+
               return room;
             })
           : [];
@@ -287,24 +294,21 @@ const RoomMap: React.FC = () => {
         setIsLoading(false); // 로딩 상태를 finally 블록에서 해제
       }
     },
-    [priceRange, roomType, region, district, facilities] // 의존성 배열에 region, district 추가
+    [priceRange, roomType, region, district, facilities, user, favorites] // 의존성 배열에 region, district 추가
   );
 
   const handleRoomItemClick = useCallback(
     (clusterOrRoom: RoomSummary[] | RoomSummary) => {
-      const cluster = Array.isArray(clusterOrRoom)
-        ? clusterOrRoom
-        : [clusterOrRoom];
-      const representativeRoom = cluster[0];
+      const representativeRoom = Array.isArray(clusterOrRoom) ? clusterOrRoom[0] : clusterOrRoom;
 
-      if (!representativeRoom?.id) return;
+      if (!representativeRoom?.roomId) return;
 
       // 이미 선택된 마커를 다시 클릭하면 선택 해제
       if (selectedRoomId === representativeRoom.id) {
         setSelectedRoomId(null);
       } else {
         // 새로운 마커를 클릭하면 선택
-        setSelectedRoomId(representativeRoom.id);
+        setSelectedRoomId(representativeRoom.roomId);
       }
     },
     [selectedRoomId] // selectedRoomId가 변경될 때마다 함수를 새로 만들어 최신 상태를 참조하도록 합니다.
@@ -435,7 +439,7 @@ const RoomMap: React.FC = () => {
         const contentNode = document.createElement("div");
         contentNode.innerHTML = content;
         contentNode.onclick = () => handleRoomItemClick(cluster);
-        contentNode.onmouseover = () => setHoveredRoomId(representativeRoom.id ?? null);
+        contentNode.onmouseover = () => setHoveredRoomId(representativeRoom.roomId);
         contentNode.onmouseout = () => setHoveredRoomId(null);
 
         const overlay = new window.kakao.maps.CustomOverlay({
@@ -605,8 +609,60 @@ const RoomMap: React.FC = () => {
     return `${value / 10000}만`;
   };
 
+  // ⭐ 추가: 좋아요 토글
+  const handleToggleFavorite = async (roomId: number, nextLiked?: boolean) => {
+    if (!user?.id) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    const roomNum = Number(roomId);
+    if (!roomNum) return;
+
+    if (isFavoriteLoading) return;
+
+    const isLiked = favorites.has(roomNum);
+    const targetLiked = typeof nextLiked === "boolean" ? nextLiked : !isLiked;
+    const currentlyLiked = !targetLiked;
+
+    // UI 즉시 반영
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      targetLiked ? next.add(roomNum) : next.delete(roomNum);
+      return next;
+    });
+
+    setRooms((prevRooms) =>
+      prevRooms.map((r) =>
+        r.id === roomNum ? { ...r, isFavorite: targetLiked } : r
+      )
+    );
+
+    // 서버 반영
+    setIsFavoriteLoading(true);
+    try {
+      await toggleFavoriteRoom(user.id, roomNum);
+    } catch (err) {
+      console.error(err);
+      alert("찜하기 처리 중 오류가 발생했습니다.");
+      // 롤백
+      setFavorites((prev) => {
+        const next = new Set(prev);
+        currentlyLiked ? next.add(roomNum) : next.delete(roomNum);
+        return next;
+      });
+      setRooms((prevRooms) =>
+        prevRooms.map((r) =>
+          r.id === roomNum ? { ...r, isFavorite: currentlyLiked } : r
+        )
+      );
+    } finally {
+      setIsFavoriteLoading(false);
+    }
+  };
+
   const modalStyle = {
-    position: "absolute" as "absolute",
+    position: "absolute",
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
@@ -620,8 +676,12 @@ const RoomMap: React.FC = () => {
     room: RoomSummary | null;
     onClose: () => void;
     onNavigate: (roomId: number) => void;
-  }> = ({ room, onClose, onNavigate }) => {
+  }> = ({ room, onClose, onNavigate}) => {
     if (!room) return null;
+
+    const isLiked = room
+      ? favorites.has(room.roomId) || room.isFavorite === true
+      : false;
 
     const imageUrl = resolveRoomImageUrl(room.images?.[0]?.imageUrl);
 
@@ -684,6 +744,15 @@ const RoomMap: React.FC = () => {
             )}
 
             <Stack direction="row" spacing={2} justifyContent="flex-end" mt={2}>
+              {room.id && (
+                <Box sx={{ mb: 'auto' }}>
+                  <FavoriteButton
+                    roomId={room.roomId}
+                    isLiked={isLiked}
+                    onToggle={() => handleToggleFavorite(room.roomId)}
+                  />
+                </Box>
+              )}
               <Button variant="outlined" onClick={onClose}>
                 닫기
               </Button>
@@ -818,7 +887,7 @@ const RoomMap: React.FC = () => {
                     key={roomId}
                     id={`room-item-${roomId}`}
                     disablePadding
-                    onMouseEnter={() => setHoveredRoomId(roomId)}
+                    onMouseEnter={() => setHoveredRoomId(room.roomId)}
                     onMouseLeave={() => setHoveredRoomId(null)}
                     sx={{
                       backgroundColor:
@@ -829,7 +898,7 @@ const RoomMap: React.FC = () => {
                     }}
                   >
                     <ListItemButton
-                      onClick={() => setModalRoom(room)}
+                      // onClick={() => setModalRoom(room)}
                       sx={{
                         borderLeft:
                           hoveredRoomId === roomId
@@ -839,25 +908,50 @@ const RoomMap: React.FC = () => {
                           hoveredRoomId === roomId ? "12px" : "16px",
                       }}
                     >
-                      <Box
-                        component="img"
-                        src={room.images?.[0]?.imageUrl ?? fallbackImage}
-                        alt={room.title}
-                        sx={{
-                          width: 170,
-                          height: 150,
-                          borderRadius: 2,
-                          objectFit: "cover",
-                          mr: 2,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <ListItemText
-                        primary={room.title}
-                        secondary={`${room.rentPrice.toLocaleString()}원 | ${
-                          room.address
-                        }`}
-                      />
+                      <Stack
+                        direction="row"
+                        spacing={2}
+                        alignItems="center"
+                        width="100%"
+                      >
+                        <Box
+                          component="img"
+                          src={room.images?.[0]?.imageUrl ?? fallbackImage}
+                          alt={room.title}
+                          onClick={() => setModalRoom(room)}
+                          sx={{
+                            width: 170,
+                            height: 150,
+                            borderRadius: 2,
+                            objectFit: "cover",
+                            flexShrink: 0,
+                            cursor: "pointer",
+                          }}
+                        />
+                        <Box
+                          sx={{
+                            flexGrow: 1,
+                            position: "relative",
+                            alignSelf: "stretch",
+                          }}
+                        >
+                          <ListItemText
+                            primary={room.title}
+                            secondary={`${room.rentPrice.toLocaleString()}원 | ${
+                              room.address
+                            }`}
+                            onClick={() => setModalRoom(room)}
+                            sx={{ cursor: "pointer", height: "100%" }}
+                          />
+                        </Box>
+                        <Box onClick={(e) => e.stopPropagation()}>
+                          <FavoriteButton
+                            roomId={room.roomId}
+                            isLiked={favorites.has(room.roomId)}
+                            onToggle={() => handleToggleFavorite(room.roomId)}
+                          />
+                        </Box>
+                      </Stack>
                     </ListItemButton>
                   </ListItem>,
                   <Divider key={`divider-${roomId}`} component="li" />,
