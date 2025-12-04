@@ -1,8 +1,8 @@
 package com.example.sharestay.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import java.util.List;
 
 @Getter
@@ -16,12 +16,20 @@ public class RoomDetailResponse {
     private String type;
     private int availabilityStatus;
     private String description;
+
+    // 룸메이트 선호 추가
+    private String preferredGender;
+    private String preferredAge;
+    private Integer totalMembers;
+
+    private List<String> lifestyle;
+    private List<String> options;
     private double latitude;
     private double longitude;
-
-    // 이미지 URL 리스트
     private List<String> imageUrls;
-
-    // 공유 링크 URL
     private String shareLinkUrl;
+
+    // 호스트 프로필로 들어가서 수정할 때 필요해서 추가
+    private Long hostId;
+    private Long hostUserId;
 }

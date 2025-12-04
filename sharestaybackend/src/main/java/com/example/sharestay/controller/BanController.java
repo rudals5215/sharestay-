@@ -1,5 +1,6 @@
 package com.example.sharestay.controller;
 
+import com.example.sharestay.dto.BanHistoryResponse;
 import com.example.sharestay.dto.BanRequest;
 import com.example.sharestay.dto.BanResponse;
 import com.example.sharestay.service.BanService;
@@ -10,32 +11,23 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RestController // 이 클래스가 REST API 컨트롤러
+@RestController
 @RequestMapping("/api/bans")
 @RequiredArgsConstructor
 public class BanController {
     private final BanService banService;
 
     /**
-     * 사용자 정지 (관리자용)
-     * @param userId 정지할 사용자의 ID
-     * @param request 정지 사유, 기간 등 정보
-     * @return 생성된 정지 정보
+     * 사용자 정지 등록
      */
     @PostMapping("/users/{userId}")
     public ResponseEntity<BanResponse> banUser(@PathVariable Long userId, @RequestBody BanRequest request) {
-        // TODO: 현재 인증된 관리자(Admin)의 ID를 가져오는 로직이 필요합니다.
-        // 예: Long adminId = SecurityUtil.getCurrentAdminId();
-        Long adminId = 1L; // 임시 관리자 ID
-
         BanResponse response = banService.banUser(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
-     * 사용자 정지 해제 (관리자용)
-     * @param userId 정지를 해제할 사용자의 ID
-     * @return 응답 없음
+     * 사용자 단위 정지 해제
      */
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<Void> unbanUser(@PathVariable Long userId) {
@@ -44,13 +36,44 @@ public class BanController {
     }
 
     /**
-     * 특정 사용자의 정지 기록 전체 조회
-     * @param userId 조회할 사용자의 ID
-     * @return 사용자의 모든 정지 기록 리스트
+     * 개별 정지 ID로 해제
+     */
+    @DeleteMapping("/{banId}")
+    public ResponseEntity<Void> unbanByBanId(@PathVariable Long banId) {
+        banService.unbanByBanId(banId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 활성 정지 수정 (사유/만료일/메모)
+     */
+    @PatchMapping("/{banId}")
+    public ResponseEntity<BanResponse> updateBan(@PathVariable Long banId, @RequestBody BanRequest request) {
+        return ResponseEntity.ok(banService.updateBan(banId, request));
+    }
+
+    /**
+     * 특정 사용자의 정지 기록 조회
      */
     @GetMapping("/users/{userId}")
     public ResponseEntity<List<BanResponse>> getBanHistory(@PathVariable Long userId) {
         List<BanResponse> history = banService.getBanHistory(userId);
         return ResponseEntity.ok(history);
+    }
+
+    /**
+     * 특정 사용자의 정지 이력(변경/해제/재정지) 조회
+     */
+    @GetMapping("/users/{userId}/history")
+    public ResponseEntity<List<BanHistoryResponse>> getBanHistoryLog(@PathVariable Long userId) {
+        return ResponseEntity.ok(banService.getBanHistoryLog(userId));
+    }
+
+    /**
+     * 전체 정지 기록 조회
+     */
+    @GetMapping
+    public ResponseEntity<List<BanResponse>> getAllBans() {
+        return ResponseEntity.ok(banService.getAllBans());
     }
 }

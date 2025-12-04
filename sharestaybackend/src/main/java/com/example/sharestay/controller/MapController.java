@@ -3,7 +3,11 @@ package com.example.sharestay.controller;
 import com.example.sharestay.dto.MapDto;
 import com.example.sharestay.service.MapService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -14,24 +18,20 @@ public class MapController {
 
     private final MapService mapService;
 
-    // 전체 방 지도 정보
-    @GetMapping("/rooms")
-    public List<MapDto> getAllRooms() {
-        return mapService.getAllRoomsForMap();
-    }
-
-    // 근처 방 조회
     @GetMapping("/rooms/near")
-    public List<MapDto> getRoomsNear(
-            @RequestParam double lat,
-            @RequestParam double lng,
-            @RequestParam double radiusKm) {
-        return mapService.getRoomsNearLocation(lat, lng, radiusKm);
-    }
-
-    // 특정 방 지도 정보
-    @GetMapping("/room/{roomId}")
-    public MapDto getRoomMapInfo(@PathVariable Long roomId) {
-        return mapService.getRoomMapInfo(roomId);
+    public ResponseEntity<List<MapDto>> findRoomsNearby(
+            // 프론트엔드에서 보내는 사각 경계 및 필터 파라미터
+            @RequestParam("swLat") Double swLat,
+            @RequestParam("swLng") Double swLng,
+            @RequestParam("neLat") Double neLat,
+            @RequestParam("neLng") Double neLng,
+            @RequestParam(value = "minPrice", defaultValue = "0") double minPrice,
+            @RequestParam(value = "maxPrice", defaultValue = "5000000") double maxPrice,
+            @RequestParam(value = "type", required = false) String type,
+            @RequestParam(value = "options", required = false) List<String> options
+    ) {
+        // MapService의 새로운 메서드를 호출하여 결과를 받습니다.
+        List<MapDto> rooms = mapService.getRoomsInBoundary(swLat, swLng, neLat, neLng, minPrice, maxPrice, type, options);
+        return ResponseEntity.ok(rooms);
     }
 }

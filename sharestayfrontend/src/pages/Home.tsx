@@ -1,4 +1,5 @@
 ﻿// src/pages/Home.tsx
+import Grid from "@mui/material/Unstable_Grid2";
 import {
   Avatar,
   Box,
@@ -9,7 +10,6 @@ import {
   CircularProgress,
   Container,
   Divider,
-  Grid,
   MenuItem,
   Stack,
   TextField,
@@ -32,11 +32,11 @@ import { mapRoomFromApi } from "../types/room";
 import type { DistrictSafety } from "../types/statistic";
 
 const heroBackground =
-  "https://plus.unsplash.com/premium_photo-1661885493074-e18964497278?fm=jpg&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8c2VvdWwlMjBuaWdodHxlbnwwfHwwfHx8MA%3D%3D&ixlib=rb-4.1.0&q=80&w=1920";
+  "https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fnew-york-7577186_1280.jpg?alt=media&token=e16af7f6-5c8c-4045-bad7-681e46617c8c";
 
 const navLinks = [
   { label: "방 찾기", href: "/rooms" },
-  { label: "안전도 지도", href: "/safety-map" },
+  { label: "지도로 찾기", href: "/RoomMap" },
   { label: "이용방법", href: "/guide" },
   {
     label: "방 등록",
@@ -83,10 +83,51 @@ const extractTags = (room: RoomSummary): string[] => {
   return [];
 };
 
+const provinces = [
+  { value: "서울", label: "서울" },
+  { value: "경기", label: "경기" },
+  { value: "인천", label: "인천" },
+  { value: "대전", label: "대전" },
+  { value: "세종", label: "세종" },
+  { value: "충남", label: "충남" },
+  { value: "충북", label: "충북" },
+  { value: "광주", label: "광주" },
+  { value: "전남", label: "전남" },
+  { value: "전북", label: "전북" },
+  { value: "대구", label: "대구" },
+  { value: "경북", label: "경북" },
+  { value: "부산", label: "부산" },
+  { value: "울산", label: "울산" },
+  { value: "경남", label: "경남" },
+  { value: "강원", label: "강원" },
+  { value: "제주", label: "제주" },
+];
+
+const provinceDistrictMap: Record<string, string[]> = {
+  서울: ["종로구", "중구", "용산구", "성동구", "광진구", "동대문구", "중랑구", "성북구", "강북구", "도봉구", "노원구", "은평구", "서대문구", "마포구", "양천구", "강서구", "구로구", "금천구", "영등포구", "동작구", "관악구", "서초구", "강남구", "송파구", "강동구"],
+  경기: ["수원시", "고양시", "용인시", "성남시", "부천시", "안산시", "안양시", "남양주시", "화성시", "평택시", "의정부시", "시흥시", "파주시", "김포시", "광주시", "광명시", "군포시", "하남시", "오산시", "양주시", "이천시", "구리시", "안성시", "포천시", "의왕시", "여주시", "동두천시"],
+  인천: ["중구", "동구", "미추홀구", "연수구", "남동구", "부평구", "계양구", "서구", "강화군", "옹진군"],
+  대전: ["동구", "서구", "유성구", "중구", "대덕구"],
+  세종: ["세종시"],
+  충남: ["천안시", "공주시", "보령시", "아산시", "서산시", "논산시", "계룡시", "당진시", "금산군", "부여군", "서천군", "청양군", "홍성군", "예산군", "태안군"],
+  충북: ["청주시", "충주시", "제천시", "보은군", "옥천군", "영동군", "증평군", "진천군", "괴산군", "음성군", "단양군"],
+  광주: ["동구", "서구", "남구", "북구", "광산구"],
+  전남: ["목포시", "여수시", "순천시", "나주시", "광양시", "담양군", "곡성군", "구례군", "고흥군", "보성군", "화순군", "장흥군", "강진군", "해남군", "영암군", "무안군", "함평군", "영광군", "장성군", "완도군", "진도군", "신안군"],
+  전북: ["전주시", "군산시", "익산시", "정읍시", "남원시", "김제시", "완주군", "진안군", "무주군", "장수군", "임실군", "순창군", "고창군", "부안군"],
+  대구: ["중구", "동구", "서구", "남구", "북구", "수성구", "달서구", "달성군"],
+  경북: ["포항시", "경주시", "김천시", "안동시", "구미시", "영주시", "영천시", "상주시", "문경시", "경산시", "의성군", "청송군", "영양군", "영덕군", "청도군", "고령군", "성주군", "칠곡군", "예천군", "봉화군", "울진군", "울릉군"],
+  부산: ["중구", "서구", "동구", "영도구", "부산진구", "동래구", "남구", "북구", "해운대구", "사하구", "금정구", "연제구", "수영구", "사상구", "기장군"],
+  울산: ["중구", "남구", "동구", "북구", "울주군"],
+  경남: ["창원시", "진주시", "통영시", "사천시", "김해시", "밀양시", "거제시", "양산시", "의령군", "함안군", "창녕군", "고성군", "남해군", "하동군", "산청군", "함양군", "거창군", "합천군"],
+  강원: ["춘천시", "원주시", "강릉시", "동해시", "태백시", "속초시", "삼척시", "홍천군", "횡성군", "영월군", "평창군", "정선군", "철원군", "화천군", "양구군", "인제군", "고성군", "양양군"],
+  제주: ["제주시", "서귀포시"],
+};
+
 export default function Home() {
   const { user, isLoading, logout } = useAuth();
   const navigate = useNavigate();
   const [heroKeyword, setHeroKeyword] = useState("");
+  const [heroRegion, setHeroRegion] = useState("");
   const [heroDistrict, setHeroDistrict] = useState("");
   const [popularRooms, setPopularRooms] = useState<RoomSummary[]>([]);
   const [roomsLoading, setRoomsLoading] = useState(false);
@@ -94,6 +135,11 @@ export default function Home() {
   const [safetyStats, setSafetyStats] = useState<DistrictSafety[]>([]);
   const [safetyLoading, setSafetyLoading] = useState(false);
   const [safetyError, setSafetyError] = useState<string | null>(null);
+
+  const districtOptions = useMemo(
+    () => (heroRegion ? provinceDistrictMap[heroRegion] ?? [] : []),
+    [heroRegion]
+  );
 
   const userActions = useMemo(() => {
     if (isLoading) {
@@ -154,7 +200,7 @@ export default function Home() {
             variant="outlined"
             color="inherit"
             component={RouterLink}
-            to="/admin/users"
+            to="/admin"
           >
             Admin
           </Button>
@@ -179,9 +225,12 @@ export default function Home() {
     setRoomsLoading(true);
     setRoomsError(null);
     try {
-      const regionParam = heroDistrict || heroKeyword || "서울";
+      const regionParam =
+        [heroRegion, heroDistrict].filter(Boolean).join(" ") ||
+        heroKeyword ||
+        "서울";
       const { data } = await api.get<RoomApiResponse[]>(
-        "/rooms/search/simple",
+        "/rooms/search",   // 여기 뒤에 simple을 지움
         { params: { region: regionParam } }
       );
       const list = Array.isArray(data)
@@ -276,6 +325,8 @@ export default function Home() {
     event.preventDefault();
     const params = new URLSearchParams();
     if (heroKeyword.trim()) params.set("keyword", heroKeyword.trim());
+    const regionParam = [heroRegion, heroDistrict].filter(Boolean).join(" ");
+    if (regionParam) params.set("region", regionParam);
     if (heroDistrict) params.set("district", heroDistrict);
     const query = params.toString();
     navigate(query ? `/rooms?${query}` : "/rooms");
@@ -354,7 +405,7 @@ export default function Home() {
           </Box>
 
           <Grid container spacing={4} alignItems="center">
-            <Grid size={{ xs: 12, md: 7 }}>
+            <Grid xs={12} md={7}>
               <Stack spacing={3}>
                 <Typography
                   variant="h3"
@@ -375,7 +426,6 @@ export default function Home() {
                     "#안심방",
                     "#서울대입구",
                     "#강남역",
-                    "#서재영",
                   ].map((tag) => (
                     <Chip
                       key={tag}
@@ -389,7 +439,7 @@ export default function Home() {
                 </Stack>
               </Stack>
             </Grid>
-            <Grid size={{ xs: 12, md: 5 }}>
+            <Grid xs={12} md={5}>
               <Box
                 component="form"
                 onSubmit={handleHeroSearch}
@@ -408,28 +458,49 @@ export default function Home() {
                   <TextField
                     fullWidth
                     label="지역명 또는 역명을 입력해주세요"
-                    placeholder="예: 서재영, 홍대입구"
+                    placeholder="예: 홍대입구"
                     variant="outlined"
                     value={heroKeyword}
                     onChange={(event) => setHeroKeyword(event.target.value)}
                   />
-                  <TextField
-                    select
-                    fullWidth
-                    label="지역 선택"
-                    value={heroDistrict}
-                    onChange={(event) => setHeroDistrict(event.target.value)}
-                  >
-                    <MenuItem value="">
-                      <em>전체 지역</em>
-                    </MenuItem>
-                    <MenuItem value="강남구">강남구</MenuItem>
-                    <MenuItem value="마포구">마포구</MenuItem>
-                    <MenuItem value="광진구">광진구</MenuItem>
-                    <MenuItem value="송파구">송파구</MenuItem>
-                    <MenuItem value="용산구">용산구</MenuItem>
-                    <MenuItem value="서재영">서재영</MenuItem>
-                  </TextField>
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+                    <TextField
+                      select
+                      fullWidth
+                      label="지역 선택"
+                      value={heroRegion}
+                      onChange={(event) => {
+                        setHeroRegion(event.target.value);
+                        setHeroDistrict("");
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>지역 전체</em>
+                      </MenuItem>
+                      {provinces.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <TextField
+                      select
+                      fullWidth
+                      label="구/읍/면 선택"
+                      value={heroDistrict}
+                      onChange={(event) => setHeroDistrict(event.target.value)}
+                      disabled={!heroRegion}
+                    >
+                      <MenuItem value="">
+                        <em>전체</em>
+                      </MenuItem>
+                      {districtOptions.map((option) => (
+                        <MenuItem key={option} value={option}>
+                          {option}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Stack>
                   <Button
                     type="submit"
                     variant="contained"
@@ -476,7 +547,7 @@ export default function Home() {
 
           <Grid container spacing={3}>
             {featureHighlights.map((feature) => (
-              <Grid size={{ xs: 12, md: 4 }} key={feature.title}>
+              <Grid xs={12} md={4} key={feature.title}>
                 <Card
                   sx={{
                     height: "100%",
@@ -557,7 +628,7 @@ export default function Home() {
                   const imageUrl = room.images?.[0]?.imageUrl ?? null;
                   const tags = extractTags(room);
                   return (
-                    <Grid size={{ xs: 12, md: 4 }} key={room.roomId}>
+                    <Grid xs={12} md={4} key={room.roomId}>
                       <Card
                         sx={{
                           height: "100%",
@@ -722,7 +793,7 @@ export default function Home() {
                       ? Math.round(district.activityScore)
                       : district.activityScore;
                   return (
-                    <Grid size={{ xs: 12, md: 4 }} key={district.district}>
+                    <Grid xs={12} md={4} key={district.district}>
                       <Card
                         sx={{
                           borderRadius: 3,
@@ -886,7 +957,7 @@ export default function Home() {
       <Box sx={{ bgcolor: "#030b24", color: "rgba(255,255,255,0.75)", py: 6 }}>
         <Container maxWidth="lg">
           <Grid container spacing={4}>
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid xs={12} md={4}>
               <Stack spacing={2}>
                 <Typography variant="h6" color="common.white" fontWeight={700}>
                   ShareStay+
@@ -910,9 +981,9 @@ export default function Home() {
                 </Stack>
               </Stack>
             </Grid>
-            <Grid size={{ xs: 12, md: 8 }}>
+            <Grid xs={12} md={8}>
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 4 }}>
+                <Grid xs={12} sm={4}>
                   <Typography
                     variant="subtitle2"
                     color="common.white"
@@ -925,8 +996,8 @@ export default function Home() {
                     <Box component="a" href="/rooms" color="inherit">
                       룸메이트 찾기
                     </Box>
-                    <Box component="a" href="/safety-map" color="inherit">
-                      안전도 지도
+                    <Box component="a" href="/RoomMap" color="inherit">
+                      지도로 찾기
                     </Box>
                     <Box component="a" href="/matching" color="inherit">
                       룸메이트 매칭
@@ -936,7 +1007,7 @@ export default function Home() {
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
+                <Grid xs={12} sm={4}>
                   <Typography
                     variant="subtitle2"
                     color="common.white"
@@ -960,7 +1031,7 @@ export default function Home() {
                     </Box>
                   </Stack>
                 </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
+                <Grid xs={12} sm={4}>
                   <Typography
                     variant="subtitle2"
                     color="common.white"

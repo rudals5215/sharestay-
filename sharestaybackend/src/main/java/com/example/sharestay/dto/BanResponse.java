@@ -1,6 +1,7 @@
 package com.example.sharestay.dto;
 
 import com.example.sharestay.entity.Ban;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,12 @@ public class BanResponse {
     private final LocalDateTime endDate;
     private final boolean isActive;
     private final String memo;
+
+    // 프런트에서 active 필드명으로도 받을 수 있게 별도 getter 제공
+    @JsonProperty("active")
+    public boolean getActive() {
+        return isActive;
+    }
 
     public BanResponse(Ban ban) {
         this.banId = ban.getId();

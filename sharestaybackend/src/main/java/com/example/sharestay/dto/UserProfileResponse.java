@@ -19,6 +19,7 @@ public class UserProfileResponse {
     private String lifeStyle;
     private String role;
     private Date signupDate;
+    private Long hostId;
     private String hostIntroduction;
     private Boolean hostTermsAgreed;
 }

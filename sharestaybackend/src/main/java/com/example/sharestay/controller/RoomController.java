@@ -1,10 +1,8 @@
 package com.example.sharestay.controller;
 
 import com.example.sharestay.dto.RoomDetailResponse;
-//import com.example.sharestay.dto.RoomImageResponse;
 import com.example.sharestay.dto.RoomRequest;
 import com.example.sharestay.dto.RoomResponse;
-import com.example.sharestay.entity.Room;
 import com.example.sharestay.service.RoomService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -13,7 +11,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
@@ -24,56 +31,55 @@ public class RoomController {
 
     private final RoomService roomService;
 
-    // 방 등록 (텍스트 + 이미지 파일 같이 받기)
-    @Operation(summary = "방 등록", description = "호스트가 방 정보를 입력하고 이미지를 업로드합니다.")
+    @Operation(summary = "방 등록", description = "호스트가 방 기본 정보와 이미지 파일을 함께 등록합니다.")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RoomResponse> createRoom(
-            @ModelAttribute RoomRequest request,        // 제목/가격/주소 등  @ModelAttribute + @RequestPart 이 조합 스프링에서 잘 안돌아감
-            @RequestParam(required = false) List<MultipartFile> files  // 이미지 리스트
+            @ModelAttribute RoomRequest request,
+            @RequestParam(required = false) List<MultipartFile> files
     ) {
         RoomResponse response = roomService.createRoom(request, files);
         return ResponseEntity.ok(response);
     }
 
     // 메인 화면 간단 검색과 필터 검색 통합
+    @Operation(summary = "방 검색", description = "지역, 유형, 가격 범위, 옵션 등 다양한 조건으로 방 목록을 검색합니다.")
     @GetMapping("/search")
-    public ResponseEntity<List<RoomResponse>> searchRooms(
-            @RequestParam(required = false) String region,
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) Double maxPrice,
-            @RequestParam(required = false) String option
+    public ResponseEntity<List<RoomResponse>> searchRooms(   // 이건 검색 시
+         @RequestParam(required = false) String region,     // 시/광역시 또는 구 단위까지 포함하는 지역명
+         @RequestParam(required = false) String district,   // 하위 구/읍/면
+         @RequestParam(required = false) String type,
+         @RequestParam(required = false) Double minPrice,
+         @RequestParam(required = false) Double maxPrice,
+         @RequestParam(required = false) String option
     ) {
         return ResponseEntity.ok(
-                roomService.searchRooms(region, type, minPrice, maxPrice, option)
+                roomService.searchRooms(region, district, type, minPrice, maxPrice, option)
         );
     }
 
-    /**
-     * Frontend simple search endpoint compatibility.
-     * Reuses the main searchRooms logic but only takes region.
-     */
-    @GetMapping("/search/simple")
-    public ResponseEntity<List<RoomResponse>> searchRoomsSimple(
-            @RequestParam(required = false) String region
-    ) {
-        return ResponseEntity.ok(
-                roomService.searchRooms(region, null, null, null, null)
-        );
+    @Operation(summary = "방 전체 조회", description = "조건 없이 모든 방 목록을 반환합니다.")
+    @GetMapping
+    public ResponseEntity<List<RoomResponse>> getAllRooms() {
+        List<RoomResponse> rooms = roomService.getRoomList();
+        return ResponseEntity.ok(rooms);
     }
 
 
-//    @Operation(summary = "방 이미지 업로드", description = "특정 방에 이미지를 업로드합니다.")
-//    @PostMapping("/{roomId}/images")
-//    public ResponseEntity<List<RoomImageResponse>> uploadImages(
-//            @PathVariable Long roomId,
-//            @RequestPart("files") List<MultipartFile> files
-//    ) {
-//        return ResponseEntity.ok(roomService.uploadRoomImages(roomId, files));
-//    }
+    @Operation(summary = "방 상세 조회", description = "특정 방의 상세 정보를 조회합니다.")
+    @GetMapping("/{roomId}")
+    public ResponseEntity<RoomDetailResponse> getRoomDetail(@PathVariable Long roomId) {
+        return ResponseEntity.ok(roomService.getRoomDetail(roomId));
+    }
 
-    // 방 수정
-    @Operation(summary = "방 정보 수정", description = "특정 방의 기본 정보를 수정합니다.")
+    @Operation(summary = "내 방 관리", description = "특정 호스트가 등록한 방 목록을 조회합니다.")
+    @GetMapping("/host/{hostId}")
+    public ResponseEntity<List<RoomResponse>> getRoomsByHost(@PathVariable Long hostId) {
+        List<RoomResponse> rooms = roomService.getRoomListByHost(hostId);
+        return ResponseEntity.ok(rooms);
+    }
+
+
+    @Operation(summary = "방 정보 수정", description = "방 기본 정보를 수정합니다.")
     @PutMapping("/{roomId}")
     public ResponseEntity<RoomResponse> updateRoom(
             @PathVariable Long roomId,
@@ -82,34 +88,10 @@ public class RoomController {
         return ResponseEntity.ok(roomService.updateRoom(roomId, request));
     }
 
-    // 방 삭제
     @Operation(summary = "방 삭제", description = "특정 방을 삭제합니다.")
     @DeleteMapping("/{roomId}")
     public ResponseEntity<Void> deleteRoom(@PathVariable Long roomId) {
         roomService.deleteRoom(roomId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
-
-    // 전체/검색 결과 방 목록
-    @GetMapping
-    public ResponseEntity<List<RoomResponse>> getAllRooms() {
-        List<RoomResponse> rooms = roomService.getRoomList();
-        return ResponseEntity.ok(rooms);
-    }
-
-    // 방 상세 조회
-    @Operation(summary = "방 상세 조회", description = "특정 방의 상세 정보를 조회합니다.")
-    @GetMapping("/{roomId}")
-    public ResponseEntity<RoomDetailResponse> getRoomDetail(@PathVariable Long roomId) {
-        return ResponseEntity.ok(roomService.getRoomDetail(roomId));
-    }
-
-
-
-
-
-
-
-
-
 }

@@ -1,4 +1,4 @@
-﻿// src/components/SiteHeader.tsx
+﻿﻿// src/components/SiteHeader.tsx
 import { AppBar, Box, Button, Stack, Toolbar, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
@@ -6,7 +6,7 @@ import type { Roles } from "../auth/types";
 
 const navLinks: { label: string; href: string; requireRoles?: Roles[] }[] = [
   { label: "방찾기", href: "/rooms" },
-  { label: "안전도 지도", href: "/safety-map" },
+  { label: "지도로 찾기", href: "/RoomMap" },
   { label: "이용 가이드", href: "/guide" },
   { label: "룸 등록", href: "/list-room", requireRoles: ["HOST", "ADMIN"] },
 ];
@@ -36,7 +36,7 @@ export default function SiteHeader(_: Props) {
         }}
       >
         <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-          <Box sx={{ flex: 1 }}>
+          <Box sx={{ flex: "0 0 auto", minWidth: 160 }}>
             <Typography
               component={RouterLink}
               to="/"
@@ -45,22 +45,39 @@ export default function SiteHeader(_: Props) {
               color="inherit"
               sx={{
                 textDecoration: "none",
-                ml: 35,
+                px: { xs: 0, sm: 1 },
               }}
             >
               ShareStay+
             </Typography>
           </Box>
 
-          <Box sx={{ flex: 1, display: "flex", justifyContent: "center" }}>
-            <Stack direction="row" spacing={2} alignItems="center">
+          <Box
+            sx={{
+              flex: "1 1 auto",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={{ xs: 0.75, sm: 1.25, md: 1.75 }}
+              alignItems="center"
+              flexWrap="wrap"
+            >
               {allowedLinks.map((link) => (
                 <Button
                   key={link.href}
                   component={RouterLink}
                   to={link.href}
                   color="inherit"
-                  sx={{ fontWeight: 500 }}
+                  sx={{
+                    fontWeight: 500,
+                    px: { xs: 1.25, sm: 1.75, md: 2 },
+                    minWidth: 72,
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}
                 >
                   {link.label}
                 </Button>
@@ -68,22 +85,55 @@ export default function SiteHeader(_: Props) {
             </Stack>
           </Box>
 
-          <Box sx={{ flex: 1, display: "flex", justifyContent: "flex-end", pr: 2 }}>
+          <Box
+            sx={{
+              flex: "0 0 auto",
+              display: "flex",
+              justifyContent: "flex-end",
+              pr: 2,
+            }}
+          >
             {isLoading ? (
               <Typography variant="body2" color="text.secondary">
                 Loading...
               </Typography>
             ) : user ? (
-              <Stack direction="row" spacing={1.5} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={{ xs: 0.75, sm: 1.25, md: 1.5 }}
+                alignItems="center"
+                flexWrap="wrap"
+                justifyContent="flex-end"
+              >
                 <Typography variant="body2" fontWeight={600}>
                   {user.nickname ?? user.email ?? user.username}
                 </Typography>
-                <Button component={RouterLink} to="/profile" color="inherit">
+                <Button
+                  component={RouterLink}
+                  to="/profile"
+                  color="inherit"
+                  sx={{ px: { xs: 1, sm: 1.25, md: 1.5 }, minWidth: "auto" }}
+                >
                   프로필
                 </Button>
-                <Button onClick={logout} color="inherit">
+                <Button
+                  onClick={logout}
+                  color="inherit"
+                  sx={{ px: { xs: 1, sm: 1.25, md: 1.5 }, minWidth: "auto" }}
+                >
                   로그아웃
                 </Button>
+                {roles.includes("ADMIN") && (
+                  <Button
+                    component={RouterLink}
+                    to="/admin"
+                    color="primary"
+                    variant="outlined"
+                    sx={{ px: { xs: 1, sm: 1.25, md: 1.5 }, minWidth: "auto" }}
+                  >
+                    관리자
+                  </Button>
+                )}
               </Stack>
             ) : (
               <Stack direction="row" spacing={1}>

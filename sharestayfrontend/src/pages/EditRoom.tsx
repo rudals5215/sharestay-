@@ -5,13 +5,15 @@ import {
   Button,
   Container,
   InputAdornment,
+  FormControlLabel,
+  Checkbox,
   MenuItem,
   Paper,
   Stack,
   Typography,
   CircularProgress,
 } from "@mui/material";
-import Grid from "@mui/material/GridLegacy";
+import Grid from "@mui/material/Unstable_Grid2";
 import { HomeWork, LocationOn } from "@mui/icons-material";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -28,6 +30,7 @@ import type {
   RoomAvailabilityStatus,
   RoomRequestPayload,
 } from "../types/room";
+
 
 const roomSchema = z.object({
   title: z.string().min(1, "Please enter a title."),
@@ -54,6 +57,9 @@ const roomSchema = z.object({
       (value) => !value || !Number.isNaN(Number(value)),
       "Longitude must be a number."
     ),
+  preferredGender: z.string().optional(),
+  preferredAge: z.string().optional(),
+  totalMembers: z.string().optional(),
   description: z
     .string()
     .min(10, "Description must be at least 10 characters.")
@@ -63,30 +69,86 @@ const roomSchema = z.object({
 type FormValues = z.infer<typeof roomSchema>;
 
 const roomTypes = [
-  { value: "ONE_ROOM", label: "One-room" },
-  { value: "TWO_ROOM", label: "Two-room" },
-  { value: "OFFICETEL", label: "Officetel" },
-  { value: "APARTMENT", label: "Apartment" },
-  { value: "ETC", label: "Other" },
+  { value: "ONE_ROOM", label: "원룸" },
+  { value: "TWO_ROOM", label: "투룸" },
+  { value: "OFFICETEL", label: "오피스텔" },
+  { value: "APARTMENT", label: "아파트" },
+  { value: "ETC", label: "그 외" },
 ];
 
 const availabilityOptions = [
-  { value: "AVAILABLE", label: "Available" },
-  { value: "PENDING", label: "Pending" },
-  { value: "UNAVAILABLE", label: "Unavailable" },
+  { value: "AVAILABLE", label: "모집중" },
+  { value: "PENDING", label: "예약중" },
+  { value: "UNAVAILABLE", label: "마감" },
 ];
 
 const availabilityStatusMap: Record<RoomAvailabilityStatus, number> = {
-  AVAILABLE: 1,
-  PENDING: 0,
-  UNAVAILABLE: -1,
+  AVAILABLE: 0,
+  PENDING: 1,
+  UNAVAILABLE: 2,
 };
 
 const reverseAvailabilityStatusMap: Record<number, RoomAvailabilityStatus> = {
-  1: "AVAILABLE",
-  0: "PENDING",
-  [-1]: "UNAVAILABLE",
+  0: "AVAILABLE",
+  1: "PENDING",
+  2: "UNAVAILABLE",
 };
+
+const preferredGenderOptions = [
+  { value: "", label: "선택 안 함" },
+  { value: "남성 선호", label: "남성 선호" },
+  { value: "여성 선호", label: "여성 선호" },
+  { value: "성별 무관", label: "성별 무관" },
+];
+
+const preferredAgeOptions = [
+  { value: "", label: "선택 안 함" },
+  { value: "10s", label: "10대" },
+  { value: "20s", label: "20대" },
+  { value: "30s", label: "30대" },
+  { value: "40s", label: "40대" },
+  { value: "50s", label: "50대 이상" },
+];
+
+const totalMemberOptions = [
+  { value: "", label: "선택 안 함" },
+  { value: "1", label: "1명" },
+  { value: "2", label: "2명" },
+  { value: "3", label: "3명" },
+  { value: "4", label: "4명 이상" },
+];
+
+const lifestyleOptions = [
+  "금연",
+  "흡연",
+  "조용한 생활",
+  "사교적",
+  "청소 자주",
+  "요리 자주",
+  "늦게 귀가",
+  "일찍 기상",
+  "운동 좋아함",
+  "음악 감상",
+  "게임",
+  "독서",
+];
+
+const facilityOptions = [
+  "에어컨",
+  "냉장고",
+  "세탁기",
+  "인터넷",
+  "와이파이",
+  "엘리베이터",
+  "TV",
+  "침대",
+  "책상",
+  "보안시설",
+  "주차장",
+  "헬스장",
+  "베란다",
+  "반려동물 가능",
+];
 
 export default function EditRoom() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -100,8 +162,12 @@ export default function EditRoom() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [images, setImages] = useState<File[]>([]);
+  const [selectedLifestyle, setSelectedLifestyle] = useState<string[]>([]);
+  const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const lastValuesRef = useRef<FormValues | null>(null);
+  const initialLifestyleRef = useRef<string[]>([]);
+  const initialFacilitiesRef = useRef<string[]>([]);
 
   const {
     control,
@@ -118,6 +184,9 @@ export default function EditRoom() {
       address: "",
       latitude: "",
       longitude: "",
+      preferredGender: "",
+      preferredAge: "",
+      totalMembers: "",
       description: "",
     },
   });
@@ -127,6 +196,29 @@ export default function EditRoom() {
     if (isAdmin) return true;
     return ownerUserId != null && ownerUserId === user.id;
   }, [isAdmin, ownerUserId, user]);
+
+  const toggleSelection = (
+    value: string,
+    setter: (updater: (prev: string[]) => string[]) => void
+  ) =>
+    setter((prev) =>
+      prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value]
+    );
+
+  const toArray = (value?: string[] | string | null) => {
+    if (!value) return [];
+    if (Array.isArray(value)) {
+      return value.filter(
+        (item) => typeof item === "string" && item.trim().length > 0
+      );
+    }
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  };
 
   useEffect(() => {
     if (!roomId) {
@@ -139,12 +231,15 @@ export default function EditRoom() {
       setIsLoading(true);
       setError(null);
       try {
-        const { data } = await api.get<RoomDetailApiResponse>(`/rooms/${roomId}`);
+        const { data } = await api.get<RoomDetailApiResponse>(
+          `/rooms/${roomId}`
+        );
         setRoomHostId(data.hostId ?? null);
         setOwnerUserId(data.hostUserId ?? null);
 
         const statusKey =
-          reverseAvailabilityStatusMap[data.availabilityStatus ?? 1] ?? "AVAILABLE";
+          reverseAvailabilityStatusMap[data.availabilityStatus ?? 1] ??
+          "AVAILABLE";
 
         const nextValues: FormValues = {
           title: data.title ?? "",
@@ -157,9 +252,17 @@ export default function EditRoom() {
             typeof data.latitude === "number" ? String(data.latitude) : "",
           longitude:
             typeof data.longitude === "number" ? String(data.longitude) : "",
+          preferredGender: data.preferredGender ?? "",
+          preferredAge: data.preferredAge ?? "",
+          totalMembers:
+            data.totalMembers != null ? String(data.totalMembers) : "",
           description: data.description ?? "",
         };
 
+        setSelectedLifestyle(toArray(data.lifestyle));
+        setSelectedFacilities(toArray(data.options));
+        initialLifestyleRef.current = toArray(data.lifestyle);
+        initialFacilitiesRef.current = toArray(data.options);
         lastValuesRef.current = nextValues;
         reset(nextValues);
         setImages([]);
@@ -184,6 +287,8 @@ export default function EditRoom() {
       reset(lastValuesRef.current);
     }
     setImages([]);
+    setSelectedLifestyle([...initialLifestyleRef.current]);
+    setSelectedFacilities([...initialFacilitiesRef.current]);
   };
 
   const handleImagePick = () => {
@@ -201,7 +306,11 @@ export default function EditRoom() {
       alert("You do not have permission to delete this room.");
       return;
     }
-    if (!window.confirm("Are you sure you want to delete this room? This action cannot be undone.")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this room? This action cannot be undone."
+      )
+    ) {
       return;
     }
     try {
@@ -224,16 +333,45 @@ export default function EditRoom() {
       return;
     }
 
+    // 주소를 좌표로 변환하는 함수
+    const getCoordsFromAddress = (address: string): Promise<{ lat: number; lng: number } | null> => {
+      return new Promise((resolve) => {
+        if (!window.kakao || !window.kakao.maps) {
+          resolve(null);
+          return;
+        }
+        const geocoder = new window.kakao.maps.services.Geocoder();
+        geocoder.addressSearch(address, (result: any, status: any) => {
+          if (status === window.kakao.maps.services.Status.OK && result.length > 0) {
+            resolve({
+              lat: parseFloat(result[0].y),
+              lng: parseFloat(result[0].x),
+            });
+          } else {
+            resolve(null);
+          }
+        });
+      });
+    };
+
     try {
       const rentPrice = Number(values.rentPrice);
-      const latitudeValue =
+      let latitudeValue =
         values.latitude && values.latitude.trim().length > 0
           ? Number(values.latitude)
           : undefined;
-      const longitudeValue =
+      let longitudeValue =
         values.longitude && values.longitude.trim().length > 0
           ? Number(values.longitude)
           : undefined;
+
+      if ((latitudeValue === undefined || longitudeValue === undefined) && values.address) {
+        const coords = await getCoordsFromAddress(values.address);
+        if (coords) {
+          latitudeValue = coords.lat;
+          longitudeValue = coords.lng;
+        }
+      }
 
       if (Number.isNaN(rentPrice)) {
         throw new Error("월세 값이 올바르지 않습니다.");
@@ -250,16 +388,29 @@ export default function EditRoom() {
           values.availabilityStatus as RoomAvailabilityStatus
         ] ?? 0;
 
+      const totalMembersValue =
+        values.totalMembers && values.totalMembers.trim().length > 0
+          ? Number(values.totalMembers)
+          : null;
+
+      const options = selectedFacilities;
+      const lifestyle = selectedLifestyle;
+
       const payload: RoomRequestPayload = {
         hostId: roomHostId,
         title: values.title,
         rentPrice,
         address: values.address,
         type: values.type,
-        latitude: latitudeValue ?? 0,
-        longitude: longitudeValue ?? 0,
+        latitude: latitudeValue ?? null,
+        longitude: longitudeValue ?? null,
         availabilityStatus: availabilityCode,
         description: values.description,
+        preferredGender: values.preferredGender ?? "",
+        preferredAge: values.preferredAge ?? "",
+        totalMembers: totalMembersValue,
+        options,
+        lifestyle,
       };
 
       await api.put(`/rooms/${roomId}`, payload);
@@ -272,7 +423,7 @@ export default function EditRoom() {
         });
       }
 
-      alert("Room details updated.");
+      alert("방 정보가 수정되었습니다.");
       navigate(`/rooms/${roomId}`, { replace: true });
     } catch (err) {
       const message =
@@ -290,7 +441,9 @@ export default function EditRoom() {
         <Container sx={{ py: 8 }}>
           <Stack alignItems="center" spacing={2}>
             <CircularProgress />
-            <Typography color="text.secondary">방 정보를 불러오는 중입니다...</Typography>
+            <Typography color="text.secondary">
+              방 정보를 불러오는 중입니다...
+            </Typography>
           </Stack>
         </Container>
         <SiteFooter />
@@ -328,9 +481,14 @@ export default function EditRoom() {
         <SiteHeader activePath="/rooms" />
         <Container sx={{ py: 8 }} maxWidth="sm">
           <Alert severity="warning">
-            방 수정 권한이 없습니다. 호스트 본인 또는 관리자만 수정할 수 있습니다.
+            방 수정 권한이 없습니다. 호스트 본인 또는 관리자만 수정할 수
+            있습니다.
           </Alert>
-          <Button sx={{ mt: 2 }} variant="contained" onClick={() => navigate("/rooms")}>
+          <Button
+            sx={{ mt: 2 }}
+            variant="contained"
+            onClick={() => navigate("/rooms")}
+          >
             방 목록으로 돌아가기
           </Button>
         </Container>
@@ -362,9 +520,12 @@ export default function EditRoom() {
           >
             <Box component="form" onSubmit={handleSubmit(onSubmit)}>
               <Stack spacing={4}>
-                <SectionTitle icon={<HomeWork color="primary" />} title="기본 정보" />
+                <SectionTitle
+                  icon={<HomeWork color="primary" />}
+                  title="기본 정보"
+                />
                 <Grid container spacing={3}>
-                  <Grid size={{ xs: 12 }}>
+                  <Grid xs={12}>
                     <FormTextField
                       name="title"
                       control={control}
@@ -372,7 +533,7 @@ export default function EditRoom() {
                       placeholder="예: 홍대입구역 도보 3분 원룸"
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid xs={12} sm={6}>
                     <FormTextField
                       name="rentPrice"
                       control={control}
@@ -385,7 +546,7 @@ export default function EditRoom() {
                       }}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid xs={12} sm={6}>
                     <FormTextField
                       name="type"
                       control={control}
@@ -399,7 +560,7 @@ export default function EditRoom() {
                       ))}
                     </FormTextField>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid xs={12} sm={6}>
                     <FormTextField
                       name="availabilityStatus"
                       control={control}
@@ -413,7 +574,7 @@ export default function EditRoom() {
                       ))}
                     </FormTextField>
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid xs={12} sm={6}>
                     <FormTextField
                       name="address"
                       control={control}
@@ -428,7 +589,7 @@ export default function EditRoom() {
                       }}
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid xs={12} sm={6}>
                     <FormTextField
                       name="latitude"
                       control={control}
@@ -436,7 +597,7 @@ export default function EditRoom() {
                       placeholder="37.12345"
                     />
                   </Grid>
-                  <Grid size={{ xs: 12, sm: 6 }}>
+                  <Grid xs={12} sm={6}>
                     <FormTextField
                       name="longitude"
                       control={control}
@@ -445,6 +606,70 @@ export default function EditRoom() {
                     />
                   </Grid>
                 </Grid>
+
+                <SectionTitle title="룸메이트 조건" />
+                <Grid container spacing={3}>
+                  <Grid xs={12} sm={4}>
+                    <FormTextField
+                      name="preferredGender"
+                      control={control}
+                      label="선호 성별"
+                      select
+                    >
+                      {preferredGenderOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </FormTextField>
+                  </Grid>
+                  <Grid xs={12} sm={4}>
+                    <FormTextField
+                      name="preferredAge"
+                      control={control}
+                      label="선호 연령대"
+                      select
+                    >
+                      {preferredAgeOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </FormTextField>
+                  </Grid>
+                  <Grid xs={12} sm={4}>
+                    <FormTextField
+                      name="totalMembers"
+                      control={control}
+                      label="총 인원수"
+                      select
+                    >
+                      {totalMemberOptions.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </FormTextField>
+                  </Grid>
+                </Grid>
+
+                <SectionTitle title="생활 패턴" />
+                <CheckboxGroup
+                  options={lifestyleOptions}
+                  selected={selectedLifestyle}
+                  onToggle={(option) =>
+                    toggleSelection(option, setSelectedLifestyle)
+                  }
+                />
+
+                <SectionTitle title="부가 옵션" />
+                <CheckboxGroup
+                  options={facilityOptions}
+                  selected={selectedFacilities}
+                  onToggle={(option) =>
+                    toggleSelection(option, setSelectedFacilities)
+                  }
+                />
 
                 <SectionTitle title="상세 설명" />
                 <FormTextField
@@ -489,8 +714,7 @@ export default function EditRoom() {
                   justifyContent="flex-end"
                   flexWrap="wrap"
                 >
-                  <Button variant="text" onClick={handleReset}
-                  >
+                  <Button variant="text" onClick={handleReset}>
                     변경 취소
                   </Button>
                   <Button
@@ -536,5 +760,33 @@ function SectionTitle({
         {title}
       </Typography>
     </Stack>
+  );
+}
+
+function CheckboxGroup({
+  options,
+  selected,
+  onToggle,
+}: {
+  options: string[];
+  selected: string[];
+  onToggle: (option: string) => void;
+}) {
+  return (
+    <Grid container spacing={1.5}>
+      {options.map((option) => (
+        <Grid xs={12} sm={6} md={3} key={option}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={selected.includes(option)}
+                onChange={() => onToggle(option)}
+              />
+            }
+            label={option}
+          />
+        </Grid>
+      ))}
+    </Grid>
   );
 }

@@ -1,4 +1,4 @@
-const assetBaseUrl = (import.meta.env.VITE_BASE_URL ?? "").replace(/\/$/, "");
+﻿const assetBaseUrl = (import.meta.env.VITE_BASE_URL ?? "").replace(/\/$/, "");
 
 export const resolveRoomImageUrl = (value?: string | null) => {
   if (!value) return undefined;
@@ -8,7 +8,7 @@ export const resolveRoomImageUrl = (value?: string | null) => {
   return `${assetBaseUrl}/${trimmed}`;
 };
 
-export interface RoomImageApiResponse {
+export interface RoomImageResponse {
   id: number;
   imageUrl: string;
 }
@@ -25,8 +25,13 @@ export type RoomAvailabilityStatus = "AVAILABLE" | "UNAVAILABLE" | "PENDING";
 
 export interface RoomSummary {
   roomId?: number;
-  id?: number;
-  hostId?: number;
+  id?: number | null;
+  hostId?: number | null;
+  hostUserId?: number | null;
+  preferredGender?: string | null;
+  preferredAge?: string | null;
+  totalMembers?: number | null;
+  lifestyle?: string[] | string | null;
   title: string;
   rentPrice: number;
   address: string;
@@ -51,32 +56,62 @@ export interface RoomRequestPayload {
   rentPrice: number;
   address: string;
   type: string;
-  latitude: number;
-  longitude: number;
   availabilityStatus: number;
   description: string;
+  latitude: number | null;
+  longitude: number | null;
+  preferredGender?: string | null;
+  preferredAge?: string | null;
+  totalMembers?: number | null;
+  options?: string[];
+  lifestyle?: string[];
 }
+
 
 export interface RoomApiResponse {
   id: number;
-  roomId?: number; // roomId 필드 추가
+  hostId?: number | null;
+  hostUserId?: number | null;
+  preferredGender?: string | null;
+  preferredAge?: string | null;
+  totalMembers?: number | null;
+  lifestyle?: string[] | null;
   title: string;
   rentPrice: number;
   address: string;
   type: string;
   availabilityStatus: number;
-  description?: string;
-  images?: RoomImageApiResponse[];
-  shareLinkUrl?: string | null;
+  description: string;
   latitude?: number;
   longitude?: number;
-}
-
-export interface RoomDetailApiResponse extends RoomApiResponse {
-  latitude?: number;
-  longitude?: number;
+  options?: string | string[] | null;
+  images: RoomImageResponse[];
   imageUrls?: string[];
   shareLinkUrl?: string | null;
+  shareLink?: { linkUrl?: string | null };
+}
+
+export interface RoomDetailApiResponse {
+  id: number;
+  hostId?: number | null;
+  hostUserId?: number | null;
+  preferredGender?: string | null;
+  preferredAge?: string | null;
+  totalMembers?: number | null;
+  lifestyle?: string[] | null;
+  title: string;
+  rentPrice: number;
+  address: string;
+  type: string;
+  availabilityStatus: number;
+  description: string;
+  options?: string[] | string | null;
+  latitude: number;
+  longitude: number;
+  images?: RoomImageResponse[];
+  imageUrls?: string[];
+  shareLinkUrl?: string | null;
+  shareLink?: { linkUrl?: string | null };
 }
 
 export interface ShareLinkResponse {
@@ -84,11 +119,9 @@ export interface ShareLinkResponse {
 }
 
 export const mapRoomFromApi = (
-  room: RoomApiResponse & {
-    latitude?: number; longitude?: number;
-  }
+  room: RoomApiResponse | RoomDetailApiResponse
 ): RoomSummary => {
-  const roomId = room.roomId ?? room.id; // roomId가 있으면 사용, 없으면 id 사용
+  const roomId = room.roomId ?? room.id;
 
   const normalizedImages: RoomImage[] =
     room.images?.map((image) => ({
@@ -96,20 +129,34 @@ export const mapRoomFromApi = (
       imageId: image.id,
       roomId: roomId,
       imageUrl: resolveRoomImageUrl(image.imageUrl) ?? image.imageUrl ?? "",
-    })) ?? [];
+    })) ??
+    room.imageUrls?.map((url, index) => ({
+      id: index,
+      imageId: index,
+      roomId: room.id,
+      imageUrl: resolveRoomImageUrl(url) ?? url ?? "",
+    })) ??
+    [];
 
   return {
-    roomId: roomId,
-    id: roomId,
+    roomId: room.id,
+    id: room.id,
+    hostId: "hostId" in room ? room.hostId : undefined,
+    hostUserId: "hostUserId" in room ? room.hostUserId : undefined,
+    preferredGender: "preferredGender" in room ? room.preferredGender : undefined,
+    preferredAge: "preferredAge" in room ? room.preferredAge : undefined,
+    totalMembers: "totalMembers" in room ? room.totalMembers : undefined,
+    lifestyle: "lifestyle" in room ? room.lifestyle : undefined,
     title: room.title,
     rentPrice: room.rentPrice,
     address: room.address,
     type: room.type,
     availabilityStatus: room.availabilityStatus,
-    latitude: room.latitude,
-    longitude: room.longitude,
+    latitude: "latitude" in room ? room.latitude : undefined,
+    longitude: "longitude" in room ? room.longitude : undefined,
     description: room.description,
+    options: "options" in room ? room.options : undefined,
     images: normalizedImages,
-    shareLinkUrl: room.shareLinkUrl ?? undefined,
+    shareLinkUrl: room.shareLinkUrl ?? room.shareLink?.linkUrl ?? undefined,
   };
 };

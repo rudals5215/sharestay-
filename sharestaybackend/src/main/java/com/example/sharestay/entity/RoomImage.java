@@ -1,5 +1,6 @@
 package com.example.sharestay.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @NoArgsConstructor(force = true)
 @Data
+@JsonIgnoreProperties("room") // 순환 참조 방지
 public class RoomImage {
 
     @Id

@@ -1,11 +1,14 @@
 // npm install \
 // react react-dom react-router-dom \
-// @mui/material @mui/icons-material @emotion/react @emotion/styled \
+// @mui/material @mui/icons-material 
+// @emotion/react @emotion/styled \
 // axios \
 // react-hook-form @hookform/resolvers \
 // zod \
 // @fontsource/roboto \
 // @react-oauth/google
+// npm install firebase
+// npm install --save firebase
 
 // src/App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -20,16 +23,17 @@ import Guide from "./pages/Guide";
 import Rooms from "./pages/Rooms";
 import RoomDetail from "./pages/RoomDetail";
 import ListRoom from "./pages/ListRoom";
+import EditRoom from "./pages/EditRoom";
 import ForgotPassword from "./pages/ForgotPassword";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Contact from "./pages/Contact";
 import SafetyMap from "./pages/SafetyMap";
 import LifestyleSetup from "./pages/LifestyleSetup";
+import LoginSuccess from "./pages/LoginSuccess";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import RoomMap from "./pages/RoomMap";
 import { AuthProvider } from "./auth/AuthContext";
-import LoginSuccess from "./pages/LoginSuccess";
 import AdminDashboard from "./pages/AdminDashboard";
 
 const theme = createTheme({
@@ -72,10 +76,10 @@ function App() {
           <CssBaseline />
           <BrowserRouter>
             <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
             <Route path="/login-success" element={<LoginSuccess />} />
+<<<<<<< HEAD
             <Route path="/guide" element={<Guide />} />
             <Route path="/rooms" element={<Rooms />} />
             <Route path="/rooms/:roomId" element={<RoomDetail />} />
@@ -118,6 +122,58 @@ function App() {
                 </ProtectedRoute>
               }
             />
+=======
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/guide" element={<Guide />} />
+              <Route path="/rooms" element={<Rooms />} />
+              <Route path="/rooms/:roomId" element={<RoomDetail />} />
+              <Route path="/RoomMap" element={<RoomMap />} />
+              <Route
+                path="/list-room"
+                element={
+                  <ProtectedRoute requireRoles={["HOST", "ADMIN"]}>
+                    <ListRoom />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/edit-room/:roomId"
+                element={
+                  <ProtectedRoute requireRoles={["HOST", "ADMIN"]}>
+                    <EditRoom />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/RoomMap" element={<RoomMap />} />
+              {/* <Route path="/safety-map" element={<SafetyMap />} /> */}
+              <Route
+                path="/lifestyle"
+                element={
+                  <ProtectedRoute>
+                    <LifestyleSetup />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute requireRoles={["ADMIN"]}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+>>>>>>> main
             </Routes>
           </BrowserRouter>
         </ThemeProvider>

@@ -1,4 +1,4 @@
-﻿ // src/auth/AuthContext.tsx
+// src/auth/AuthContext.tsx
 import React, { createContext, useEffect, useMemo, useState } from "react";
 import {
   api,
@@ -22,6 +22,7 @@ type BackendUser = {
   nickname?: string;
   role?: string;
   roles?: string[];
+  hostId?: number;
   address?: string;
   phoneNumber?: string;
   lifeStyle?: string;
@@ -80,6 +81,7 @@ function mapUser(dto: BackendUser): UserInfo {
     email: dto.username,
     role: normalizedRoles[0],
     roles: normalizedRoles,
+    hostId: dto.hostId ?? null,
     address: dto.address,
     phoneNumber: dto.phoneNumber,
     lifeStyle: dto.lifeStyle,
@@ -89,21 +91,36 @@ function mapUser(dto: BackendUser): UserInfo {
   };
 }
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (username: string) => {
-    const { data } = await api.get<BackendUser>(`/users/${username}`);
+    const safeUsername = encodeURIComponent(username);
+    const { data } = await api.get<BackendUser>(`/users/${safeUsername}`);
     setUser(mapUser(data));
   };
 
   useEffect(() => {
-    const url = new URL(window.location.href);
     const token = getAccessToken();
     const username = getStoredUsername();
+
+    // 여기에 sub 디코드/console.log 추가
+    if (token) {
+      const payload = token.split(".")[1];
+      try {
+        const decoded = JSON.parse(atob(payload));
+        console.log(
+          "[Auth] JWT sub:",
+          decoded.sub,
+          "stored username:",
+          username
+        );
+      } catch (e) {
+        console.warn("[Auth] token decode failed", e);
+      }
+    }
+    
     if (!token || !username) {
       setIsLoading(false);
       return;
@@ -118,12 +135,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const login = async (username: string, password: string) => {
-    const { data } = await api.post<LoginResponse>('/login', {
+    const { data } = await api.post<LoginResponse>("/login", {
       username,
       password,
     });
     if (!data?.accessToken) {
-      throw new Error('Access token is missing in the response.');
+      throw new Error("Access token is missing in the response.");
     }
 
     setAccessToken(data.accessToken);
@@ -132,13 +149,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const signup = async (payload: SignupPayload) => {
-    await api.post('/signup', payload);
+    await api.post("/signup", payload);
   };
 
   const logout = () => {
     clearTokens();
     setUser(null);
-    window.location.href = '/login';
+    window.location.href = "/login";
   };
 
   const refreshProfile = async () => {
@@ -150,9 +167,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const updateProfile = async (payload: UpdateProfilePayload) => {
     const username = getStoredUsername();
     if (!username) {
-      throw new Error('사용자 정보를 찾을 수 없습니다.');
+      throw new Error("사용자를 찾을 수 없습니다.");
     }
-    await api.put(`/users/${username}`, payload);
+    const safeUsername = encodeURIComponent(username);
+    await api.put(`/users/${safeUsername}`, payload);
     await fetchProfile(username);
   };
 
@@ -166,9 +184,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       refreshProfile,
       updateProfile,
     }),
-    [user, isLoading]
+    [user, isLoading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-

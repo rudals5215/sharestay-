@@ -6,9 +6,13 @@ import com.example.sharestay.dto.UpdateUserRequest;
 import com.example.sharestay.dto.UserProfileResponse;
 import com.example.sharestay.service.UserService;
 import java.util.List;
+import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,4 +50,14 @@ public class UserController {
     public UserProfileResponse updateUser(@PathVariable String email, @RequestBody UpdateUserRequest request) {
         return userService.updateUser(email, request);
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> me(@AuthenticationPrincipal UserDetails user) {
+        return ResponseEntity.ok(Map.of(
+                "username", user.getUsername()
+                // role 정보가 필요하면 UserDetailsService에서 권한 가져오는 방법 사용
+        ));
+    }
+
+
 }

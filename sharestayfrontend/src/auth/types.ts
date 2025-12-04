@@ -8,6 +8,7 @@ export interface UserInfo {
   email?: string;
   role?: Roles;
   roles: Roles[];
+  hostId?: number | null;
   address?: string;
   phoneNumber?: string;
   lifeStyle?: string;

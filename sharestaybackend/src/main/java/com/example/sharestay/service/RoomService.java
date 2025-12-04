@@ -1,28 +1,24 @@
-// RoomService.java
 package com.example.sharestay.service;
 
 import com.example.sharestay.dto.RoomDetailResponse;
-//import com.example.sharestay.dto.RoomImageResponse;
-import com.example.sharestay.entity.Host;
-import com.example.sharestay.entity.RoomImage;
-import com.example.sharestay.entity.User;
-import com.example.sharestay.repository.FavoriteRepository;
-import com.example.sharestay.repository.HostRepository;
-import com.example.sharestay.entity.Room;
-import com.example.sharestay.repository.RoomImageRepository;
-import com.example.sharestay.repository.RoomRepository;
+import com.example.sharestay.dto.RoomImageResponse;
 import com.example.sharestay.dto.RoomRequest;
 import com.example.sharestay.dto.RoomResponse;
+import com.example.sharestay.entity.Host;
+import com.example.sharestay.entity.Room;
+import com.example.sharestay.entity.RoomImage;
+import com.example.sharestay.entity.ShareLink;
+import com.example.sharestay.repository.FavoriteRepository;
+import com.example.sharestay.repository.HostRepository;
+import com.example.sharestay.repository.RoomImageRepository;
+import com.example.sharestay.repository.RoomRepository;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-// 검색, 필터만 // Controller에서 메인 간단 검색 / 상세 검색으로 나눔
 @Service
 @RequiredArgsConstructor
 public class RoomService {
@@ -30,105 +26,24 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final RoomImageRepository roomImageRepository;
     private final HostRepository hostRepository;
-    private final FirebaseService firebaseService;  // Firebase 업로드용
+    private final FirebaseService firebaseService;
     private final FavoriteRepository favoriteRepository;
 
-    // 방 등록
-    @Transactional  // DB 트랜잭션 제어 (내부에서 여러 DB 작업 실행 -> 예외 없이 정상 종료 → commit()) 예외를 안에서 잡는 건 x, service 로직에서만 사용하는 것을 추천
-    public RoomResponse createRoom(RoomRequest request, List<MultipartFile> files) {
-        Host host = hostRepository.findById(request.getHostId())
-                .orElseThrow(() -> new IllegalArgumentException("Host not found"));
 
-        Room room = request.toEntity(host);
-
-        // 이미지 업로드 및 RoomImage 엔티티 생성
-        if (files != null && !files.isEmpty()) {
-            for (MultipartFile file : files) {
-                String imageUrl = firebaseService.uploadFile(file);
-
-                RoomImage image = new RoomImage(room, imageUrl);
-                room.getRoomImages().add(image); // room의 이미지 목록에 추가
-            }
-        }
-
-        Room savedRoom = roomRepository.save(room); // room을 저장하면 roomImages도 함께 저장됨
-
-        return toResponse(savedRoom);
-
-
-//        // DTO 변환
-//        List<RoomImageResponse> imageResponses = saved.getRoomImages().stream()
-//                .map(img -> new RoomImageResponse(img.getId(), img.getImageUrl()))
-//                .collect(Collectors.toList());
-//
-//        String shareLinkUrl = saved.getShareLink() != null
-//                ? saved.getShareLink().getLinkUrl()
-//                : null;
-
-    }
-
-
-    // 방 검색
-    // 검색 service 로직은 하나로 작성하고 controller에서 나눌 것임
-    @Transactional(readOnly = true)
-    public List<RoomResponse> searchRooms(
-            String region, String type,
-            Double minPrice, Double maxPrice,
-            String option
-    ) {
-        List<Room> rooms = roomRepository.searchRooms(region, type, minPrice, maxPrice, option);
-
-        return rooms.stream()
-                .map(this::toResponse)   // 공통 변환 메서드 사용
-                .collect(Collectors.toList());
-    }
-
-    // 방 수정
-    @Transactional
-    public RoomResponse updateRoom(Long roomId, RoomRequest request) {
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
-
-        // 수정은 Host를 바꾸지 않음 (방 등록자 고정)
-        room.update(request);  // RoomEntity에 update() 만듦
-
-        Room updated = roomRepository.save(room);
-        return toResponse(updated);
-    }
-
-    // 방 삭제
-    @Transactional
-    public void deleteRoom(Long roomId) {
-        // 1. Favorite 먼저 삭제
-        favoriteRepository.deleteByRoomId(roomId);
-
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
-        roomRepository.delete(room);
-    }
-
-    @Transactional(readOnly = true)
-    public List<RoomResponse> getRoomList() {
-        return roomRepository.findAll()   // 전체 조회 or 나중에 필터 조건 추가 가능
-                .stream()
-                .map(this::toResponse)    // Room → RoomResponse 변환
-                .collect(Collectors.toList());
-    }
-
-    // 방 상세보기
+    // 상세보기
     @Transactional(readOnly = true)
     public RoomDetailResponse getRoomDetail(Long roomId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found"));
 
-        // RoomImageRepository 이용해서 이미지 URL 조회
         List<String> imageUrls = roomImageRepository.findByRoomId(roomId)
                 .stream()
                 .map(RoomImage::getImageUrl)
                 .collect(Collectors.toList());
 
-        String shareLinkUrl = room.getShareLink() != null
-                ? room.getShareLink().getLinkUrl()
+        Long hostId = room.getHost() != null ? room.getHost().getId() : null;
+        Long hostUserId = (room.getHost() != null && room.getHost().getUser() != null)
+                ? room.getHost().getUser().getId()
                 : null;
 
         return new RoomDetailResponse(
@@ -139,21 +54,141 @@ public class RoomService {
                 room.getType(),
                 room.getAvailabilityStatus(),
                 room.getDescription(),
+                room.getPreferredGender(),
+                room.getPreferredAge(),
+                room.getTotalMembers(),
+                room.getLifestyleAsList(),
+                room.getOptionsAsList(),
                 room.getLatitude(),
                 room.getLongitude(),
                 imageUrls,
-                shareLinkUrl
+                room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null,
+                hostId,
+                hostUserId
         );
     }
 
 
-    // 공통 변환 메서드 (Entity → DTO)
-    private RoomResponse toResponse(Room room) {
+    // 방 등록
+    @Transactional
+    public RoomResponse createRoom(RoomRequest request, List<MultipartFile> files) {
+        Host host = hostRepository.findById(request.getHostId())
+                .orElseThrow(() -> new IllegalArgumentException("Host not found"));
 
-        List<String> imageUrls = room.getRoomImages()
+        Room room = request.toEntity(host);
+
+        ShareLink shareLink = new ShareLink();
+        room.setShareLink(shareLink);
+
+        // 위도/경도가 null이거나 0일 경우 DB에 null로 저장
+        if (room.getLatitude() == null || room.getLatitude() == 0.0) {
+            room.setLatitude(null);
+        }
+        if (room.getLongitude() == null || room.getLongitude() == 0.0) {
+            room.setLongitude(null);
+        }
+
+        roomRepository.save(room);
+
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                String imageUrl = firebaseService.uploadFile(file);
+                RoomImage image = new RoomImage(room, imageUrl);
+                room.getRoomImages().add(image);
+            }
+        }
+
+        Room savedRoom = roomRepository.save(room);
+        return toResponse(savedRoom);
+    }
+
+    // 검색(간단 검색 / 필터 검색 통합)
+    @Transactional(readOnly = true)
+    public List<RoomResponse> searchRooms(
+            String region, String district, String type,
+            Double minPrice, Double maxPrice,
+            String option
+    ) {
+        List<Room> rooms = roomRepository.searchRooms(district, region, type, minPrice, maxPrice, option);
+
+        return rooms.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+
+    @Transactional
+    public RoomResponse updateRoom(Long roomId, RoomRequest request) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+
+        room.update(request);
+
+        // 위도/경도가 null이거나 0일 경우 DB에 null로 저장
+        if (room.getLatitude() == null || room.getLatitude() == 0.0) {
+            room.setLatitude(null);
+        }
+        if (room.getLongitude() == null || room.getLongitude() == 0.0) {
+            room.setLongitude(null);
+        }
+
+        Room updated = roomRepository.save(room);
+        return toResponse(updated);
+    }
+
+    @Transactional
+    public void deleteRoom(Long roomId) {
+        favoriteRepository.deleteAllByRoomId(roomId);
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+        roomRepository.delete(room);
+    }
+
+    // 그냥 전체 목록만 불러오기
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getRoomList() {
+        return roomRepository.findAll()
                 .stream()
-                .map(RoomImage::getImageUrl)
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<RoomResponse> getRoomListByHost(Long hostId) {
+        List<Room> rooms = roomRepository.findByHostId(hostId);
+        return rooms.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+
+
+    /**
+     * 마이그레이션 용도: 기존 방들 중 공유 링크가 없는 경우 기본 ShareLink를 채워 넣습니다.
+     * 존재하지 않으면 새 ShareLink를 생성하고 저장합니다.
+     */
+    @Transactional
+    public void backfillShareLinks() {
+        List<Room> rooms = roomRepository.findAll();
+        for (Room room : rooms) {
+            if (room.getShareLink() == null) {
+                ShareLink link = new ShareLink();
+                room.setShareLink(link);
+                roomRepository.save(room);
+            }
+        }
+    }
+
+    private RoomResponse toResponse(Room room) {
+        List<RoomImageResponse> imageUrls = room.getRoomImages()
+                .stream()
+                .map(img -> new RoomImageResponse(img.getId(), img.getImageUrl()))
                 .toList();
+
+        Long hostId = room.getHost() != null ? room.getHost().getId() : null;
+        Long hostUserId = (room.getHost() != null && room.getHost().getUser() != null)
+                ? room.getHost().getUser().getId()
+                : null;
 
         return new RoomResponse(
                 room.getId(),
@@ -163,8 +198,15 @@ public class RoomService {
                 room.getType(),
                 room.getAvailabilityStatus(),
                 room.getDescription(),
+                room.getOptionsAsList(),
+                room.getLifestyleAsList(),
+                room.getPreferredGender(),
+                room.getPreferredAge(),
+                room.getTotalMembers(),
                 imageUrls,
-                null
+                room.getShareLink() != null ? room.getShareLink().getLinkUrl() : null,
+                hostId,
+                hostUserId
         );
     }
 }

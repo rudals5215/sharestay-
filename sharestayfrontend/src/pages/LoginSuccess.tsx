@@ -1,4 +1,4 @@
-﻿// src/pages/LoginSuccess.tsx
+// src/pages/LoginSuccess.tsx
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { setAccessToken, setStoredUsername } from "../lib/api";
