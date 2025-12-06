@@ -12,6 +12,7 @@ public class RoomDetailResponse {
     private Long id;
     private String title;
     private double rentPrice;
+    private int deposit;
     private String address;
     private String type;
     private int availabilityStatus;
@@ -32,4 +33,7 @@ public class RoomDetailResponse {
     // 호스트 프로필로 들어가서 수정할 때 필요해서 추가
     private Long hostId;
     private Long hostUserId;
+
+    private String hostIntroduction;
+    private String hostNickname;
 }

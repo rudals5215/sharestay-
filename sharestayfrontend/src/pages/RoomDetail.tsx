@@ -26,6 +26,10 @@ import SectionPaper from "../components/SectionPaper";
 import FavoriteButton from "../components/FavoriteButton";
 import { useAuth } from "../auth/useAuth";
 import { fetchFavoriteRooms, toggleFavoriteRoom } from "../lib/favorites";
+import { Avatar } from "@mui/material";
+import PersonIcon from "@mui/icons-material/PersonOutline";
+import VerifiedIcon from "@mui/icons-material/Verified";
+
 
 import Grid from "@mui/material/Unstable_Grid2";
 
@@ -124,9 +128,16 @@ const parseDescriptionAndOptions = (
   };
 };
 
-const formatCurrency = (amount?: number) => {
+// 월세/보증금 공통 "숫자 + 원"
+const formatMoney = (amount?: number) => {
   if (typeof amount !== "number" || Number.isNaN(amount)) return "-";
-  return `${amount.toLocaleString()}원/월`;
+  return `${amount.toLocaleString()}원`;
+};
+
+// 월세용 (필요하면 /월 붙여서 쓸 수 있게)
+const formatMonthly = (amount?: number) => {
+  if (typeof amount !== "number" || Number.isNaN(amount)) return "-";
+  return `${amount.toLocaleString()}원`;
 };
 
 const toArray = (value?: string[] | string | null) => {
@@ -159,15 +170,13 @@ const genderLabel = (value?: string | null) => {
 
 const ageLabel = (value?: string | null) => {
   switch (value) {
-    case "10s":
-      return "10대";
-    case "20s":
+    case "20대":
       return "20대";
-    case "30s":
+    case "30대":
       return "30대";
-    case "40s":
+    case "40대":
       return "40대";
-    case "50s":
+    case "50대":
       return "50대 이상";
     case "":
     case null:
@@ -192,6 +201,9 @@ export default function RoomDetail() {
   const [shareLink, setShareLink] = useState<string | null>(null);
   const [isShareGenerating, setIsShareGenerating] = useState(false);
 
+  const hostName = room?.hostNickname ?? "현재 룸메이트";
+
+
   const shareButtonLabel = useMemo(
     () => (shareLink ? "공유" : "공유 복사"),
     [shareLink]
@@ -200,6 +212,7 @@ export default function RoomDetail() {
   const {
     main: mainDescription,
     lifestyle: parsedLifestyle,
+    facilities: parsedFacilities,
     others: parsedOthers,
   } = useMemo(
     () => parseDescriptionAndOptions(room?.description),
@@ -210,6 +223,14 @@ export default function RoomDetail() {
   const explicitOptions = useMemo(() => toArray(room?.options), [room?.options]);
 
   const displayLifestyle = explicitLifestyle.length ? explicitLifestyle : parsedLifestyle;
+
+  const displayFacilities = useMemo(() => {
+  // options에 아무것도 없으면 description에서 파싱한 facilities를 사용
+  if (explicitOptions.length === 0) return parsedFacilities;
+  // options에 값이 있으면, 그 중에서 facilityOptionSet에 해당하는 것만 필터링
+  return explicitOptions.filter((opt) => facilityOptionSet.has(opt));
+}, [explicitOptions, parsedFacilities]);
+
 
   const displayOtherOptions = useMemo(() => {
     if (explicitOptions.length === 0) return parsedOthers;
@@ -484,6 +505,12 @@ const isLiked = room
 
                 {/* 방 정보 */}
                 <SectionPaper title="방 정보">
+                  <Stack
+                    direction="row"
+                    spacing={10}
+                    flexWrap="wrap"
+                    useFlexGap
+                  >
                   {room.type !== undefined && room.type !== null && (
                     <Box>
                       <Typography
@@ -498,6 +525,44 @@ const isLiked = room
                       </Typography>
                     </Box>
                   )}
+                  {/* 면적, 층수 넣기 */}
+                  </Stack>
+
+
+
+                    {displayFacilities.length > 0 && (
+                    <>
+                      <Divider sx={{ my: 3 }} />
+
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ fontWeight: 700, mb: 1 }}
+                      >
+                        부가 옵션
+                      </Typography>
+
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        flexWrap="wrap"
+                        useFlexGap
+                      >
+                        {displayFacilities.map((item) => (
+                          <Chip
+                            key={item}
+                            label={item}
+                            sx={{
+                              borderRadius: 999,
+                              bgcolor: "rgba(0,0,0,0.03)",
+                              // color: "primary.main",
+                              fontWeight: 600,
+                            }}
+                          />
+                        ))}
+                      </Stack>
+                    </>
+                  )}
+
                 </SectionPaper>
 
                 {/* 룸메이트 조건 */}
@@ -587,13 +652,51 @@ const isLiked = room
                   </SectionPaper>
                 )}
 
+                <SectionPaper title="현재 룸메이트 정보">
+  <Stack spacing={1.5}>
+    <Stack direction="row" spacing={2} alignItems="center">
+      <Avatar
+        sx={{
+          width: 64,
+          height: 64,
+          bgcolor: "rgba(25,118,210,0.08)",
+          color: "primary.main",
+        }}
+      >
+        <PersonIcon fontSize="large" />
+      </Avatar>
+
+      <Stack spacing={0.5}>
+        <Typography variant="h6" fontWeight={800}>
+          {hostName}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          이 방의 호스트
+        </Typography>
+      </Stack>
+    </Stack>
+
+    {room.hostIntroduction ? (
+      <Typography whiteSpace="pre-line" sx={{ mt: 1.5 }}>
+        {room.hostIntroduction}
+      </Typography>
+    ) : (
+      <Typography color="text.secondary" sx={{ mt: 1.5 }}>
+        호스트 소개가 아직 등록되지 않았습니다.
+      </Typography>
+    )}
+  </Stack>
+</SectionPaper>
+
+
+
                 <SectionPaper title="생활 규칙">
                   들어갈 예정입니다.
                 </SectionPaper>
 
-                <SectionPaper title="부가 옵션">
-                  들어갈 예정입니다.
-                </SectionPaper>
+                
+
+
 
                 <SectionPaper title="기타 옵션">
                   <PreferenceBox
@@ -625,14 +728,35 @@ const isLiked = room
                 <Stack spacing={3}>
                   {/* 가격 */}
                   <Box>
-                    <Typography
-                      variant="h5"
-                      color="primary"
-                      fontWeight={800}
-                    >
-                      {formatCurrency(room.rentPrice)}
-                    </Typography>
+                    {/* 월세 + /월 : 같은 줄, /월은 작게 */}
+                    <Stack direction="row" spacing={0.5} alignItems="baseline">
+                      <Typography
+                        variant="h4"        // 더 크게
+                        color="primary"
+                        fontWeight={800}
+                      >
+                        {formatMonthly(room.rentPrice)}
+                      </Typography>
+                      <Typography
+                        variant="body2"     // 더 작게
+                        color="text.secondary"
+                      >
+                        /월
+                      </Typography>
+                    </Stack>
+
+
                     {/* 여기에 보증금/관리비 등 있으면 추가 */}
+                    <Stack spacing={0.5} sx={{ mt: 2 }}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">
+                          보증금
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {formatMoney(room.deposit ?? 0)}
+                        </Typography>
+                      </Stack>
+                    </Stack>
                   </Box>
 
                   <Divider />
@@ -648,16 +772,25 @@ const isLiked = room
                     </Typography>
                     <Stack spacing={0.5}>
                       {room.preferredGender && (
-                        <Typography variant="body2">
-                          <strong>성별&nbsp;</strong>
-                          {genderLabel(room.preferredGender)}
-                        </Typography>
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" color="text.secondary">
+                            성별
+                          </Typography>
+                          <Typography variant="body2" fontWeight={600}>
+                            {genderLabel(room.preferredGender)}
+                          </Typography>
+                        </Stack>
                       )}
+
                       {room.preferredAge && (
-                        <Typography variant="body2">
-                          <strong>연령&nbsp;</strong>
-                          {ageLabel(room.preferredAge)}
-                        </Typography>
+                        <Stack direction="row" justifyContent="space-between">
+                          <Typography variant="body2" color="text.secondary">
+                            연령
+                          </Typography>
+                          <Typography variant="body2" fontWeight={600}>
+                            {ageLabel(room.preferredAge)}
+                          </Typography>
+                        </Stack>
                       )}
                     </Stack>
                   </Stack>
@@ -675,13 +808,21 @@ const isLiked = room
                     <Button
                       fullWidth
                       variant="outlined"
+                      sx={{ borderRadius: 999, py: 1.2 }}
+                    >
+                      문의하기
+                    </Button>
+
+                    {/* <Button
+                      fullWidth
+                      variant="outlined"
                       onClick={handleShareLink}
                       disabled={isShareGenerating}
                       sx={{ borderRadius: 999, py: 1.2 }}
                       startIcon={<ShareIcon />}
                     >
                       {shareButtonLabel}
-                    </Button>
+                    </Button> */}
 
                     <Button
                       fullWidth

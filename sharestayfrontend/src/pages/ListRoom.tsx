@@ -44,6 +44,10 @@ const roomSchema = z.object({
       (value) => !Number.isNaN(Number(value)),
       "월세는 숫자로 입력해주세요."
     ),
+    deposit: z
+    .string()
+    .min(1, "Please enter a deposit.")
+    .refine((value) => !Number.isNaN(Number(value)), "Deposit must be a number."),
   type: z.string().min(1, "방 유형을 선택해주세요."),
   availabilityStatus: z.string().min(1, "모집 상태를 선택해주세요."),
   address: z.string().min(1, "주소를 입력해주세요."),
@@ -97,11 +101,11 @@ const preferredGenderOptions = [
 ];
 
 const preferredAgeOptions = [
-  { value: "", label: "무관" },
-  { value: "TEENS", label: "10대" },
-  { value: "TWENTIES", label: "20대" },
-  { value: "THIRTIES", label: "30대" },
-  { value: "FORTIES_PLUS", label: "40대 이상" },
+  { value: "", label: "선택 안 함" },
+  { value: "20대", label: "20대" },
+  { value: "30대", label: "30대" },
+  { value: "40대", label: "40대" },
+  { value: "50대", label: "50대 이상" },
 ];
 
 const totalMemberOptions = [
@@ -170,6 +174,7 @@ export default function ListRoom() {
     defaultValues: {
       title: "",
       rentPrice: "",
+      deposit: "",
       type: "",
       availabilityStatus: "AVAILABLE",
       address: "",
@@ -301,6 +306,7 @@ export default function ListRoom() {
     formData.append("hostId", String(hostId!));
     formData.append("title", values.title);
     formData.append("rentPrice", String(rentPrice));
+    formData.append("deposit", String(Number(values.deposit)));
     formData.append("address", values.address);
     formData.append("type", values.type);
     formData.append("availabilityStatus", String(availabilityCode));
@@ -388,7 +394,21 @@ export default function ListRoom() {
                     />
                   </Grid>
 
-                  <Grid xs={12} md={4}>
+                  <Grid xs={12} sm={3}>
+                    <FormTextField
+                      name="deposit"
+                      control={control}
+                      label="보증금"
+                      placeholder="예: 10000000"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">₩</InputAdornment>
+                        ),
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid xs={12} md={3}>
                     <FormTextField
                       name="rentPrice"
                       control={control}
@@ -403,7 +423,7 @@ export default function ListRoom() {
                     />
                   </Grid>
 
-                  <Grid xs={12} md={4}>
+                  <Grid xs={12} md={3}>
                     <FormTextField
                       name="type"
                       control={control}
@@ -422,7 +442,7 @@ export default function ListRoom() {
                     </FormTextField>
                   </Grid>
 
-                  <Grid xs={12} md={4}>
+                  <Grid xs={12} md={3}>
                     <FormTextField
                       name="availabilityStatus"
                       control={control}

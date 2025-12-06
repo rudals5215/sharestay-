@@ -88,6 +88,25 @@ public class RoomController {
         return ResponseEntity.ok(roomService.updateRoom(roomId, request));
     }
 
+
+    @Operation(summary = "방 이미지 수정", description = "기존 이미지를 삭제하고 새 이미지로 교체합니다.")
+    @PostMapping(value = "/{roomId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> updateRoomImages(
+            @PathVariable Long roomId,
+            @RequestParam(required = false, name = "files") List<MultipartFile> files
+    ) {
+        // 이미지 선택 안 하고 저장 눌렀을 때 500에러 안 나게 그냥 OK 리턴
+        if (files == null || files.isEmpty()) {
+            return ResponseEntity.ok().build();
+        }
+
+        roomService.updateRoomImages(roomId, files);
+        return ResponseEntity.ok().build();
+    }
+
+
+
+
     @Operation(summary = "방 삭제", description = "특정 방을 삭제합니다.")
     @DeleteMapping("/{roomId}")
     public ResponseEntity<Void> deleteRoom(@PathVariable Long roomId) {

@@ -34,10 +34,11 @@ export interface RoomSummary {
   lifestyle?: string[] | string | null;
   title: string;
   rentPrice: number;
+  deposit? : number;
   address: string;
   type: string;
   latitude?: number;
-  longitude?: number;
+  longitude?: number; 
   availabilityStatus: RoomAvailabilityStatus | number;
   description?: string;
   safetyScore?: number;
@@ -48,12 +49,15 @@ export interface RoomSummary {
   options?: string[] | string | null;
   images?: RoomImage[];
   shareLinkUrl?: string;
+  hostIntroduction?: string;
+  hostNickname?: string | null;
 }
 
 export interface RoomRequestPayload {
   hostId: number;
   title: string;
   rentPrice: number;
+  deposit : number;
   address: string;
   type: string;
   availabilityStatus: number;
@@ -78,6 +82,7 @@ export interface RoomApiResponse {
   lifestyle?: string[] | null;
   title: string;
   rentPrice: number;
+  deposit? : number;
   address: string;
   type: string;
   availabilityStatus: number;
@@ -89,6 +94,9 @@ export interface RoomApiResponse {
   imageUrls?: string[];
   shareLinkUrl?: string | null;
   shareLink?: { linkUrl?: string | null };
+
+  hostIntroduction?: string | null;
+  hostNickname?: string | null;
 
   // ✅ 백엔드에서 좋아요 정보 내려줄 때 받을 용도
   isFavorite?: boolean;
@@ -105,6 +113,7 @@ export interface RoomDetailApiResponse {
   lifestyle?: string[] | null;
   title: string;
   rentPrice: number;
+  deposit? : number;
   address: string;
   type: string;
   availabilityStatus: number;
@@ -116,6 +125,9 @@ export interface RoomDetailApiResponse {
   imageUrls?: string[];
   shareLinkUrl?: string | null;
   shareLink?: { linkUrl?: string | null };
+
+  hostIntroduction?: string | null;
+  hostNickname?: string | null;
 
   // ✅ 상세 API에도 옵션으로 붙을 수 있으니 같이 둠
   isFavorite?: boolean;
@@ -165,6 +177,7 @@ export const mapRoomFromApi = (
     lifestyle: "lifestyle" in room ? room.lifestyle : undefined,
     title: room.title,
     rentPrice: room.rentPrice,
+    deposit: "deposit" in room ? room.deposit : undefined,
     address: room.address,
     type: room.type,
     availabilityStatus: room.availabilityStatus,
@@ -176,5 +189,13 @@ export const mapRoomFromApi = (
     shareLinkUrl,
     isFavorite: "isFavorite" in room ? room.isFavorite : undefined,
     favoriteId: "favoriteId" in room ? room.favoriteId ?? undefined : undefined,
+
+    hostIntroduction:
+          "hostIntroduction" in room ? room.hostIntroduction ?? undefined : undefined,
+        hostNickname:
+          "hostNickname" in room ? room.hostNickname ?? undefined : undefined,
+
+    // hostIntroduction: "hostIntroduction" in room ? room.hostIntroduction ?? undefined : undefined,
+    // hostNickname: "hostNickname" in room ? room.hostNickname ?? undefined : undefined,
   };
 };

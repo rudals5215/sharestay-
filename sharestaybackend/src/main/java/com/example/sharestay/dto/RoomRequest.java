@@ -18,6 +18,7 @@ public class RoomRequest {   // 방 등록, 수정 할 때 필요함
     private Long hostId;
     private String title;
     private double rentPrice;
+    private int deposit;
     private String address;
     private String type;
 
@@ -40,6 +41,7 @@ public class RoomRequest {   // 방 등록, 수정 할 때 필요함
     public List<String> safeLifestyle() {
         return lifestyle == null ? List.of() : lifestyle;
     }
+
     /*
         클라이언트가 옵션 안 보냈으면 options == null
         빈 배열 보내면 options.isEmpty() == true
@@ -60,7 +62,8 @@ public class RoomRequest {   // 방 등록, 수정 할 때 필요함
                 this.latitude,
                 this.longitude,
                 this.availabilityStatus,
-                this.description
+                this.description,
+                this.deposit
         );
         room.setOptionsFromList(safeOptions());
         room.setLifestyleFromList(safeLifestyle());

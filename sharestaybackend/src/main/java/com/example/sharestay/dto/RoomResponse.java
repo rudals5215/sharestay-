@@ -12,6 +12,7 @@ public class RoomResponse {
     private Long id;
     private String title;
     private double rentPrice;
+    private int deposit;
     private String address;
     private String type;
     private int availabilityStatus;
