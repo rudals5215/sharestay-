@@ -223,7 +223,6 @@ public class SecurityConfig {
                                 "/uploads/**",
                                 "/api/statistics/**"
                         ).permitAll()
-<<<<<<< HEAD
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/login", "/api/signup", "/api/auth/google").permitAll()
                         .requestMatchers("/login-success", "/oauth2/**").permitAll()
@@ -234,7 +233,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/rooms/**").hasAnyRole("HOST", "ADMIN")
                         .requestMatchers(HttpMethod.POST,"/api/favorites/**").authenticated()
-=======
 
                         // 🔹 preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -254,7 +252,6 @@ public class SecurityConfig {
 
                         // 🔹 즐겨찾기: 로그인 필요
                         .requestMatchers(HttpMethod.POST, "/api/favorites/**").authenticated()
->>>>>>> main
 
                         // 🔹 나머지는 전부 인증 필요
                         .anyRequest().authenticated()

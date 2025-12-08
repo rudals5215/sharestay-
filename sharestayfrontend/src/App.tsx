@@ -76,50 +76,6 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
             <Route path="/login-success" element={<LoginSuccess />} />
-<<<<<<< HEAD
-            <Route path="/guide" element={<Guide />} />
-            <Route path="/rooms" element={<Rooms />} />
-            <Route path="/rooms/:roomId" element={<RoomDetail />} />
-            <Route path="/RoomMap" element={<RoomMap />} />
-            <Route
-              path="/list-room"
-              element={
-                <ProtectedRoute requireRoles={["HOST", "ADMIN"]}>
-                  <ListRoom />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/safety-map" element={<SafetyMap />} />
-            <Route
-              path="/lifestyle"
-              element={
-                <ProtectedRoute>
-                  <LifestyleSetup />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/contact/i" element={<Contact />} />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requireRoles={["ADMIN"]}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-=======
               <Route path="/signup" element={<Signup />} />
               <Route path="/guide" element={<Guide />} />
               <Route path="/rooms" element={<Rooms />} />
@@ -170,7 +126,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
->>>>>>> main
             </Routes>
           </BrowserRouter>
         </ThemeProvider>
