@@ -73,8 +73,8 @@ public class Room {
         "에어컨, 냉장고, 세탁기"를 잘라서 [ "에어컨", "냉장고", "세탁기" ]로 만들어줌.
      */
 
-        @Column(nullable = false)
-        private int deposit;
+    @Column(nullable = false)
+    private int deposit;
 
 
 

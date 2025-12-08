@@ -32,6 +32,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import RoomMap from "./pages/RoomMap";
 import { AuthProvider } from "./auth/AuthContext";
 import AdminDashboard from "./pages/AdminDashboard";
+import Contact from "./pages/Contact";
 
 const theme = createTheme({
   palette: {
@@ -110,6 +111,8 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
+              <Route path="/Contact" element={<Contact />} />
+
               <Route
                 path="/profile"
                 element={
