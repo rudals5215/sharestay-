@@ -14,7 +14,16 @@ export const fetchFavoriteRooms = async (userId: number | null | undefined) => {
     params: { userId },
   });
 
-  return Array.isArray(data) ? data : [];
+  if (!Array.isArray(data)) return [];
+
+  // roomId가 문자열로 내려오는 경우가 있어 숫자로 정규화
+  return data.map((item) => {
+    const parsed = Number(item.roomId);
+    return {
+      ...item,
+      roomId: Number.isFinite(parsed) ? parsed : (item.roomId as number),
+    };
+  });
 };
 
 /**

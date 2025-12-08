@@ -98,7 +98,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchProfile = async (username: string) => {
     const safeUsername = encodeURIComponent(username);
     const { data } = await api.get<BackendUser>(`/users/${safeUsername}`);
-    setUser(mapUser(data));
+
+    const mapped = mapUser(data);
+    setUser(mapped);
+
+    return mapped;
   };
 
   useEffect(() => {
@@ -145,7 +149,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setAccessToken(data.accessToken);
     setStoredUsername(username);
-    await fetchProfile(username);
+
+    const profile = await fetchProfile(username);
+    
+    if (profile.id) {
+      sessionStorage.setItem("userId", String(profile.id));
+    }
   };
 
   const signup = async (payload: SignupPayload) => {

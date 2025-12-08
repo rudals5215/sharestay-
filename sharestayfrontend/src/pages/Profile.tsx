@@ -32,6 +32,7 @@ import {
 } from "@mui/icons-material";
 import { Link as RouterLink } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { useAuth } from "../auth/useAuth";
 import SiteHeader from "../components/SiteHeader";
 import SiteFooter from "../components/SiteFooter";
@@ -254,7 +255,22 @@ export default function Profile() {
     });
   };
 
-  const sidebarMenu = isHostView
+  type SidebarItemKey =
+    | "profile"
+    | "rooms"
+    | "roommate"
+    | "security"
+    | "favorites"
+    | "reservations";
+
+  type SidebarItem = {
+    key: SidebarItemKey;
+    label: string;
+    icon: ReactNode;
+    badge?: ReactNode;
+  };
+
+  const sidebarMenu: SidebarItem[] = isHostView
     ? [
         { key: "profile" as const, label: "프로필 관리", icon: <PersonOutline /> },
         { key: "rooms" as const, label: "내 방 관리", icon: <HomeWork /> },
@@ -369,7 +385,7 @@ export default function Profile() {
                         {item.icon}
                       </ListItemIcon>
                       <ListItemText primary={item.label} />
-                      {"badge" in item && item.badge ? (
+                      {item.badge ? (
                         <Box
                           sx={{
                             bgcolor: "#ef4444",
@@ -955,5 +971,4 @@ function SectionPlaceholder({ title, description, actionLabel, actionHref }: Sec
     </Card>
   );
 }
-
 

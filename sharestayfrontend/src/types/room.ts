@@ -24,7 +24,7 @@ export interface RoomImage {
 export type RoomAvailabilityStatus = "AVAILABLE" | "UNAVAILABLE" | "PENDING";
 
 export interface RoomSummary {
-  roomId?: number;
+  roomId: number;
   id?: number | null;
   hostId?: number | null;
   hostUserId?: number | null;
@@ -34,26 +34,30 @@ export interface RoomSummary {
   lifestyle?: string[] | string | null;
   title: string;
   rentPrice: number;
+  deposit? : number;
   address: string;
   type: string;
   latitude?: number;
-  longitude?: number;
+  longitude?: number; 
   availabilityStatus: RoomAvailabilityStatus | number;
   description?: string;
   safetyScore?: number;
   trustScore?: number;
   tags?: string[];
-  isFavorite?: boolean;
+  isFavorite?: boolean;   // ✅ 여길 실제로 채워줄 거임
   favoriteId?: number;
   options?: string[] | string | null;
   images?: RoomImage[];
   shareLinkUrl?: string;
+  hostIntroduction?: string;
+  hostNickname?: string | null;
 }
 
 export interface RoomRequestPayload {
   hostId: number;
   title: string;
   rentPrice: number;
+  deposit : number;
   address: string;
   type: string;
   availabilityStatus: number;
@@ -78,6 +82,7 @@ export interface RoomApiResponse {
   lifestyle?: string[] | null;
   title: string;
   rentPrice: number;
+  deposit? : number;
   address: string;
   type: string;
   availabilityStatus: number;
@@ -89,6 +94,13 @@ export interface RoomApiResponse {
   imageUrls?: string[];
   shareLinkUrl?: string | null;
   shareLink?: { linkUrl?: string | null };
+
+  hostIntroduction?: string | null;
+  hostNickname?: string | null;
+
+  // ✅ 백엔드에서 좋아요 정보 내려줄 때 받을 용도
+  isFavorite?: boolean;
+  favoriteId?: number | null;
 }
 
 export interface RoomDetailApiResponse {
@@ -101,6 +113,7 @@ export interface RoomDetailApiResponse {
   lifestyle?: string[] | null;
   title: string;
   rentPrice: number;
+  deposit? : number;
   address: string;
   type: string;
   availabilityStatus: number;
@@ -112,6 +125,13 @@ export interface RoomDetailApiResponse {
   imageUrls?: string[];
   shareLinkUrl?: string | null;
   shareLink?: { linkUrl?: string | null };
+
+  hostIntroduction?: string | null;
+  hostNickname?: string | null;
+
+  // ✅ 상세 API에도 옵션으로 붙을 수 있으니 같이 둠
+  isFavorite?: boolean;
+  favoriteId?: number | null;
 }
 
 export interface ShareLinkResponse {
@@ -121,7 +141,9 @@ export interface ShareLinkResponse {
 export const mapRoomFromApi = (
   room: RoomApiResponse | RoomDetailApiResponse
 ): RoomSummary => {
-  const roomId = room.roomId ?? room.id;
+  const rawRoomId = (room as any).roomId ?? room.id;
+  const parsedRoomId = Number(rawRoomId);
+  const roomId = Number.isFinite(parsedRoomId) ? parsedRoomId : room.id;
 
   const normalizedImages: RoomImage[] =
     room.images?.map((image) => ({
@@ -133,14 +155,20 @@ export const mapRoomFromApi = (
     room.imageUrls?.map((url, index) => ({
       id: index,
       imageId: index,
-      roomId: room.id,
+      roomId: roomId,
       imageUrl: resolveRoomImageUrl(url) ?? url ?? "",
     })) ??
     [];
 
+//  - 공유 링크를 백엔드가 아니라 프론트에서 직접 생성한다.
+//  - 백엔드 ShareLink 기능(엔티티/서비스/컨트롤러)을 전부 주석 때문에
+//  - 항상 /rooms/{roomId} 형태의 단순 URL만 사용하도록 강제함
+  const shareLinkUrl =
+  roomId ? `${window.location.origin}/rooms/${roomId}` : undefined;
+
   return {
-    roomId: room.id,
-    id: room.id,
+    roomId: roomId,
+    id: roomId ?? room.id,
     hostId: "hostId" in room ? room.hostId : undefined,
     hostUserId: "hostUserId" in room ? room.hostUserId : undefined,
     preferredGender: "preferredGender" in room ? room.preferredGender : undefined,
@@ -149,6 +177,7 @@ export const mapRoomFromApi = (
     lifestyle: "lifestyle" in room ? room.lifestyle : undefined,
     title: room.title,
     rentPrice: room.rentPrice,
+    deposit: "deposit" in room ? room.deposit : undefined,
     address: room.address,
     type: room.type,
     availabilityStatus: room.availabilityStatus,
@@ -157,6 +186,16 @@ export const mapRoomFromApi = (
     description: room.description,
     options: "options" in room ? room.options : undefined,
     images: normalizedImages,
-    shareLinkUrl: room.shareLinkUrl ?? room.shareLink?.linkUrl ?? undefined,
+    shareLinkUrl,
+    isFavorite: "isFavorite" in room ? room.isFavorite : undefined,
+    favoriteId: "favoriteId" in room ? room.favoriteId ?? undefined : undefined,
+
+    hostIntroduction:
+          "hostIntroduction" in room ? room.hostIntroduction ?? undefined : undefined,
+        hostNickname:
+          "hostNickname" in room ? room.hostNickname ?? undefined : undefined,
+
+    // hostIntroduction: "hostIntroduction" in room ? room.hostIntroduction ?? undefined : undefined,
+    // hostNickname: "hostNickname" in room ? room.hostNickname ?? undefined : undefined,
   };
 };

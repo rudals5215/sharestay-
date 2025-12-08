@@ -19,6 +19,8 @@ export interface UserInfo {
 
 export interface LoginResponse {
   accessToken: string;
+  userId: number;
+  username: string;
 }
 
 export interface SignupPayload {

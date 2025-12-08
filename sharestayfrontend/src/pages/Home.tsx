@@ -44,7 +44,6 @@ const navLinks = [
     requireRoles: ["HOST", "ADMIN"] as Roles[],
   },
 ];
-
 const featureHighlights = [
   {
     icon: <SecurityOutlined fontSize="large" color="primary" />,

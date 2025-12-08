@@ -7,7 +7,6 @@ import {
   CardContent,
   Chip,
   Container,
-  Grid,
   Stack,
   Typography,
 } from "@mui/material";

@@ -74,7 +74,7 @@ public class SharestayApplication implements CommandLineRunner {
     -------------------------- */
         User hostUser1 = new User(
                 "host1@test.com",
-                encoder.encode("user1234"),
+                encoder.encode("user1234챙ㄷ"),
                 "LOCAL",
                 "홍대 호스트",
                 "서울 마포구",
@@ -165,25 +165,36 @@ public class SharestayApplication implements CommandLineRunner {
        4. Host 엔티티 3개
     -------------------------- */
         Host host1 = new Host(
-                "홍대/합정 인근에서 조용한 생활을 돕는 호스트입니다.",
+                "홍대/합정 인근에서 조용하고 편안한 생활을 돕는 호스트입니다. " +
+                        "주변에 카페와 맛집, 편의시설이 잘 갖춰져 있어 주말에는 여유롭게 쉬거나 산책하기 좋고, " +
+                        "평일에는 조용히 공부하거나 재택근무를 하기에도 좋은 환경이에요. " +
+                        "깨끗한 공간과 규칙적인 생활을 선호하는 분과 함께 지내고 싶습니다.",
                 true,
                 hostUser1
         );
 
         Host host2 = new Host(
-                "강남 직장인을 위한 최적의 숙소를 제공합니다.",
+                "강남역에서 도보 5분 거리에 위치한 깔끔하고 모던한 원룸에서 함께 살 룸메이트를 찾고 있습니다." +
+                        " 최근 리모델링을 완료하여 매우 깨끗하며, 필요한 모든 가전제품이 구비되어 있습니다. 교통이 매우 편리하고 주변에 편의시설이 잘 갖춰져 있어 생활하기 좋습니다. " +
+                        "깔끔하고 조용한 생활을 선호하는 20대 여성분을 찾고 있어요!",
                 true,
                 hostUser2
         );
 
         Host host3 = new Host(
-                "잠실 야경과 편리한 교통을 자랑하는 호스트입니다.",
+                "잠실 일대의 야경과 쾌적한 주거 환경을 자랑하는 호스트입니다. " +
+                        "석촌호수와 롯데월드몰이 가까워 여가 생활을 즐기기 좋고, 지하철과 버스 노선도 잘 발달되어 있어 " +
+                        "출퇴근이나 등교에도 편리한 위치에 있어요. " +
+                        "기본적인 생활 규칙을 서로 지키면서도 편하게 지낼 수 있는 룸메이트를 찾고 있습니다.",
                 true,
                 hostUser3
         );
 
         Host host4 = new Host(
-                "부산 해운대/광안리 일대를 기반으로 편안한 숙소를 제공합니다.",
+                "부산 해운대/광안리 일대를 기반으로 편안한 숙소를 제공하는 호스트입니다. " +
+                        "바다와 가까운 위치라 여유로운 분위기를 느끼실 수 있고, 카페와 맛집, 산책로가 잘 갖춰져 있어 " +
+                        "휴식과 일상을 모두 만족시키기 좋은 공간이에요. " +
+                        "바다를 좋아하고 기본적인 정리정돈을 함께 지켜 줄 룸메이트를 기다리고 있습니다.",
                 true,
                 hostUser4
         );
@@ -210,9 +221,14 @@ public class SharestayApplication implements CommandLineRunner {
                 37.557123,
                 126.923456,
                 0, // 모집중
-                "깔끔하고 교통 좋은 원룸입니다."
+                "깔끔하고 교통 좋은 원룸입니다.",
+                2000000
         );
         room1.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터");
+        room1.setPreferredGender("여성");
+        room1.setPreferredAge("20대");
+        room1.setTotalMembers(2);
+        room1.setLifestyleFromList(List.of("금연", "조용한 생활"));
 
         Room room2 = new Room(
                 host1,
@@ -223,9 +239,14 @@ public class SharestayApplication implements CommandLineRunner {
                 37.549911,
                 126.914905,
                 0, // 모집중
-                "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다."
+                "루프탑과 공용 라운지가 있는 합정 쉐어하우스입니다.",
+                2500000
         );
         room2.setOptions("와이파이, TV, 주차장, 침대");
+        room2.setPreferredGender("무관");
+        room2.setPreferredAge("30대");
+        room2.setTotalMembers(4);
+        room2.setLifestyleFromList(List.of("사교적", "요리 자주"));
 
         // host2 방 2개
         Room room3 = new Room(
@@ -237,23 +258,33 @@ public class SharestayApplication implements CommandLineRunner {
                 37.497942,
                 127.027621,
                 1, // 예약중
-                "강남역 인근 직장인에게 최적의 원룸입니다."
+                "강남역 인근 직장인에게 최적의 원룸입니다.",
+                3500000
         );
-        room3.setOptions("엘리베이터, 주차장, 와이파이, 전자렌지");
+        room3.setOptions("엘리베이터, 주차장, 와이파이, 책상");
+        room3.setPreferredGender("여성");
+        room3.setPreferredAge("20대");
+        room3.setTotalMembers(2);
+        room3.setLifestyleFromList(List.of("운동 좋아함", "조용한 생활"));
 
         Room room4 = new Room(
                 host2,
                 "건대입구역 풀옵션 원룸",
-                250000,
+                450000,
                 "서울특별시 광진구 화양동 22-10",
                 "원룸",
                 37.540408,
                 127.069210,
                 1, // 예약중
-                "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다."
+                "풀옵션(에어컨, 세탁기, 냉장고) 포함된 신축 원룸입니다.",
+                3000000
         );
 
-        room3.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터, TV");
+        room4.setOptions("에어컨, 냉장고, 세탁기, 엘리베이터, TV");
+        room4.setPreferredGender("남성");
+        room4.setPreferredAge("30대");
+        room4.setTotalMembers(1);
+        room4.setLifestyleFromList(List.of("금연", "일찍 기상"));
 
         // host3 방 2개
         Room room5 = new Room(
@@ -265,8 +296,14 @@ public class SharestayApplication implements CommandLineRunner {
                 37.559819,
                 126.942308,
                 2, // 마감
-                "연세대/이대생에게 인기 많은 조용한 투룸입니다."
+                "연세대/이대생에게 인기 많은 조용한 투룸입니다.",
+                500000
         );
+        room5.setOptions("에어컨, 세탁기, 인터넷, 보안시설");
+        room5.setPreferredGender("여성");
+        room5.setPreferredAge("20대");
+        room5.setTotalMembers(3);
+        room5.setLifestyleFromList(List.of("조용한 생활", "독서"));
 
         Room room6 = new Room(
                 host3,
@@ -277,8 +314,14 @@ public class SharestayApplication implements CommandLineRunner {
                 37.511822,
                 127.086554,
                 2, // 마감
-                "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다."
+                "롯데월드, 잠실역 접근성 좋은 오피스텔 원룸입니다.",
+                3000000
         );
+        room6.setOptions("엘리베이터, 주차장, 와이파이, 침대");
+        room6.setPreferredGender("남성");
+        room6.setPreferredAge("30대");
+        room6.setTotalMembers(2);
+        room6.setLifestyleFromList(List.of("사교적", "운동 좋아함"));
 
         Room room7 = new Room(
                 host4,
@@ -289,9 +332,14 @@ public class SharestayApplication implements CommandLineRunner {
                 35.163054,
                 129.163556,
                 0,  // 모집중
-                "바다가 보이는 오션뷰 원룸입니다."
+                "바다가 보이는 오션뷰 원룸입니다.",
+                5000000
         );
         room7.setOptions("에어컨, 세탁기, 냉장고, 주차장, 와이파이");
+        room7.setPreferredGender("여성");
+        room7.setPreferredAge("20대");
+        room7.setTotalMembers(2);
+        room7.setLifestyleFromList(List.of("금연", "운동 좋아함"));
 
         Room room8 = new Room(
                 host4,
@@ -302,9 +350,14 @@ public class SharestayApplication implements CommandLineRunner {
                 35.153215,
                 129.118598,
                 0,  // 모집중
-                "광안리 바다가 보이는 투룸입니다."
+                "광안리 바다가 보이는 투룸입니다.",
+                5500000
         );
-        room8.setOptions("에어컨, TV, 침대, 옷장, 엘리베이터");
+        room8.setOptions("에어컨, TV, 침대, 베란다, 엘리베이터");
+        room8.setPreferredGender("무관");
+        room8.setPreferredAge("30대");
+        room8.setTotalMembers(4);
+        room8.setLifestyleFromList(List.of("음악 감상", "사교적"));
 
 
         room1.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F3d-kwaejeoghan-dogseosil.jpg?alt=media&token=6aa1cc21-20e5-4bc6-b5b5-4552daecd01d");
@@ -322,6 +375,8 @@ public class SharestayApplication implements CommandLineRunner {
         room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fhome-820389_1280.jpg?alt=media&token=e2d18205-4b4c-4200-a4d5-abe38d720185");
         room6.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2Fbedroom-1872196_1280.jpg?alt=media&token=78d11423-e245-4b8a-8bd0-54e31587c66c");
 
+        room7.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F%E1%84%8B%E1%85%A9%E1%84%89%E1%85%A7%E1%86%AB%E1%84%87%E1%85%B2.avif?alt=media&token=8c03acc3-3cd9-4b8b-b239-4e3813603333");
+        room8.addRoomImage("https://firebasestorage.googleapis.com/v0/b/sharestay-4d2c6.firebasestorage.app/o/rooms%2F%E1%84%80%E1%85%AA%E1%86%BC%E1%84%8B%E1%85%A1%E1%86%AB%E1%84%85%E1%85%B5%20%E1%84%87%E1%85%B2.avif?alt=media&token=b0a52fb2-b4ca-4778-b72f-552893f650b0");
         List<Room> rooms = Arrays.asList(room1, room2, room3, room4, room5, room6, room7, room8);
         roomRepository.saveAll(rooms);
 
@@ -409,7 +464,7 @@ public class SharestayApplication implements CommandLineRunner {
 
 
         // ⚠ 개발용: 더미 데이터에만 한 번 돌리고, 끝난 뒤에는 주석 처리해 두기
-        roomService.backfillShareLinks();
+        //roomService.backfillShareLinks();
     }
 
 }

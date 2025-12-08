@@ -3,12 +3,6 @@ import { useState, useCallback } from "react";
 import axios from "axios";
 import type { RoomSummary } from "../../../types/room";
 
-interface UseRoomsProps {
-  roomType: string;
-  priceRange: number[];
-  facilities: Set<string>;
-}
-
 const ACCESS_TOKEN_KEY = "jwt";
 
 export const useRooms = (filters: {
@@ -47,12 +41,16 @@ export const useRooms = (filters: {
           : res.data?.result ?? [];
 
         setRooms(roomData);
+        return roomData;
       } catch (err) {
-        if (err.response?.status === 401) {
+        if (axios.isAxiosError(err) && err.response?.status === 401) {
           setError("로그인이 필요합니다.");
         } else {
-          setError(err.message || "서버 오류");
+          const message =
+            err instanceof Error ? err.message : "서버 오류";
+          setError(message);
         }
+        return [];
       } finally {
         setIsLoading(false);
       }

@@ -73,18 +73,21 @@ public class Room {
         "에어컨, 냉장고, 세탁기"를 잘라서 [ "에어컨", "냉장고", "세탁기" ]로 만들어줌.
      */
 
+        @Column(nullable = false)
+        private int deposit;
 
 
-    // Room 이 저장될 때 함께 저장, 삭제 될 때 함께 삭제
-    @OneToOne(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-    private ShareLink shareLink;
 
-    public void setShareLink(ShareLink shareLink) {
-        this.shareLink = shareLink;
-        if (shareLink != null && shareLink.getRoom() != this) {
-            shareLink.setRoom(this);  // 주인 쪽도 맞춰줌
-        }
-    }
+//    // Room 이 저장될 때 함께 저장, 삭제 될 때 함께 삭제
+//    @OneToOne(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private ShareLink shareLink;
+//
+//    public void setShareLink(ShareLink shareLink) {
+//        this.shareLink = shareLink;
+//        if (shareLink != null && shareLink.getRoom() != this) {
+//            shareLink.setRoom(this);  // 주인 쪽도 맞춰줌
+//        }
+//    }
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id")
@@ -102,7 +105,7 @@ RoomImage와 ShareLink의 cascade 관계는 명확히 관리되지만, 순환참
 
 
     public Room(Host host, String title, double rentPrice, String address, String type,
-                double latitude, double longitude, int availabilityStatus, String description) {
+                double latitude, double longitude, int availabilityStatus, String description, int deposit) {
         this.host = host;
         this.title = title;
                 this.rentPrice = rentPrice;
@@ -112,12 +115,14 @@ RoomImage와 ShareLink의 cascade 관계는 명확히 관리되지만, 순환참
         this.longitude = longitude;
         this.availabilityStatus = availabilityStatus;
         this.description = description;
+        this.deposit = deposit;
     }
 
     // 업데이트 메서드 (RoomRequest 기반)
     public void update(RoomRequest request) {
         this.title = request.getTitle();
         this.rentPrice = request.getRentPrice();
+        this.deposit = request.getDeposit();
         this.address = request.getAddress();
         this.type = request.getType();
         this.latitude = request.getLatitude();

@@ -20,7 +20,7 @@ function SectionTitle({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor: "primary.main",
+            // bgcolor: "primary.main",
             color: "primary.contrastText",
           }}
         >

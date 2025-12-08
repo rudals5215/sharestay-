@@ -1,5 +1,6 @@
 // src/components/Room/hooks/useMap.ts
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import type { RoomSummary } from "../../../types/room";
 
 interface UseMapParams {
   fetchRoomsNearby: (
@@ -93,8 +94,9 @@ export function useMap({ fetchRoomsNearby, rooms }: UseMapParams) {
   // 2. 방 클릭 핸들러
   // -----------------------------
   const handleRoomItemClick = useCallback((room: RoomSummary) => {
-    if (!room.id) return;
-    setSelectedRoomId((prev) => (prev === room.id ? null : room.id));
+    const roomId = room.id ?? room.roomId ?? null;
+    if (roomId === null) return;
+    setSelectedRoomId((prev) => (prev === roomId ? null : roomId));
   }, []);
 
   // -----------------------------
@@ -135,7 +137,7 @@ export function useMap({ fetchRoomsNearby, rooms }: UseMapParams) {
           position,
           content,
           yAnchor: 1,
-        });
+        }) as any;
 
         overlay.room = room;
         return overlay;

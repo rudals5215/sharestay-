@@ -20,8 +20,6 @@ import {
   Typography,
 } from "@mui/material";
 import {
-  Favorite,
-  FavoriteBorder,
   GridView,
   ListAlt,
   LocationOn,
@@ -30,12 +28,12 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Link as RouterLink,
-  useNavigate,
   useSearchParams,
 } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
 import SiteFooter from "../components/SiteFooter";
 import SiteHeader from "../components/SiteHeader";
+import FavoriteButton from "../components/FavoriteButton";
 import { api } from "../lib/api";
 import { fetchFavoriteRooms, toggleFavoriteRoom } from "../lib/favorites";
 import type { RoomApiResponse, RoomSummary } from "../types/room";
@@ -46,19 +44,20 @@ import Grid from "@mui/material/Unstable_Grid2";
 // 칩 심는 거 해야함
 
 const filterFacilities = [
+  
+  "침대",
+  "책상",
   "에어컨",
   "냉장고",
   "세탁기",
   "인터넷",
-  "와이파이",
-  "엘리베이터",
-  "TV",
-  "침대",
-  "책상",
-  "보안시설",
   "주차장",
   "헬스장",
   "베란다",
+  "와이파이",
+  "TV",
+  "엘리베이터",
+  "보안시설",
   "반려동물 가능",
 ];
 
@@ -132,6 +131,8 @@ const extractTags = (room: RoomSummary): string[] => {
   return [];
 };
 
+
+
 const ensureArray = <T,>(value: T | T[]): T[] =>
   Array.isArray(value) ? value : [value];
 
@@ -155,7 +156,11 @@ const availabilityLabel = (status: RoomSummary["availabilityStatus"]) => {
   return "모집중";
 };
 
-const getRoomId = (room: RoomSummary) => room.roomId ?? room.id ?? null;
+const getRoomId = (room: RoomSummary) => {
+  const raw = room.roomId ?? room.id;
+  const num = Number(raw);
+  return Number.isFinite(num) ? num : null;
+};
 
 const isClosedStatus = (status: RoomSummary["availabilityStatus"]) => {
   if (typeof status === "number") return status >= 2;
@@ -186,7 +191,7 @@ type RoomSearchOverrides = {
   roomType?: string;
   priceRange?: number[];
   useSearchEndpoint?: boolean;   // ⭐ 추가: /rooms vs /rooms/search 구분용
-  facility?: string;        // ⭐ 추가
+  facility?: string[];   // 중복 검색을 위해서 string에서 string[] 로 변경
 };
 
 export default function Rooms() {
@@ -211,7 +216,7 @@ export default function Rooms() {
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<number>>(new Set());
   // ⭐ 추가: 현재 선택된 편의시설 (없으면 빈 문자열)
-  const [selectedFacility, setSelectedFacility] = useState<string>("");
+  const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
 
   const priceLabel = useMemo(
     () =>
@@ -261,27 +266,29 @@ export default function Rooms() {
       const roomTypeValue = overrides?.roomType ?? roomType;
       const priceRangeValue = overrides?.priceRange ?? priceRange;
       const [minPrice, maxPrice] = priceRangeValue;
-      // ⭐ 추가: override로 들어온 facility가 있으면 그걸 우선 사용
-      const facilityValue = overrides?.facility ?? selectedFacility;
+      
+      const facilityValue =
+        overrides?.facility ?? selectedFacilities; // string[] 
+      const hasFacility = facilityValue.length > 0;
 
       const hasCustomPriceRange =
         priceRangeValue[0] !== defaultPriceRange[0] ||
         priceRangeValue[1] !== defaultPriceRange[1];
 
+      // 🔥 서버에는 "한 개만" option 으로 보내고, 나머지는 프론트에서 필터링
       const optionParam =
-        (facilityValue && facilityValue.trim().length > 0
-          ? facilityValue
-          : undefined) ||
-        (keywordValue && keywordValue.trim().length > 0
+        hasFacility && facilityValue.length === 1
+          ? facilityValue[0] // 서버 검색에 사용
+          : keywordValue && keywordValue.trim().length > 0
           ? keywordValue
-          : undefined);
+          : undefined;
 
       const hasAnyFilter =
         (regionValue && regionValue.trim().length > 0) ||
         (districtValue && districtValue.trim().length > 0) ||
         (roomTypeValue && roomTypeValue.trim().length > 0) ||
         (keywordValue && keywordValue.trim().length > 0) ||
-        (facilityValue && facilityValue.trim().length > 0) ||  // ⭐ 추가
+        hasFacility ||
         hasCustomPriceRange;
 
       let data: RoomApiResponse[] = [];
@@ -310,13 +317,31 @@ export default function Rooms() {
       }
 
       const list = Array.isArray(data) ? data.map(mapRoomFromApi) : [];
-      const normalized = list.map((room) => {
+      let normalized = list.map((room) => {
         const roomId = getRoomId(room);
         return {
           ...room,
           isFavorite: roomId ? favorites.has(roomId) : false,
         };
       });
+
+      // 🔥 프론트에서 "모든 선택된 편의시설을 포함" 하는지 필터링
+      if (hasFacility) {
+        normalized = normalized.filter((room) => {
+          // RoomSummary.options 를 배열로 변환
+          const opts: string[] = Array.isArray(room.options)
+            ? room.options
+            : typeof room.options === "string"
+            ? room.options
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : [];
+
+          // 선택된 모든 시설이 포함되어야 통과
+          return facilityValue.every((f) => opts.includes(f));
+        });
+      }
 
       setRooms(sortRoomsForDisplay(normalized));
 
@@ -331,7 +356,7 @@ export default function Rooms() {
     } finally {
       setIsLoading(false);
     }
-  }, [keyword, region, district, roomType, priceRange, selectedFacility, favorites]);
+  }, [keyword, region, district, roomType, priceRange, selectedFacilities, favorites]);
 
   useEffect(() => {
     const initialKeyword = searchParams.get("keyword") ?? "";
@@ -441,9 +466,15 @@ export default function Rooms() {
 // ⭐ 추가: 왼쪽 필터바 "편의시설" 칩 클릭 핸들러
   const handleFacilityClick = async (facility: string) => {
     // 같은 칩을 한 번 더 누르면 해제
-    const nextFacility = selectedFacility === facility ? "" : facility;
+    // const nextFacility = selectedFacility === facility ? "" : facility;
 
-    setSelectedFacility(nextFacility);
+    const nextFacilities = selectedFacilities.includes(facility)
+    ? selectedFacilities.filter((f) => f !== facility)
+    : [...selectedFacilities, facility];
+
+    setSelectedFacilities(nextFacilities);
+
+    
 
     const params = new URLSearchParams();
     if (keyword.trim()) params.set("keyword", keyword.trim());
@@ -457,8 +488,10 @@ export default function Rooms() {
       params.set("minPrice", String(priceRange[0]));
       params.set("maxPrice", String(priceRange[1]));
     }
-    if (nextFacility) {
-      params.set("option", nextFacility); // URL에도 남겨두고 싶으면
+    if (nextFacilities.length === 1) {
+    params.set("option", nextFacilities[0]);
+    } else {
+      params.delete("option");
     }
 
     if (params.toString()) setSearchParams(params, { replace: true });
@@ -466,7 +499,7 @@ export default function Rooms() {
 
     // 실제 목록 다시 조회 (facility override만 넘기면 나머지는 현재 state 사용)
     await fetchRooms({
-      facility: nextFacility,
+      facility: nextFacilities,
     });
   };
 
@@ -481,9 +514,8 @@ export default function Rooms() {
       const favoriteRooms = await fetchFavoriteRooms(user.id);
       const next = new Set<number>();
       favoriteRooms.forEach((item) => {
-        if (typeof item.roomId === "number") {
-          next.add(item.roomId);
-        }
+        const id = Number(item.roomId);
+        if (Number.isFinite(id)) next.add(id);
       });
       setFavorites(next);
       setRooms((prev) =>
@@ -783,7 +815,7 @@ export default function Rooms() {
                     useFlexGap
                   >
                     {filterFacilities.map((facility) => {
-                      const isSelected = selectedFacility === facility;
+                      const isSelected = selectedFacilities.includes(facility); // 🔥 변경
                       return (
 >>>>>>> main
                         <Chip
@@ -1003,16 +1035,11 @@ export default function Rooms() {
                               >
                                 공유 링크
                               </Button>
-                              <IconButton
-                                onClick={(event) => {
-                                  event.stopPropagation(); // 카드 클릭으로 인한 네비게이션 막기
-                                  toggleFavorite(room);
-                                }}
-                                color={isFavorite ? "error" : "default"}
-                                aria-label="즐겨찾기"
-                              >
-                                {isFavorite ? <Favorite /> : <FavoriteBorder />}
-                              </IconButton>
+                              <FavoriteButton
+                                  roomId={roomId!}
+                                  isLiked={isFavorite}
+                                  onToggle={() => toggleFavorite(room)}
+                                />
                             </CardActions>
                           </Card>
                         </Grid>
