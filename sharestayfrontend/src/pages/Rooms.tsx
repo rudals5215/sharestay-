@@ -761,30 +761,6 @@ export default function Rooms() {
                 </Stack>
 
 
-<<<<<<< HEAD
-                  <Button
-                    component={RouterLink}
-                    to="/RoomMap"
-                    variant="contained"
-                    fullWidth
-                    startIcon={<LocationOn />}
-                    sx={{ borderRadius: 2, my: 1 }}
-                  >
-                    지도로 찾기
-                  </Button>
-
-                  <Stack spacing={1}>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      편의시설
-                    </Typography>
-                    <Stack
-                      spacing={1}
-                      flexWrap="wrap"
-                      direction="row"
-                      useFlexGap
-                    >
-                      {filterFacilities.map((facility) => (
-=======
                 <Stack spacing={1}>
                 <Typography variant="subtitle2" color="text.secondary">
                   가격 범위
@@ -817,7 +793,6 @@ export default function Rooms() {
                     {filterFacilities.map((facility) => {
                       const isSelected = selectedFacilities.includes(facility); // 🔥 변경
                       return (
->>>>>>> main
                         <Chip
                           key={facility}
                           label={facility}
